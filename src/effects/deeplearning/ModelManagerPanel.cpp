@@ -274,6 +274,7 @@ void ModelCardPanel::PopulateInstallCtrls(ShuttleGui &S)
       mInstallProgressGauge = safenew wxGauge(S.GetParent(), wxID_ANY, 100); // TODO:  sizing
       mInstallProgressGauge->SetSize(wxSize(80, 20));
       S.AddWindow(mInstallProgressGauge);
+      mInstallProgressGauge->Show();
 
       S.StartHorizontalLay(wxCENTER, true);
       {
@@ -371,7 +372,7 @@ void ModelCardPanel::SetInstallStatus(InstallStatus status)
       this->mInstallButton->SetLabel("Uninstall");
       this->mInstallButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
                                  wxCommandEventHandler(ModelCardPanel::OnUninstall), NULL, this);
-
+      this->mInstallProgressGauge->Hide();
       this->mInstallStatusText->SetLabel("installed");
 
       statusColor = *wxGREEN;
@@ -381,7 +382,7 @@ void ModelCardPanel::SetInstallStatus(InstallStatus status)
       this->mInstallButton->SetLabel("Cancel");
       this->mInstallButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
                                  wxCommandEventHandler(ModelCardPanel::OnCancelInstall), NULL, this);
-      // this->mInstallProgressGauge->Show();
+      this->mInstallProgressGauge->Show();
 
       this->mInstallStatusText->SetLabel("installing...");
       statusColor = *wxBLACK; 
@@ -391,13 +392,15 @@ void ModelCardPanel::SetInstallStatus(InstallStatus status)
       this->mInstallButton->SetLabel("Install");
       this->mInstallButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
                                  wxCommandEventHandler(ModelCardPanel::OnInstall), NULL, this);
-      // this->mInstallProgressGauge->Hide();
+      this->mInstallProgressGauge->Hide();
 
       this->mInstallStatusText->SetLabel("uninstalled");
       statusColor = *wxRED;
    }
 
    mInstallStatusText->SetForegroundColour(statusColor);
+   this->Layout();
+   this->GetParent()->Layout();
 }
 
 void ModelCardPanel::OnUninstall(wxCommandEvent &event)
