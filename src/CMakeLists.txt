@@ -1039,6 +1039,10 @@ list( APPEND DEFINES
       $<$<BOOL:${${_OPT}has_updates_check}>:
           HAVE_UPDATES_CHECK
       >
+
+      $<$<BOOL:${USE_LIBTORCH}>:
+         HAVE_LIB_TORCH
+      >
 )
 
 # If we have cmake 3.16 or higher, we can use precompiled headers, but
@@ -1072,7 +1076,7 @@ list( APPEND LIBRARIES
       SndFile::sndfile
       PortAudio::PortAudio
       sqlite
-      $<$<BOOL:${USE_LIBTORCH}>:libtorch>
+      $<$<BOOL:${USE_LIBTORCH}>:Torch::Torch>
       $<$<BOOL:${USE_LIBTORCH}>:RapidJSON::RapidJSON>
       $<$<BOOL:${${_OPT}has_crashreports}>:crashreports>
       $<$<BOOL:${USE_FFMPEG}>:ffmpeg>

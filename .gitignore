@@ -162,7 +162,3 @@ win/xaudacity.ico
 
 .idea/
 .vscode/
-
-# libtorch
-cmake-proxies/libtorch/libtorch
-cmake-proxies/libtorch/libtorch.zip
