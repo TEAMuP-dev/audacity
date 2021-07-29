@@ -102,6 +102,7 @@ bool EffectSourceSep::ProcessOne(WaveTrack *leader,
       //Get a blockSize of samples (smaller than the size of the buffer)
       sampleCount samplePos = block.first;
       size_t blockSize = block.second;
+      double tPos = leader->LongSamplesToTime(samplePos); 
    
       // get a torch tensor from the leader track
       torch::Tensor input = BuildMultichannelTensor(leader, buffer.get(), 
@@ -119,10 +120,9 @@ bool EffectSourceSep::ProcessOne(WaveTrack *leader,
       // write each source output to the source tracks
       for (size_t idx = 0; idx < output.size(0) ; idx++)
          TensorToTrack(output[idx].unsqueeze(0), sourceTracks[idx], 
-                       tStart, tEnd); 
+                       tPos, tEnd); 
 
       // Update the Progress meter
-      double tPos = leader->LongSamplesToTime(samplePos); 
       if (TrackProgress(mCurrentTrackNum, (tPos - tStart) / (tEnd - tStart))) 
          return false;
    }
