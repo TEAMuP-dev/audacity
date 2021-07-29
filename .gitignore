@@ -208,3 +208,7 @@ win/xaudacity.ico
 *.dll
 
 .idea/
+
+# libtorch
+cmake-proxies/libtorch/libtorch
+cmake-proxies/libtorch/libtorch.zip
