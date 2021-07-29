@@ -36,6 +36,7 @@ public:
 class DeepModel
 {
    void LoadModel(const std::string &path);
+   void LoadResampler();
    void Cleanup();
 
 public:
@@ -57,6 +58,11 @@ public:
    void SetCard(ModelCardHolder card);
    ModelCardHolder GetCard();
    int GetSampleRate(){return mSampleRate;}
+
+   // @execsafety: strong (may throw if model is not loaded or 
+   // forward pass fails)
+   // waveform should be shape (channels, samples)
+   torch::Tensor Resample(const torch::Tensor &waveform, int sampleRateIn, int sampleRateOut);
 
    // @execsafety: strong (may throw if model is not loaded or 
    // forward pass fails)

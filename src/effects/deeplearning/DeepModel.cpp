@@ -10,6 +10,7 @@
 ******************************************************************/
 
 #include "DeepModel.h"
+#include "DeepModelManager.h"
 
 #include <torch/script.h>
 #include <torch/torch.h>
@@ -23,11 +24,22 @@ DeepModel::DeepModel() : mLoaded(false)
                         //  mCard(ModelCardHolder())
 {}
 
+void DeepModel::LoadResampler()
+{
+   // load the resampler module
+   std::string resamplerPath = wxFileName(DeepModelManager::DLModelsDir(), wxT("resampler.pt"))
+                                       .GetFullPath().ToStdString();
+   mResampler = std::make_unique<torch::jit::script::Module>
+                  (torch::jit::load(resamplerPath, torch::kCPU));
+   mResampler->eval();
+}
 
 void DeepModel::Load(const std::string &modelPath)
 {
    try
    { 
+      // set mResampler
+      LoadResampler();
 
       // set mModel
       mModel = std::make_unique<torch::jit::script::Module>
@@ -48,6 +60,8 @@ void DeepModel::Load(std::istream &bytes)
 {
    try
    {
+      // load the resampler module
+      LoadResampler();
 
       // load the model to CPU, as well as the metadata
       mModel = std::make_unique<torch::jit::script::Module>
@@ -93,6 +107,30 @@ void DeepModel::Cleanup()
    mLoaded = false;
 }
 
+torch::Tensor DeepModel::Resample(const torch::Tensor &waveform, int sampleRateIn, 
+                                  int sampleRateOut)
+{
+   if (!mLoaded) throw ModelException("Attempted resample while is not loaded."
+                                       " Please call Load() first."); 
+
+   // set up inputs
+   // torchaudio likes that sample rates are cast to float, for some reason.
+   std::vector<torch::jit::IValue> inputs = {waveform, 
+                                             (float)sampleRateIn, 
+                                             (float)sampleRateOut};
+
+   torch::Tensor output;
+   try
+   {
+      output = mResampler->forward(inputs).toTensor();
+   }
+   catch (const std::exception &e)
+   {
+      throw ModelException(e.what());
+   }
+
+   return output.contiguous();
+}
 
 // forward pass through the model!
 torch::Tensor DeepModel::Forward(const torch::Tensor &waveform)
