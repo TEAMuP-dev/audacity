@@ -109,7 +109,8 @@ void ModelManagerPanel::FetchCards()
       this->CallAfter(
          [this, current, total]()
          {
-            this->mTools->SetFetchProgress(current, total);
+            if (mTools)
+               this->mTools->SetFetchProgress(current, total);
          }
       );
    };
@@ -453,10 +454,13 @@ void ModelCardPanel::OnInstall(wxCommandEvent &event)
                if (manager.IsInstalled(this->mCard))
                   this->SetInstallStatus(InstallStatus::installed);
                else
+               {
                   this->mEffect->Effect::MessageBox(
                      XO("An error ocurred while installing the model with Repo ID %s. ")
                         .Format(this->mCard->GetRepoID())
                   );
+                  this->SetInstallStatus(InstallStatus::uninstalled);
+               }
             }
             else
             {
