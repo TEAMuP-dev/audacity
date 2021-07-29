@@ -33,7 +33,7 @@ void ModelManagerPanel::PopulateOrExchange(ShuttleGui & S)
    S.StartVerticalLay(true);
    {
       if (!mTools) 
-         mTools = std::make_unique<ManagerToolsPanel>(S.GetParent());
+         mTools = safenew ManagerToolsPanel(S.GetParent());
       
       mTools->PopulateOrExchange(S);
 
@@ -124,7 +124,7 @@ void ModelManagerPanel::FetchCards()
 ManagerToolsPanel::ManagerToolsPanel(wxWindow *parent)
    : wxPanelWrapper(parent, wxID_ANY)
 {
-
+   mFetchStatus = NULL;
 }
 
 void ManagerToolsPanel::PopulateOrExchange(ShuttleGui &S)

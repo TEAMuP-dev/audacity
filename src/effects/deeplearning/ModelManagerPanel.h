@@ -57,7 +57,7 @@ public:
 private:
    wxScrolledWindow *mScroller;
 
-   std::unique_ptr<ManagerToolsPanel> mTools;
+   ManagerToolsPanel *mTools;
    std::map<std::string, std::unique_ptr<ModelCardPanel>> mPanels;
    EffectDeepLearning *mEffect;
    
