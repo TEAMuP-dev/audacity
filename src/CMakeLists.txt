@@ -557,12 +557,14 @@ list( APPEND SOURCES
       >
 
       # Deep Learning
-      # TODO: need to add a conditional for networking
-      $<$<BOOL:${USE_LIBTORCH}>:
+      $<$<AND:$<BOOL:${USE_LIBTORCH}>,$<BOOL:${${_OPT}has_networking}>>:
          effects/deeplearning/DeepModel.cpp
          effects/deeplearning/DeepModel.h
          effects/deeplearning/ModelCard.cpp
          effects/deeplearning/ModelCard.h
+
+         effects/deeplearning/DeepModelManager.cpp
+         effects/deeplearning/DeepModelManager.h
 
       >
 
