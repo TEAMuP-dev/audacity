@@ -570,9 +570,9 @@ list( APPEND SOURCES
          effects/deeplearning/EffectDeepLearning.h
          effects/deeplearning/ModelManagerPanel.cpp
          effects/deeplearning/ModelManagerPanel.h
-
+      
+         effects/SourceSep.cpp 
          effects/SourceSep.h
-         effects/SourceSep.cpp
       >
 
       # Export
