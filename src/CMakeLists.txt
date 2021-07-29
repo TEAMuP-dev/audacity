@@ -566,6 +566,13 @@ list( APPEND SOURCES
          effects/deeplearning/DeepModelManager.cpp
          effects/deeplearning/DeepModelManager.h
 
+         effects/deeplearning/EffectDeepLearning.cpp
+         effects/deeplearning/EffectDeepLearning.h
+         effects/deeplearning/ModelManagerPanel.cpp
+         effects/deeplearning/ModelManagerPanel.h
+
+         effects/SourceSep.h
+         effects/SourceSep.cpp
       >
 
       # Export
