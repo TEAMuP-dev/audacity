@@ -27,7 +27,7 @@ DeepModel::DeepModel() : mLoaded(false)
 void DeepModel::LoadResampler()
 {
    // load the resampler module
-   std::string resamplerPath = wxFileName(DeepModelManager::DLModelsDir(), wxT("resampler.pt"))
+   std::string resamplerPath = wxFileName(DeepModelManager::BuiltInModulesDir(), wxT("resampler.pt"))
                                        .GetFullPath().ToStdString();
    mResampler = std::make_unique<torch::jit::script::Module>
                   (torch::jit::load(resamplerPath, torch::kCPU));

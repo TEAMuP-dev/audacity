@@ -40,26 +40,28 @@ DeepModelManager& DeepModelManager::Get()
 
 FilePath DeepModelManager::DLModelsDir()
 {
-   wxFileName modelsDir(FileNames::BaseDir(), wxEmptyString);
-   modelsDir.AppendDir(wxT("deeplearning-models"));
-   return modelsDir.GetFullPath();
+   return FileNames::MkDir( wxFileName( FileNames::DataDir(), wxT("deeplearning-models") ).GetFullPath() );
+}
+
+FilePath DeepModelManager::BuiltInModulesDir()
+{
+   return FileNames::MkDir( wxFileName( FileNames::BaseDir(), wxT("deeplearning-models") ).GetFullPath() );
 }
 
 FilePath DeepModelManager::GetRepoDir(ModelCardHolder card)
 {
    // TODO: do we really want these fields in the JSON file?
    // or should they be members of the ModelCard class? 
-   wxFileName repoDir = DLModelsDir();
 
-   repoDir.AppendDir(card->author());
-   if (!repoDir.Exists())
-      repoDir.Mkdir();
+   FilePath authorDir = FileNames::MkDir( 
+         wxFileName( DLModelsDir(), card->author() ).GetFullPath() 
+   );
 
-   repoDir.AppendDir(card->name());
-   if (!repoDir.Exists())
-      repoDir.Mkdir();
+   FilePath repoDir = FileNames::MkDir(
+         wxFileName( authorDir, card->name() ).GetFullPath()
+   );
 
-   return repoDir.GetFullPath();
+   return repoDir;
 }
 
 std::unique_ptr<DeepModel> DeepModelManager::GetModel(ModelCardHolder card)
@@ -143,6 +145,7 @@ void DeepModelManager::Install(ModelCardHolder card, ProgressCallback onProgress
          {
             // clean up 
             Uninstall(cardCopy);
+            wxLogError(e.what());
          }
       }
 

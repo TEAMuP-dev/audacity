@@ -75,6 +75,7 @@ public:
    // base directory for deep learning models
    // TODO: maybe we want to support a couple of search paths?
    static FilePath DLModelsDir();
+   static FilePath BuiltInModulesDir();
 
    // loads the deep model and passes ownership to the caller
    std::unique_ptr<DeepModel> GetModel(ModelCardHolder card);
