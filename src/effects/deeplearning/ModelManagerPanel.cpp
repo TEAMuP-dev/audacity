@@ -98,7 +98,8 @@ void ModelManagerPanel::FetchCards()
          {
             if (success)
             {
-               this->AddCard(card);
+               if (card->effect_type() == mEffect->GetDeepEffectID())
+                  this->AddCard(card);
             }
          }
       );
