@@ -68,7 +68,6 @@ std::unique_ptr<DeepModel> DeepModelManager::GetModel(ModelCardHolder card)
 {
    if (!IsInstalled(card))
    {
-      wxASSERT(IsInstalled(card)); // TODO: 
       throw ModelManagerException("model is not loaded.");
    }
 

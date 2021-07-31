@@ -28,13 +28,23 @@
 EffectDeepLearning::EffectDeepLearning()
 {
    mManagerPanel = NULL;
+   mCard = NULL;
 }
 
 bool EffectDeepLearning::Init()
 {
    DeepModelManager &manager = DeepModelManager::Get();
 
+   // try loading the model (if available)
    mModel = std::make_unique<DeepModel>();
+   if (mCard)
+   {
+      if (manager.IsInstalled(mCard))
+      {
+         mModel = manager.GetModel(mCard);
+      }
+   }
+
    return true;
 }
 
@@ -240,11 +250,9 @@ void EffectDeepLearning::PopulateOrExchange(ShuttleGui &S)
       {
          std::string modelDesc;
          if (mModel->IsLoaded())
-            modelDesc = "Ready";
+            mModelDesc = S.AddVariableText(XO("%s is Ready").Format(mCard->GetRepoID()));
          else
-            modelDesc = "Not Ready";
-
-         mModelDesc = S.AddVariableText(TranslatableString(wxString(modelDesc).c_str(), {}));
+            mModelDesc = S.AddVariableText(XO("Not Ready"));
       }
       S.EndHorizontalLay();
    }
@@ -263,8 +271,11 @@ void EffectDeepLearning::SetModel(ModelCardHolder card)
    }
    else
    {
-      mModel = manager.GetModel(card);
-
-      mModelDesc->SetLabel(XO("%s is Ready").Format(card->GetRepoID()).Translation());
+      if (!(mModel->IsLoaded() && ((*mModel->GetCard()) == (*card))))
+      {
+         mModel = manager.GetModel(card);
+         mCard = card;
+      }
+      mModelDesc->SetLabel(XO("%s is Ready").Format(mCard->GetRepoID()).Translation());
    }  
 }
