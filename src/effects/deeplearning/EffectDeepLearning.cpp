@@ -261,6 +261,17 @@ void EffectDeepLearning::PopulateOrExchange(ShuttleGui &S)
 
 void EffectDeepLearning::SetModel(ModelCardHolder card)
 {
+   // if card is empty, reset the model
+   if (!card)
+   {
+      mModel.reset(safenew DeepModel());
+      mCard = nullptr;
+
+      mModelDesc->SetLabel(XO("Not Ready").Translation());
+      return;
+   }
+
+
    auto &manager = DeepModelManager::Get();
 
    if (!manager.IsInstalled(card))

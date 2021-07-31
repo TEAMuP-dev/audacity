@@ -410,6 +410,8 @@ void ModelCardPanel::OnUninstall(wxCommandEvent &event)
    // TODO: show a prompt to confirm?
    manager.Uninstall(mCard);
    this->SetInstallStatus(InstallStatus::uninstalled);
+
+   mEffect->SetModel(nullptr);      
 }
 
 void ModelCardPanel::OnCancelInstall(wxCommandEvent &event)
