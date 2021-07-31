@@ -17,7 +17,7 @@
 
 #include <wx/stattext.h>
 
-#include "../FileNames.h"
+#include "FileNames.h"
 #include "../Shuttle.h"
 #include "../ShuttleGui.h"
 #include "../WaveTrack.h"
