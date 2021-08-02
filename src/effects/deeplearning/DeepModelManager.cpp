@@ -106,8 +106,7 @@ void DeepModelManager::Install(ModelCardHolder card, ProgressCallback onProgress
       // if the install has been cancelled, bail
       // if we don't bail early, then calling the handler will 
       // segfault.
-      ModelCardHolder cardCopy = card;
-      if (!this->IsInstalling(cardCopy))
+      if (!this->IsInstalling(card))
          return;
 
       return handler(current, expected);
@@ -118,41 +117,17 @@ void DeepModelManager::Install(ModelCardHolder card, ProgressCallback onProgress
    CompletionHandler installHandler(
    [this, card, handler {std::move(onCompleted)} ](int httpCode, std::string body)
    {
-      // if the install has been cancelled, bail
-      // if we don't bail early, then calling the handler will 
-      // segfault.
-      ModelCardHolder cardCopy = ModelCardHolder(card);
-      if (!this->IsInstalling(cardCopy))
-         return;
-
-      std::string repoId = card->GetRepoID(); 
-      std::string path = wxFileName(this->GetRepoDir(card), "model.pt").GetFullPath().ToStdString();
-
-      // only attempt save if request succeeded
-      if ((httpCode == 200) || (httpCode == 302))
+      if (!this->IsInstalling(card))
       {
-         std::istringstream modulestr(body);
-
-         DeepModel tmpModel = DeepModel();
-         tmpModel.SetCard(cardCopy);
-         try
-         {
-            tmpModel.Load(modulestr);
-            tmpModel.Save(path);
-         }
-         catch (const ModelException &e)
-         {
-            // clean up 
-            Uninstall(cardCopy);
-            wxLogError(e.what());
-         }
+         Uninstall(card);
+         return;
       }
-
+      
       // let the caller handle this
       handler(httpCode, body);
 
       // get rid of the cached response
-      this->mResponseMap.erase(repoId);
+      this->mResponseMap.erase(card->GetRepoID());
    });
 
    // download the model
@@ -400,17 +375,78 @@ void DeepModelManager::FetchModelSize(const std::string &repoID, ModelSizeCallba
 network_manager::ResponsePtr DeepModelManager::DownloadModel
 (ModelCardHolder card, ProgressCallback onProgress, CompletionHandler onCompleted)
 {
+   using namespace network_manager;
+
    // TODO: this is not raising an error for an invalid URL 
    // try adding a double slash anyuwhere to break it. 
    // its because huggingface returns 200s saying "Not Found"
-   std::string modelUrl = GetRootURL(card->GetRepoID())  + "model.pt";
+   std::string url = GetRootURL(card->GetRepoID())  + "model.pt";
    
    std::stringstream msg;
-   msg<<"downloading from "<<modelUrl<<std::endl;
+   msg<<"downloading from "<<url<<std::endl;
    wxLogDebug(wxString(msg.str()));
 
-   auto response = doGet(modelUrl, onCompleted, onProgress);
+   Request request(url);
+
+   // send request
+   NetworkManager &manager = NetworkManager::GetInstance();
+   ResponsePtr response = manager.doGet(request);
+
+   // open a file to write the model to 
+   std::string repoId = card->GetRepoID(); 
+   wxString path = wxFileName(this->GetRepoDir(card), "model.pt").GetFullPath();
+   std::shared_ptr<wxFile> file = std::make_shared<wxFile>(path, wxFile::write);
+
+   // set callback for download progress
+   if (onProgress)
+      response->setDownloadProgressCallback(onProgress);
+
+   // completion handler
+   response->setRequestFinishedCallback(
+      [response, handler = std::move(onCompleted)](IResponse*) 
+      {
+         const std::string responseData = response->readAll<std::string>();
+
+         if (handler)
+            handler(response->getHTTPCode(), responseData);
+      }
+   );
+
+   // write to file here
+   response->setOnDataReceivedCallback(
+      [this, response, card, file](IResponse*) 
+      {
+         // abort
+         if (!this->IsInstalling(card))
+         {
+            Uninstall(card);
+            return;
+         }
+
+         // only attempt save if request succeeded
+         int httpCode = response->getHTTPCode();
+         if ((httpCode == 200) || (httpCode == 302))
+         {
+            try
+            {
+               file->SeekEnd();
+
+               const std::string responseData = response->readAll<std::string>();
+               file->Write(responseData.c_str(), responseData.size());
+            }
+            // TODO: what to catch here? if anything
+            catch (const char *msg)
+            {
+               // clean up 
+               Uninstall(card);
+               wxLogError(msg);
+            }
+         }
+      }
+   );
+
    return response;
+
 }
 
 network_manager::ResponsePtr DeepModelManager::doGet
