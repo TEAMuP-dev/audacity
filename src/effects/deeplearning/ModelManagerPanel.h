@@ -30,19 +30,26 @@ class ModelManagerPanel;
 class ManagerToolsPanel : public wxPanelWrapper
 {
 public:
-   ManagerToolsPanel(wxWindow *parent);
+   
+   ManagerToolsPanel(wxWindow *parent, ModelManagerPanel *panel);
 
    void PopulateOrExchange(ShuttleGui & S);
 
    void SetFetchProgress(int64_t current, int64_t total);
+   void OnAddRepo(wxCommandEvent & WXUNUSED(event));
 
 private:
    wxStaticText *mFetchStatus;
+   wxButton *mAddRepoButton;
+   ModelManagerPanel *mManagerPanel;
+
 
 };
 
 class ModelManagerPanel final : public wxPanelWrapper
 {
+   CardFetchedCallback GetCardFetchedCallback();
+
 public:
    ModelManagerPanel(wxWindow *parent, EffectDeepLearning *effect);
 
@@ -61,6 +68,7 @@ private:
    std::map<std::string, std::unique_ptr<ModelCardPanel>> mPanels;
    EffectDeepLearning *mEffect;
    
+   friend class ManagerToolsPanel;
 };
 
 class ModelCardPanel final : public wxPanelWrapper

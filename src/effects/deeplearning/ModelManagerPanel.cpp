@@ -19,6 +19,7 @@
 #include <wx/gauge.h>
 #include <wx/button.h>
 #include <wx/sizer.h>
+#include <wx/textdlg.h>
 
 // ModelManagerPanel
 // TODO: need to get rid of the unique ptrs to UI elements
@@ -33,7 +34,7 @@ void ModelManagerPanel::PopulateOrExchange(ShuttleGui & S)
    S.StartVerticalLay(true);
    {
       if (!mTools) 
-         mTools = safenew ManagerToolsPanel(S.GetParent());
+         mTools = safenew ManagerToolsPanel(S.GetParent(), this);
       
       mTools->PopulateOrExchange(S);
 
@@ -87,10 +88,8 @@ void ModelManagerPanel::AddCard(ModelCardHolder card)
    mScroller->GetParent()->Layout();
 }
 
-void ModelManagerPanel::FetchCards()
+CardFetchedCallback ModelManagerPanel::GetCardFetchedCallback()
 {
-   DeepModelManager &manager = DeepModelManager::Get();
-
    CardFetchedCallback onCardFetched = [this](bool success, ModelCardHolder card)
    {
       this->CallAfter(
@@ -98,12 +97,23 @@ void ModelManagerPanel::FetchCards()
          {
             if (success)
             {
-               if (card->effect_type() == mEffect->GetDeepEffectID())
+               bool found = mPanels.find(card->GetRepoID()) != mPanels.end();
+               bool effectTypeMatches = card->effect_type() == mEffect->GetDeepEffectID();
+               if (!found && effectTypeMatches)
                   this->AddCard(card);
             }
          }
       );
    };
+
+   return onCardFetched;
+}
+
+void ModelManagerPanel::FetchCards()
+{
+   DeepModelManager &manager = DeepModelManager::Get();
+
+   CardFetchedCallback onCardFetched = GetCardFetchedCallback();
 
    CardFetchProgressCallback onCardFetchedProgress = [this](int64_t current, int64_t total)
    {
@@ -123,10 +133,12 @@ void ModelManagerPanel::FetchCards()
 
 // ManagerToolsPanel
 
-ManagerToolsPanel::ManagerToolsPanel(wxWindow *parent)
-   : wxPanelWrapper(parent, wxID_ANY)
+ManagerToolsPanel::ManagerToolsPanel(wxWindow *parent, ModelManagerPanel *panel)
+   : wxPanelWrapper((wxWindow *)parent, wxID_ANY)
 {
-   mFetchStatus = NULL;
+   mManagerPanel = panel;
+   mFetchStatus = nullptr;
+   mAddRepoButton = nullptr;
 }
 
 void ManagerToolsPanel::PopulateOrExchange(ShuttleGui &S)
@@ -135,9 +147,31 @@ void ManagerToolsPanel::PopulateOrExchange(ShuttleGui &S)
    S.StartHorizontalLay(wxLEFT, true);
    {
       mFetchStatus = S.AddVariableText(XO("Fetching models..."), false);
+
+      mAddRepoButton = S.AddButton(XO("Add HuggingFace Repo"));
+      mAddRepoButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+                              wxCommandEventHandler(ManagerToolsPanel::OnAddRepo), NULL, this);
    }
    S.EndHorizontalLay();
    S.EndStatic();
+}
+
+void ManagerToolsPanel::OnAddRepo(wxCommandEvent & WXUNUSED(event))
+{
+   DeepModelManager &manager = DeepModelManager::Get();
+
+   CardFetchedCallback onCardFetched = mManagerPanel->GetCardFetchedCallback();
+
+   wxString msg = XO("Enter a HuggingFace Repo ID \n"
+                    "For example: \"huggof/ConvTasNet-DAMP-Vocals\"\n").Translation();
+   wxString caption = XO("AddRepo").Translation();
+   wxTextEntryDialog dialog(this, msg, caption, wxEmptyString);
+
+   if (dialog.ShowModal() == wxID_OK)
+   {
+      std::string repoId = dialog.GetValue().ToStdString();
+      manager.FetchCard(repoId, onCardFetched);
+   }
 }
 
 void ManagerToolsPanel::SetFetchProgress(int64_t current, int64_t total)

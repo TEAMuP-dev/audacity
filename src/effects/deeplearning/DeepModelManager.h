@@ -60,7 +60,6 @@ class DeepModelManager
                                                 ProgressCallback onProgress=NULL);
 
    void FetchRepos(RepoListFetchedCallback onReposFetched);
-   void FetchCard(const std::string &repoID, CardFetchedCallback onCardFetched);
 
    // download a model
    audacity::network_manager::ResponsePtr DownloadModel(ModelCardHolder card, 
@@ -92,6 +91,7 @@ public:
    void CancelInstall(ModelCardHolder card);
 
    void FetchModelCards(CardFetchedCallback onCardFetched, CardFetchProgressCallback onProgress);
+   void FetchCard(const std::string &repoID, CardFetchedCallback onCardFetched);
 
    void FetchModelSize(const std::string &repoID, ModelSizeCallback onModelSizeRetrieved);
 
