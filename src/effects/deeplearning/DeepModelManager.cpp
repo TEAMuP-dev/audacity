@@ -64,14 +64,12 @@ FilePath DeepModelManager::GetRepoDir(ModelCardHolder card)
    return repoDir;
 }
 
-std::unique_ptr<DeepModel> DeepModelManager::GetModel(ModelCardHolder card)
+DeepModelHolder DeepModelManager::GetModel(ModelCardHolder card)
 {
    if (!IsInstalled(card))
-   {
       throw ModelManagerException("model is not loaded.");
-   }
 
-   std::unique_ptr<DeepModel> model = std::make_unique<DeepModel>();
+   DeepModelHolder model = std::make_shared<DeepModel>();
    model->SetCard(card);
 
    // GetRepoDir won't work if the card is empty

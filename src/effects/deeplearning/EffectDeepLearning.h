@@ -65,6 +65,10 @@ protected:
    torch::Tensor BuildMultichannelTensor(WaveTrack *leader, float *buffer, 
                                          sampleCount start, size_t len);
 
+   // performs a forward pass on a helper thread, and sends updates to a progress dialog 
+   // to keep the main thread alive. 
+   torch::Tensor ForwardPassInThread(torch::Tensor input);
+
    // wraps the forward pass in an exception
    torch::Tensor ForwardPass(torch::Tensor input); 
 
@@ -82,7 +86,10 @@ protected:
    int mCurrentTrackNum;
    
    // the deep model itself
-   std::unique_ptr<DeepModel> mModel;
+   DeepModelHolder mModel;
+
+   // populate this with the current progress in ProcessOne
+   double mCurrentProgress {0.0};
 
 private:
    ModelCardHolder mCard;

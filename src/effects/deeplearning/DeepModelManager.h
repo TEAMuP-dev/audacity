@@ -77,8 +77,7 @@ public:
    static FilePath BuiltInModulesDir();
 
    // loads the deep model and passes ownership to the caller
-   std::unique_ptr<DeepModel> GetModel(ModelCardHolder card);
-
+   DeepModelHolder GetModel(ModelCardHolder card);
 
    // download and install a deep learning model
    bool IsInstalled(ModelCardHolder card);

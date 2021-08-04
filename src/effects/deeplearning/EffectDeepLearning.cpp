@@ -36,7 +36,7 @@ bool EffectDeepLearning::Init()
    DeepModelManager &manager = DeepModelManager::Get();
 
    // try loading the model (if available)
-   mModel = std::make_unique<DeepModel>();
+   mModel = std::make_shared<DeepModel>();
    if (mCard)
    {
       if (manager.IsInstalled(mCard))
@@ -50,8 +50,7 @@ bool EffectDeepLearning::Init()
 
 void EffectDeepLearning::End()
 {
-   // TODO:  how to clean up card panels?
-   // release model
+   // release model (may still be active in thread)
    mModel.reset();
 
    // TODO:  how to clean up card panels?
@@ -184,6 +183,68 @@ torch::Tensor EffectDeepLearning::BuildMultichannelTensor(WaveTrack *leader, flo
           BuildMonoTensor(channel, buffer, start, len).clone());
 
    return torch::stack(channelStack);
+}
+
+torch::Tensor EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
+{
+   torch::Tensor output;
+
+   std::atomic<bool> done = {false};
+   std::atomic<bool> success = {true};
+
+   // make a copy of the model (in case we need to abort)
+   DeepModelHolder model = this->mModel;
+
+   auto thread = std::thread(
+      [model, &input, &output, &done, &success]()
+      {
+         try
+         {
+            // TODO this won't work because the model 
+            torch::Tensor tempOut = model->Forward(input);
+
+            // only write to output tensor if abort was not requested
+            if (success)
+               output = tempOut;
+         }
+         catch (const std::exception &e)
+         {
+            wxLogError(e.what());
+            wxLogDebug(e.what());
+            success = false;
+            output = torch::zeros_like(input);
+         }
+         done = true;
+      }
+   );
+
+   // wait for the thread to finish
+   while (!done)
+   {
+      if (TrackProgress(mCurrentTrackNum, mCurrentProgress))
+      {
+         // abort if requested
+         success = false;
+
+         // tensor output will be destroyed once the thread is destroyed
+         thread.detach();
+
+         output = torch::zeros_like(input);
+         return output;
+      }
+
+      wxMilliSleep(50);
+   }
+   thread.join();
+
+   if (!success)
+   {
+      Effect::MessageBox(XO("An error occurred during the forward pass"
+                        "This model may be broken."),
+                        wxOK | wxICON_ERROR);
+   }
+
+   return output;
 }
 
 torch::Tensor EffectDeepLearning::ForwardPass(torch::Tensor input)

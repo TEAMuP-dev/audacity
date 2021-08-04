@@ -112,8 +112,8 @@ bool EffectSourceSep::ProcessOne(WaveTrack *leader,
       input = mModel->Resample(input, origRate, mModel->GetSampleRate());
 
       // forward pass!
-      torch::Tensor output = ForwardPass(input);
-      
+      torch::Tensor output = ForwardPassInThread(input);
+
       // resample back
       output = mModel->Resample(output, mModel->GetSampleRate(), origRate);
 
@@ -123,7 +123,8 @@ bool EffectSourceSep::ProcessOne(WaveTrack *leader,
                        tPos, tEnd); 
 
       // Update the Progress meter
-      if (TrackProgress(mCurrentTrackNum, (tPos - tStart) / (tEnd - tStart))) 
+      mCurrentProgress = (tPos - tStart) / (tEnd - tStart);
+      if (TrackProgress(mCurrentTrackNum, mCurrentProgress)) 
          return false;
    }
 

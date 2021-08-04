@@ -23,7 +23,10 @@
 #include <torch/script.h>
 #include <torch/torch.h>
 
+class DeepModel;
+
 using ModulePtr = std::unique_ptr<torch::jit::script::Module>;
+using DeepModelHolder = std::shared_ptr<DeepModel>;
 
 class ModelException : public std::exception
 {
