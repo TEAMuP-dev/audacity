@@ -12,6 +12,9 @@
 #include "ModelCard.h"
 #include "DeepModel.h"
 
+#include <wx/string.h>
+#include <wx/file.h>
+
 #include <rapidjson/document.h>
 #include <rapidjson/ostreamwrapper.h>
 #include <rapidjson/filewritestream.h>
@@ -104,20 +107,13 @@ namespace parsers
 
    DocHolder ParseFile(const std::string &path)
    {
-      // TODO: error check reading from the stream?
-      // TODO: error check for file parse
-      // https://rapidjson.org/md_doc_stream.html
-      FILE* fp = fopen(path.c_str(), "r");
+      std::shared_ptr<wxString> docStr = std::make_shared<wxString>();
+      wxFile file = wxFile(path);
 
-      char readBuffer[65536];
-      rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+      if(!file.ReadAll(docStr.get()))
+         throw InvalidModelCardDocument("could not read file", nullptr);
 
-      DocHolder d;
-      d->ParseStream(is);
-
-      fclose(fp);
-
-      return d;
+      return ParseString(docStr->ToStdString());
    }
 }
 
@@ -146,15 +142,15 @@ ModelCard::ModelCard()
 
 void ModelCard::SerializeToFile(const std::string &path) const
 {
-   std::ofstream ofs(path);
-   rapidjson::OStreamWrapper osw(ofs);
-   rapidjson::Writer<rapidjson::OStreamWrapper> writer(osw);
+   rapidjson::StringBuffer sb;
+   rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
 
    writer.StartObject();
    Serialize(writer);
    writer.EndObject();
 
-   ofs.close();
+   wxFile file(path, wxFile::write);
+   file.Write(wxString(sb.GetString()));
 }
 
 void ModelCard::DeserializeFromFile(const std::string &path)

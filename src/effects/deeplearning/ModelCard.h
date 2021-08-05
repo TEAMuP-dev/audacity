@@ -39,6 +39,7 @@ public:
    virtual const char* what() const throw () 
    {
       // TODO: also print the document
+      // TODO: check if document is nullptr
       return m_msg.c_str();
       // rapidjson::StringBuffer sb;
       // rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
