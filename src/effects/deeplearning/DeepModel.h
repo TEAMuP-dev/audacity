@@ -51,7 +51,7 @@ public:
    // which is stored in a ModelCard.
    void Load(const std::string &modelPath);
    void Load(std::istream &bytes);
-   bool IsLoaded(){ return mLoaded; };
+   bool IsLoaded();
 
    // @execsafety: strong (will throw if model is not loaded)
    void Save(const std::string &modelPath);

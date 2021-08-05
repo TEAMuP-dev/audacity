@@ -78,6 +78,11 @@ void DeepModel::Load(std::istream &bytes)
    }
 }
 
+bool DeepModel::IsLoaded()
+{
+   return mLoaded; 
+}
+
 void DeepModel::Save(const std::string &modelPath)
 {
    if (!mLoaded)
