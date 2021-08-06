@@ -247,6 +247,21 @@ torch::Tensor EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
    return output;
 }
 
+torch::Tensor EffectDeepLearning::Resample(torch::Tensor input, int SampleRateIn, int SampleRateOut)
+{
+   try
+   {
+      input = mModel->Resample(input, SampleRateIn, SampleRateOut);
+   }
+   catch(const ModelException& e)
+   {
+      Effect::MessageBox(XO("An error occurred while resampling the audio data."),
+                         wxOK | wxICON_ERROR);
+   }
+
+   return input;
+}
+
 torch::Tensor EffectDeepLearning::ForwardPass(torch::Tensor input)
 {
    torch::Tensor output;
