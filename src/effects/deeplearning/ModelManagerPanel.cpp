@@ -20,6 +20,7 @@
 #include <wx/button.h>
 #include <wx/sizer.h>
 #include <wx/textdlg.h>
+#include <wx/stattext.h>
 
 // ModelManagerPanel
 // TODO: need to get rid of the unique ptrs to UI elements

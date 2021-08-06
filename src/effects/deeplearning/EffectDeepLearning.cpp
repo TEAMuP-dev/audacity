@@ -21,6 +21,7 @@
 #include <torch/script.h>
 
 #include <wx/log.h>
+#include <wx/stattext.h>
 
 
 // ModelCardPanel
