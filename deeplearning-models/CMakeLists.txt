@@ -7,6 +7,7 @@ def_vars()
 
 list( APPEND SOURCES
    resampler.pt
+   modelcard-schema.json
 )
 
 foreach( source ${SOURCES} )

@@ -272,7 +272,7 @@ void ModelCardPanel::PopulateDescription(ShuttleGui &S)
    // model description
    S.StartStatic(XO("Description"));
    mModelDescription = S.AddVariableText(
-                                       XO("%s").Format(wxString(mCard->description())),
+                                       XO("%s").Format(wxString(mCard->short_description())),
                                        false, wxLEFT);
    S.EndStatic();
 }
@@ -289,7 +289,7 @@ void ModelCardPanel::PopulateMetadata(ShuttleGui &S)
       S.AddVariableText(XO("Domain: "))
           ->SetFont(wxFont(wxFontInfo().Bold()));
       S.AddVariableText(XO("%s")
-                            .Format(mCard->domain()));
+                            .Format(" NONE ")); // FIXME
 
       S.AddVariableText(XO("Sample Rate: "))
           ->SetFont(wxFont(wxFontInfo().Bold()));

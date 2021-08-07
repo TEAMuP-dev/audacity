@@ -65,12 +65,15 @@ namespace parsers
 class ModelCard
 {
 public:
-   void DeserializeFromFile(const std::string& path);
+   // throws InvalidModelCardDocument if the given json is not valid. 
+   void DeserializeFromFile(const std::string& path, DocHolder schema);
    void SerializeToFile(const std::string& path) const;
 
    template < typename Writer >
    void Serialize(Writer &writer) const;
-   void Deserialize(DocHolder doc);
+   void Deserialize(DocHolder doc, DocHolder schema);
+
+   void Validate(DocHolder doc, DocHolder schema);
 
    ModelCard();
    ModelCard(const ModelCard&);
@@ -83,11 +86,11 @@ public:
    std::string author() const { return m_author; }
    void author(const std::string &author) { m_author = author; }
 
-   std::string description() const { return m_description; }
-   void description(const std::string &description) { m_description = description; }
+   std::string long_description() const { return m_long_description; }
+   void long_description(const std::string &long_description) { m_long_description = long_description; }
 
-   std::string version() const { return m_version; }
-   void version(const std::string &version) { m_version = version; }
+   std::string short_description() const { return m_short_description; }
+   void short_description(const std::string &short_description) { m_short_description = short_description; }
 
    int sample_rate() const { return m_sample_rate; }
    void sample_rate(int rate) { m_sample_rate = rate; }
@@ -98,8 +101,11 @@ public:
    std::string effect_type() const { return m_effect_type; }
    void effect_type(const std::string &type) { m_effect_type = type; }
 
-   std::string domain() const { return m_domain; }
-   void domain(const std::string &domain) { m_domain = domain; }
+   const std::vector<std::string> domain_tags() const { return m_domain_tags; }
+   void domain_tags(const std::vector<std::string> tags) { m_domain_tags = tags; }
+
+   const std::vector<std::string> tags() const { return m_tags; }
+   void tags(const std::vector<std::string> tags) { m_tags = tags; }
 
    const std::vector<std::string> labels() const { return m_labels; }
    void labels(std::vector<std::string> labels) { m_labels = labels; } // use std::move to not copy
@@ -107,12 +113,13 @@ public:
 private:
    std::string m_name;
    std::string m_author;
-   std::string m_description;
-   std::string m_version;
+   std::string m_long_description;
+   std::string m_short_description;
    int m_sample_rate;
    bool m_multichannel;
    std::string m_effect_type;
-   std::string m_domain;
+   std::vector<std::string> m_domain_tags;
+   std::vector<std::string> m_tags;
    std::vector<std::string> m_labels;
 
 public:

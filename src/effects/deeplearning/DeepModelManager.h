@@ -104,5 +104,6 @@ private:
    std::map<std::string, audacity::network_manager::ResponsePtr> mResponseMap;
 
    const std::string mAPIEndpoint;
+   DocHolder mModelCardSchema;
 };
 

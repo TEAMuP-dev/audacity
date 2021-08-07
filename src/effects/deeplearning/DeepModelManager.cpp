@@ -24,6 +24,9 @@ using namespace audacity;
 DeepModelManager::DeepModelManager() : mCards(ModelCardCollection()),
                                        mAPIEndpoint("https://huggingface.co/api/")
 {
+   std::string schemaPath = wxFileName(BuiltInModulesDir(), wxT("modelcard-schema.json"))
+                           .GetFullPath().ToStdString();
+   mModelCardSchema = parsers::ParseFile(schemaPath);
 }
 
 DeepModelManager::~DeepModelManager()
@@ -295,7 +298,10 @@ void DeepModelManager::FetchCard(const std::string &repoID, CardFetchedCallback 
    std::string modelCardUrl = GetRootURL(repoID) + "metadata.json";
    ModelCardHolder card = std::make_shared<ModelCard>();
    // TODO: how do you handle an exception inside a thread, like this one? 
-   CompletionHandler completionHandler = [modelCardUrl, repoID, card, onCardFetched = std::move(onCardFetched)](int httpCode, std::string body)
+   CompletionHandler completionHandler = 
+   [modelCardSchema = mModelCardSchema, modelCardUrl, 
+      repoID, card, onCardFetched = std::move(onCardFetched)]
+   (int httpCode, std::string body)
    { 
       if (!(httpCode == 200))
       {
@@ -316,7 +322,7 @@ void DeepModelManager::FetchCard(const std::string &repoID, CardFetchedCallback 
          try
          {
             DocHolder doc = parsers::ParseString(body);
-            card->Deserialize(doc);
+            card->Deserialize(doc, modelCardSchema);
             card->name(sName);
             card->author(sAuthor);
 

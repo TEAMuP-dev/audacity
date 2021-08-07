@@ -124,12 +124,13 @@ namespace parsers
 ModelCard::ModelCard(const ModelCard &other)
 : m_name(other.name()),
   m_author(other.author()),
-  m_description(other.description()),
-  m_version(other.version()),
+  m_long_description(other.long_description()),
+  m_short_description(other.short_description()),
   m_sample_rate(other.sample_rate()),
   m_multichannel(other.multichannel()),
   m_effect_type(other.effect_type()),
-  m_domain(other.domain()),
+  m_domain_tags(other.domain_tags()),
+  m_tags(other.tags()),
   m_labels(other.labels())
 {
    
@@ -137,7 +138,39 @@ ModelCard::ModelCard(const ModelCard &other)
 
 ModelCard::ModelCard()
 {
+}
 
+void ModelCard::Validate(DocHolder doc, DocHolder schema)
+{
+   rapidjson::SchemaDocument schemaDoc(*schema);
+   rapidjson::SchemaValidator validator(schemaDoc);
+
+   if (!doc->Accept(validator)) 
+   {
+      // Input JSON is invalid according to the schema
+      // Output diagnostic information
+      std::string message("A Schema violation was found in the Model Card.\n");
+
+      rapidjson::StringBuffer sb;
+      validator.GetInvalidSchemaPointer().StringifyUriFragment(sb);
+      message += "violation found in URI: " + std::string(sb.GetString()) + "\n";
+      message += "the following schema field was violated: " 
+                  + std::string(validator.GetInvalidSchemaKeyword()) + "\n";
+      sb.Clear();
+
+      rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+      doc->Accept(writer);
+      message += "invalid document: \n\t" 
+                  + std::string(sb.GetString()) + "\n";
+
+      sb.Clear();
+      rapidjson::Writer<rapidjson::StringBuffer> swriter(sb);
+      schema->Accept(swriter);
+      message += "schema document: \n\t" 
+                  + std::string(sb.GetString()) + "\n";
+
+      throw InvalidModelCardDocument(message.c_str(), doc);
+   }
 }
 
 void ModelCard::SerializeToFile(const std::string &path) const
@@ -153,10 +186,10 @@ void ModelCard::SerializeToFile(const std::string &path) const
    file.Write(wxString(sb.GetString()));
 }
 
-void ModelCard::DeserializeFromFile(const std::string &path)
+void ModelCard::DeserializeFromFile(const std::string &path, DocHolder schema)
 {
    DocHolder d = parsers::ParseFile(path);
-   Deserialize(d);
+   Deserialize(d, schema);
 }
 
 template < typename Writer >
@@ -169,14 +202,28 @@ void ModelCard::Serialize(Writer &writer) const
    // author
    writer.String("author");
    writer.String(m_author.c_str());
+   
+   // long description
+   writer.String("long_description");
+   writer.String(m_long_description.c_str());
 
-   // description
-   writer.String("effect_type");
-   writer.String(m_effect_type.c_str());
+   // short description
+   writer.String("short_description");
+   writer.String(m_short_description.c_str());
 
-   // domain
-   writer.String("domain");
-   writer.String(m_domain.c_str());
+   // domain tags
+   writer.String("domain_tags");
+   writer.StartArray();
+   for (auto tag : m_domain_tags)
+      writer.String(tag.c_str());
+   writer.EndArray();
+
+   // tags
+   writer.String("tags");
+   writer.StartArray();
+   for (auto tag : m_tags)
+      writer.String(tag.c_str());
+   writer.EndArray();
 
    // labels
    writer.String("labels");
@@ -186,10 +233,6 @@ void ModelCard::Serialize(Writer &writer) const
    writer.EndArray();
 
    // sample rate
-   writer.String("description");
-   writer.String(m_description.c_str());
-
-   // multichannel
    writer.String("sample_rate");
    writer.Int(m_sample_rate);
 
@@ -198,14 +241,15 @@ void ModelCard::Serialize(Writer &writer) const
    writer.Bool(m_multichannel);
 }
 
-void ModelCard::Deserialize(DocHolder doc)
+void ModelCard::Deserialize(DocHolder doc, DocHolder schema)
 {
    using namespace validators;
-   m_name = tryGetString("name", doc);
-   m_author = tryGetString("author", doc);
-   m_description = tryGetString("description", doc);
+   Validate(doc, schema);
+   m_long_description = tryGetString("long_description", doc);
+   m_short_description = tryGetString("short_description", doc);
    m_effect_type = tryGetString("effect_type", doc);
-   m_domain = tryGetString("domain", doc);
+   m_domain_tags = tryGetStringArray("domain_tags", doc);
+   m_tags = tryGetStringArray("tags", doc);
    m_labels = tryGetStringArray("labels", doc);
    m_sample_rate = tryGetInt("sample_rate", doc);
    m_multichannel = tryGetBool("multichannel", doc);
