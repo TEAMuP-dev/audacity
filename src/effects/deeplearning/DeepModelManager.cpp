@@ -11,6 +11,8 @@
 
 #include "DeepModelManager.h"
 
+#include "FileNames.h"
+
 #include "NetworkManager.h"
 #include "IResponse.h"
 #include "Request.h"
@@ -55,13 +57,12 @@ FilePath DeepModelManager::GetRepoDir(ModelCardHolder card)
 {
    // TODO: do we really want these fields in the JSON file?
    // or should they be members of the ModelCard class? 
+   static const std::string sep = "_";
 
-   FilePath authorDir = FileNames::MkDir( 
-         wxFileName( DLModelsDir(), card->author() ).GetFullPath() 
-   );
-
-   FilePath repoDir = FileNames::MkDir(
-         wxFileName( authorDir, card->name() ).GetFullPath()
+   FilePath repoDir = FileNames::MkDir( 
+      wxFileName(DLModelsDir(), 
+                 card->author() + sep + card->name() 
+      ).GetFullPath()
    );
 
    return repoDir;
@@ -88,7 +89,7 @@ DeepModelHolder DeepModelManager::GetModel(ModelCardHolder card)
 
 bool DeepModelManager::IsInstalled(ModelCardHolder card)
 {
-   FilePath repoDir = GetRepoDir(card);
+   FilePath repoDir = wxFileName(card->local_path()).GetFullPath();
 
    wxFileName modelPath = wxFileName(repoDir, "model.pt");
    wxFileName metadataPath = wxFileName(repoDir, "metadata.json");
@@ -254,6 +255,41 @@ std::string DeepModelManager::GetRootURL(const std::string &repoID)
    return url.str();
 }
 
+void DeepModelManager::FetchLocalCards(CardFetchedCallback onCardFetched)
+{
+   FilePaths pathList;
+   FilePaths modelFiles; 
+
+   // NOTE: maybe we should support multiple search paths? 
+   pathList.push_back(DLModelsDir());
+
+   FileNames::FindFilesInPathList(wxT("model.pt"), pathList, 
+                                 modelFiles, wxDIR_FILES | wxDIR_DIRS);
+
+   for (const auto &modelFile : modelFiles)
+   {
+      wxFileName modelPath(modelFile);
+      wxFileName cardPath(modelPath.GetFullPath());
+
+      cardPath.SetFullName("metadata.json");
+
+      if (cardPath.FileExists() && modelPath.FileExists())
+      {
+         ModelCardHolder card = std::make_shared<ModelCard>();
+         try
+         {
+            card->DeserializeFromFile(cardPath.GetFullPath().ToStdString(), mModelCardSchema);
+            card->set_local(true);
+            onCardFetched(true, card);
+         }
+         catch (const InvalidModelCardDocument &e)
+         {
+            wxLogError(wxString(e.what()));
+         }
+      }
+   }
+}
+
 void DeepModelManager::FetchRepos(RepoListFetchedCallback onReposFetched)
 {
    std::string query = mAPIEndpoint + "models?filter=audacity";
@@ -325,6 +361,7 @@ void DeepModelManager::FetchCard(const std::string &repoID, CardFetchedCallback 
             card->Deserialize(doc, modelCardSchema);
             card->name(sName);
             card->author(sAuthor);
+            card->set_local(false);
 
             success = true;
          }
@@ -345,35 +382,105 @@ void DeepModelManager::FetchCard(const std::string &repoID, CardFetchedCallback 
    network_manager::ResponsePtr response = doGet(modelCardUrl, completionHandler);
 }
 
-void DeepModelManager::FetchModelSize(const std::string &repoID, ModelSizeCallback onModelSizeRetrieved)
+void DeepModelManager::FetchModelSize(ModelCardHolder card, ModelSizeCallback onModelSizeRetrieved)
 {
-   using namespace network_manager;
+   if (card->is_local())
+   {
+      FilePath repoDir = GetRepoDir(card);
+      wxFileName modelPath = wxFileName(repoDir, "model.pt");
 
-   std::string modelUrl = GetRootURL(repoID) + "model.pt";
-
-   Request request(modelUrl);
-
-   NetworkManager &manager = NetworkManager::GetInstance();
-   ResponsePtr response = manager.doHead(request);
-
-   response->setRequestFinishedCallback(
-      [response, handler = std::move(onModelSizeRetrieved)](IResponse*)
+      if (modelPath.FileExists())
       {
-         if (!((response->getHTTPCode() == 200) || (response->getHTTPCode() == 302)))
-            return;
+         size_t model_size = (size_t)wxFile(modelPath.GetFullPath(), wxFile::read).Length();
 
-         if (response->hasHeader("x-linked-size"))
-         {
-            std::string length = response->getHeader("x-linked-size");
-            std::cerr << length << std::endl;
-
-            size_t modelSize = std::stoi(length, nullptr, 10);
-            handler(modelSize);
-         }
-
+         card->model_size(model_size);
+         onModelSizeRetrieved(model_size);
       }
-   );
+   }
+   else
+   {
+      using namespace network_manager;
+
+      std::string modelUrl = GetRootURL(card->GetRepoID()) + "model.pt";
+
+      Request request(modelUrl);
+
+      NetworkManager &manager = NetworkManager::GetInstance();
+      ResponsePtr response = manager.doHead(request);
+
+      response->setRequestFinishedCallback(
+         [card, response, handler = std::move(onModelSizeRetrieved)](IResponse*)
+         {
+            if (!((response->getHTTPCode() == 200) || (response->getHTTPCode() == 302)))
+               return;
+
+            if (response->hasHeader("x-linked-size"))
+            {
+               std::string length = response->getHeader("x-linked-size");
+               std::cerr << length << std::endl;
+
+               size_t modelSize = std::stoi(length, nullptr, 10);
+               handler(modelSize);
+
+               card->model_size(modelSize);
+            }
+
+         }
+      );
+   }
+}
+
+bool DeepModelManager::NewCardFromHuggingFace(ModelCardHolder card, const std::string &jsonBody, const std::string &repoID)
+{
+   bool success = true;
+
+   wxStringTokenizer st(wxString(repoID), wxT("/"));
+   std::string sAuthor = st.GetNextToken().ToStdString();
+   std::string sName = st.GetNextToken().ToStdString();
    
+   try
+   {
+      DocHolder doc = parsers::ParseString(jsonBody);
+      card->Deserialize(doc, mModelCardSchema);
+      card->name(sName);
+      card->author(sAuthor);
+      card->set_local(false);
+      card->local_path(GetRepoDir(card).ToStdString());
+
+   }
+   catch (const InvalidModelCardDocument &e)
+   {
+      wxLogError(wxString(e.what()));
+      success = false;
+   }
+   catch (const char *msg)
+   { 
+      success = false;
+      wxLogError(wxString(msg));
+      wxASSERT(false);
+   }
+   
+   return success;
+}
+
+bool DeepModelManager::NewCardFromLocal(ModelCardHolder card, const std::string &filePath)
+{
+   bool success = true; 
+
+   try
+   {
+      std::string localPath = wxFileName(wxString(filePath)).GetPath().ToStdString();
+      card->DeserializeFromFile(filePath, mModelCardSchema);
+      card->set_local(true);
+      card->local_path(localPath);
+   }
+   catch (const InvalidModelCardDocument &e)
+   {
+      wxLogError(wxString(e.what()));
+      success = false;
+   }
+
+   return success;
 }
 
 network_manager::ResponsePtr DeepModelManager::DownloadModel

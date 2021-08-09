@@ -89,10 +89,14 @@ public:
    void Uninstall(ModelCardHolder card);
    void CancelInstall(ModelCardHolder card);
 
+   void FetchLocalCards(CardFetchedCallback onCardFetched);
    void FetchModelCards(CardFetchedCallback onCardFetched, CardFetchProgressCallback onProgress);
    void FetchCard(const std::string &repoID, CardFetchedCallback onCardFetched);
 
-   void FetchModelSize(const std::string &repoID, ModelSizeCallback onModelSizeRetrieved);
+   // if the card is local, checks the model.pt file
+   // else, it sends a HEAD request for the HF repo's model file
+   // if this fails, the callback is not called. 
+   void FetchModelSize(ModelCardHolder card, ModelSizeCallback onModelSizeRetrieved);
 
    ModelCardCollection GetCards() { return mCards; }
    ModelCardCollection GetCards(std::string effect_type);

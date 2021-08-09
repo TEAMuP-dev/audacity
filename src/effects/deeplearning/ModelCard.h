@@ -78,6 +78,12 @@ public:
    ModelCard();
    ModelCard(const ModelCard&);
 
+   bool is_local() { return m_is_local; }
+   void set_local(bool local) { m_is_local = local; }
+
+   std::string local_path() const { return m_local_path; }
+   void local_path(const std::string& path) { m_local_path = path; }
+
 public:
 
    std::string name() const { return m_name; }
@@ -110,6 +116,9 @@ public:
    const std::vector<std::string> labels() const { return m_labels; }
    void labels(std::vector<std::string> labels) { m_labels = labels; } // use std::move to not copy
 
+   size_t model_size() const { return m_model_size; }
+   void model_size(size_t model_size) { m_model_size = model_size; }
+
 private:
    std::string m_name;
    std::string m_author;
@@ -121,6 +130,10 @@ private:
    std::vector<std::string> m_domain_tags;
    std::vector<std::string> m_tags;
    std::vector<std::string> m_labels;
+   size_t m_model_size;
+
+   bool m_is_local;
+   std::string m_local_path;
 
 public:
 

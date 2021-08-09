@@ -130,6 +130,7 @@ void ModelManagerPanel::FetchCards()
    // TODO: this needs a progress gauge
    // Should go on the top panel
    manager.FetchModelCards(onCardFetched, onCardFetchedProgress);
+   manager.FetchLocalCards(onCardFetched);
 }
 
 // ManagerToolsPanel
@@ -396,7 +397,7 @@ void ModelCardPanel::FetchModelSize()
       mModelSize->SetLabel(XO("[%.1f MB]").Format(sizeMB).Translation());
    }; 
 
-   manager.FetchModelSize(mCard->GetRepoID(), onGetModelSize);
+   manager.FetchModelSize(mCard, onGetModelSize);
 }
 
 void ModelCardPanel::SetInstallStatus(InstallStatus status)

@@ -14,6 +14,7 @@
 
 #include <wx/string.h>
 #include <wx/file.h>
+#include <wx/log.h>
 
 #include <rapidjson/document.h>
 #include <rapidjson/ostreamwrapper.h>
@@ -83,6 +84,15 @@ namespace validators
          labels.emplace_back(itr->GetString());
 
       return labels;
+   }
+
+   uint64_t tryGetUint64(const std::string &key, DocHolder doc)
+   {
+      validateExists(key, doc);
+      if(!(*doc)[key.c_str()].IsUint64())
+         throwTypeError(key, "uint64", doc);
+      
+      return (*doc)[key.c_str()].GetUint64();
    }
 
 }
@@ -211,6 +221,18 @@ void ModelCard::Serialize(Writer &writer) const
    writer.String("short_description");
    writer.String(m_short_description.c_str());
 
+   // sample rate
+   writer.String("sample_rate");
+   writer.Int(m_sample_rate);
+
+   // multichannel
+   writer.String("multichannel");
+   writer.Bool(m_multichannel);
+
+   // effect type
+   writer.String("effect_type");
+   writer.String(m_effect_type.c_str());
+
    // domain tags
    writer.String("domain_tags");
    writer.StartArray();
@@ -232,19 +254,30 @@ void ModelCard::Serialize(Writer &writer) const
       writer.String(label.c_str());
    writer.EndArray();
 
-   // sample rate
-   writer.String("sample_rate");
-   writer.Int(m_sample_rate);
+   // model size
+   writer.String("model_size");
+   writer.Uint64((uint64_t)m_model_size);
 
-   // multichannel
-   writer.String("multichannel");
-   writer.Bool(m_multichannel);
 }
 
 void ModelCard::Deserialize(DocHolder doc, DocHolder schema)
 {
    using namespace validators;
    Validate(doc, schema);
+
+   // these fields are not in HF metadata but rather added later,
+   // so don't throw if they are not present
+   try
+   {
+      m_author = tryGetString("author", doc);
+      m_name = tryGetString("name", doc);
+      m_model_size = (size_t)tryGetUint64("model_size", doc);
+   }
+   catch (const InvalidModelCardDocument &e)
+   {
+      wxLogDebug(e.what());
+   }
+
    m_long_description = tryGetString("long_description", doc);
    m_short_description = tryGetString("short_description", doc);
    m_effect_type = tryGetString("effect_type", doc);
