@@ -23,6 +23,7 @@
 #include <wx/log.h>
 #include <wx/stattext.h>
 
+#include <WaveClip.h>
 
 // ModelCardPanel
 
@@ -126,29 +127,26 @@ std::vector<BlockIndex> EffectDeepLearning::GetBlockIndices(WaveTrack *track, do
 {
    std::vector<BlockIndex> blockIndices;
 
-   sampleCount start = track->TimeToLongSamples(tStart);
-   sampleCount end = track->TimeToLongSamples(tEnd);
+   const WaveClipHolders &clips = track->GetClips();
 
-   //Get the length of the selection (as double). len is
-   //used simple to calculate a progress meter, so it is easier
-   //to make it a double now than it is to do it later
-   double len = (end - start).as_double();
-
-   //Go through the track one buffer at a time. samplePos counts which
-   //sample the current buffer starts at.
-   bool bGoodResult = true;
-   sampleCount samplePos = start;
-   while (samplePos < end)
+   for (const auto &clip : clips)
    {
-      //Get a blockSize of samples (smaller than the size of the buffer)
-      size_t blockSize = limitSampleBufferSize(
-          /*bufferSize*/ track->GetBestBlockSize(samplePos),
-          /*limit*/ end - samplePos);
+      sampleCount clipStart = clip->GetStartSample();
+      sampleCount clipEnd = clip->GetEndSample();
 
-      blockIndices.emplace_back(BlockIndex(samplePos, blockSize));
+      sampleCount samplePos = clipStart;
 
-      // Increment the sample pointer
-      samplePos += blockSize;
+      while (samplePos < clipEnd)
+      {
+         //Get a blockSize of samples (smaller than the size of the buffer)
+         size_t blockSize = limitSampleBufferSize(
+            track->GetBestBlockSize(samplePos),
+            clipEnd - samplePos);
+         
+         blockIndices.emplace_back(BlockIndex(samplePos, blockSize));
+
+         samplePos += blockSize;
+      }
    }
 
    return blockIndices;
