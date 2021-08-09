@@ -102,6 +102,10 @@ public:
    ModelCardCollection GetCards(std::string effect_type);
 
 private:
+   // factory functions for model cards
+   bool NewCardFromHuggingFace(ModelCardHolder card, const std::string &jsonBody, const std::string &repoID);
+   bool NewCardFromLocal(ModelCardHolder card, const std::string &filePath);
+
    std::mutex mCardMutex;
       ModelCardCollection mCards;
    

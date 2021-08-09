@@ -130,7 +130,6 @@ namespace parsers
 // ModelCard Implementation
 
 // copy constructor
-// copy all of the members of ModelCard
 ModelCard::ModelCard(const ModelCard &other)
 : m_name(other.name()),
   m_author(other.author()),

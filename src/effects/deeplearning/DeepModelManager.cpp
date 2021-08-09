@@ -275,17 +275,9 @@ void DeepModelManager::FetchLocalCards(CardFetchedCallback onCardFetched)
 
       if (cardPath.FileExists() && modelPath.FileExists())
       {
-         ModelCardHolder card = std::make_shared<ModelCard>();
-         try
-         {
-            card->DeserializeFromFile(cardPath.GetFullPath().ToStdString(), mModelCardSchema);
-            card->set_local(true);
-            onCardFetched(true, card);
-         }
-         catch (const InvalidModelCardDocument &e)
-         {
-            wxLogError(wxString(e.what()));
-         }
+         ModelCardHolder card(safenew ModelCard());
+         bool success = NewCardFromLocal(card, cardPath.GetFullPath().ToStdString());
+         onCardFetched(success, card);
       }
    }
 }
@@ -332,11 +324,9 @@ void DeepModelManager::FetchRepos(RepoListFetchedCallback onReposFetched)
 void DeepModelManager::FetchCard(const std::string &repoID, CardFetchedCallback onCardFetched)
 { 
    std::string modelCardUrl = GetRootURL(repoID) + "metadata.json";
-   ModelCardHolder card = std::make_shared<ModelCard>();
    // TODO: how do you handle an exception inside a thread, like this one? 
    CompletionHandler completionHandler = 
-   [modelCardSchema = mModelCardSchema, modelCardUrl, 
-      repoID, card, onCardFetched = std::move(onCardFetched)]
+   [this, modelCardUrl, repoID, onCardFetched = std::move(onCardFetched)]
    (int httpCode, std::string body)
    { 
       if (!(httpCode == 200))
@@ -348,33 +338,8 @@ void DeepModelManager::FetchCard(const std::string &repoID, CardFetchedCallback 
       }
       else
       {
-         wxStringTokenizer st(wxString(repoID), wxT("/"));
-         std::string sAuthor = st.GetNextToken().ToStdString();
-         std::string sName = st.GetNextToken().ToStdString();
-         
-         // TODO: initalize card
-         // card = ModelCard(body, sName, sAuthor));
-         bool success = false;
-         try
-         {
-            DocHolder doc = parsers::ParseString(body);
-            card->Deserialize(doc, modelCardSchema);
-            card->name(sName);
-            card->author(sAuthor);
-            card->set_local(false);
-
-            success = true;
-         }
-         catch (const InvalidModelCardDocument &e)
-         {
-            wxLogError(wxString(e.what()));
-         }
-         catch (const char *msg)
-         { 
-            wxLogError(wxString(msg));
-            wxASSERT(false);
-         }
-         
+         ModelCardHolder card(safenew ModelCard());
+         bool success = NewCardFromHuggingFace(card, body, repoID);
          onCardFetched(success, card);
       }
    };

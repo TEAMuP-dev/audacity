@@ -62,9 +62,16 @@ namespace parsers
    DocHolder ParseFile(const std::string &path);
 }
 
+class DeepModelManager;
+
 class ModelCard
 {
-public:
+private:
+   friend class DeepModelManager;
+
+   ModelCard();
+   ModelCard(const ModelCard&);
+
    // throws InvalidModelCardDocument if the given json is not valid. 
    void DeserializeFromFile(const std::string& path, DocHolder schema);
    void SerializeToFile(const std::string& path) const;
@@ -75,8 +82,7 @@ public:
 
    void Validate(DocHolder doc, DocHolder schema);
 
-   ModelCard();
-   ModelCard(const ModelCard&);
+public:
 
    bool is_local() { return m_is_local; }
    void set_local(bool local) { m_is_local = local; }
@@ -144,7 +150,6 @@ public:
    // returns {author}/{name}
    std::string GetRepoID() const;
 };
-
 
 using ModelCardHolder = std::shared_ptr<ModelCard>;
 using ModelCardFilter = std::function<bool(ModelCardHolder card)>;
