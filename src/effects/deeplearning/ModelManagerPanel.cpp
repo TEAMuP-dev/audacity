@@ -27,16 +27,14 @@
 ModelManagerPanel::ModelManagerPanel(wxWindow *parent, EffectDeepLearning *effect)
 {
    mEffect = effect;
-   mTools = NULL;
+   mTools = nullptr;
 }
 
 void ModelManagerPanel::PopulateOrExchange(ShuttleGui & S)
 {
    S.StartVerticalLay(true);
    {
-      if (!mTools) 
-         mTools = safenew ManagerToolsPanel(S.GetParent(), this);
-      
+      mTools = safenew ManagerToolsPanel(S.GetParent(), this);
       mTools->PopulateOrExchange(S);
 
       mScroller = S.Style(wxVSCROLL | wxTAB_TRAVERSAL)
@@ -151,11 +149,11 @@ void ManagerToolsPanel::PopulateOrExchange(ShuttleGui &S)
       mFetchStatus = S.AddVariableText(XO("Fetching models..."), false);
 
       mAddRepoButton = S.AddButton(XO("Add HuggingFace Repo"));
-      mAddRepoButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-                              wxCommandEventHandler(ManagerToolsPanel::OnAddRepo), NULL, this);
    }
    S.EndHorizontalLay();
    S.EndStatic();
+
+   mAddRepoButton->Bind(wxEVT_BUTTON, &ManagerToolsPanel::OnAddRepo, this);
 }
 
 void ManagerToolsPanel::OnAddRepo(wxCommandEvent & WXUNUSED(event))
