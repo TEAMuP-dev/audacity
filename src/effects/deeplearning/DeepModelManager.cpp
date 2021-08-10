@@ -288,7 +288,13 @@ void DeepModelManager::FetchLocalCards(CardFetchedCallback onCardFetched)
 
 void DeepModelManager::FetchRepos(RepoListFetchedCallback onReposFetched)
 {
-   std::string query = mAPIEndpoint + "models?filter=audacity";
+   // NOTE: the url below asks for all repos in huggingface
+   // that contain the tag "audacity". 
+   // however, it might be better for us to keep a curated list of 
+   // models which we show to the user, and allow the user to explore huggingface
+   // on their own for more repos
+   // std::string query = mAPIEndpoint + "models?filter=audacity";
+   std::string query = GetRootURL("hugggof/audacity-deepmodels") + "models.json";
 
    // TODO: handle exception in main thread
    CompletionHandler handler = [onReposFetched = std::move(onReposFetched)]
@@ -301,7 +307,8 @@ void DeepModelManager::FetchRepos(RepoListFetchedCallback onReposFetched)
       }
       else
       {
-         // TODO: needs rewrite since 
+         bool success = true;
+
          DocHolder reposDoc;
          try
          {
@@ -311,14 +318,24 @@ void DeepModelManager::FetchRepos(RepoListFetchedCallback onReposFetched)
          {
             wxLogError("error parsing JSON reponse for fetching repos");
             wxLogError(e.what());
+            success = false;
          }
 
-         for (auto itr = reposDoc->Begin(); itr != reposDoc->End(); ++itr)
-            // TODO: need to raise an exception if we can't get the object 
-            // or modelId
-            repos.emplace_back(itr->GetObject()["modelId"].GetString());
+         if (success && reposDoc->IsArray())
+         {
+            for (auto itr = reposDoc->Begin(); itr != reposDoc->End(); ++itr)
+            {
+               wxLogDebug(
+                  wxString("Found repo with name %s")
+                     .Format(wxString(itr->GetString()))
+               );
+               repos.emplace_back(itr->GetString());
+            }
+         }
+         else 
+            success = false;
 
-         onReposFetched(true, repos);
+         onReposFetched(success, repos);
       }
    };
 
