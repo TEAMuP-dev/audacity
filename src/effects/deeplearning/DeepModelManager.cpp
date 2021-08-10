@@ -124,6 +124,12 @@ void DeepModelManager::Install(ModelCardHolder card, ProgressCallback onProgress
          Uninstall(card);
          return;
       }
+
+      if (!(httpCode == 200) || 
+          !(httpCode == 302)  ||
+          !(body.size() > 0))
+         Uninstall(card);
+          
       
       // let the caller handle this
       handler(httpCode, body);
