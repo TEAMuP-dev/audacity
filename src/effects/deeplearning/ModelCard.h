@@ -27,15 +27,26 @@
 #include <rapidjson/writer.h>
 
 #include "MemoryX.h"
+#include "AudacityException.h"
 
 using DocHolder = std::shared_ptr<rapidjson::Document>;
 
-class InvalidModelCardDocument : public std::exception 
+// this exception should be caught internally, but we 
+// derive from MessageBoxException just in case it needs to 
+// get handled by Audacity
+class InvalidModelCardDocument : public MessageBoxException
 {
 public:
    InvalidModelCardDocument(const std::string& msg, 
                            DocHolder doc)
-                           : m_msg(msg), m_doc(doc) {}
+                           : m_msg(msg), m_doc(doc) ,
+                            MessageBoxException {
+                               ExceptionType::Internal,
+                               XO("Invalid Model Card Document")
+                            }
+   {}
+
+   // detailed internal error message
    virtual const char* what() const throw () 
    {
       // TODO: also print the document
@@ -51,6 +62,10 @@ public:
       // mMsg << "document: " << std::string(sb.GetString()) << "\n";
       // return mMsg.str();
    }
+
+   // user facing message
+   virtual TranslatableString ErrorMessage() const
+      { return XO("An error occurred while validating model metadata.");}
 
    const std::string m_msg;
    DocHolder m_doc;

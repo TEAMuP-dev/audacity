@@ -22,17 +22,30 @@
 
 #include <torch/script.h>
 #include <torch/torch.h>
+#include "AudacityException.h"
 
 class DeepModel;
 
 using ModulePtr = std::unique_ptr<torch::jit::script::Module>;
 using DeepModelHolder = std::shared_ptr<DeepModel>;
 
-class ModelException : public std::exception
+class ModelException : public MessageBoxException
 {
 public:
-   ModelException(const std::string& msg) : m_msg(msg) {}
+   ModelException(const std::string& msg) :
+                  m_msg(msg),
+                  MessageBoxException{
+                     ExceptionType::Internal,
+                     XO("Deep Model Error")
+   } {}
+
+   // internal message
    virtual const char* what() const throw () {return m_msg.c_str();}
+
+   // user facing message
+   virtual TranslatableString ErrorMessage() const
+      { return XO("An internal error occurred within the deep learning model.");}
+   
    const std::string m_msg;
 };
 

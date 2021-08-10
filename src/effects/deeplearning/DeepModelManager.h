@@ -26,12 +26,27 @@ TODO: add a more thorough description
 #include "Request.h"
 #include "NetworkManager.h"
 #include "widgets/ProgressDialog.h"
+#include "AudacityException.h"
 
-class ModelManagerException : public std::exception
+// this exception should be caught internally, but we 
+// derive from MessageBoxException just in case it needs to 
+// get handled by Audacity
+class ModelManagerException : public MessageBoxException
 {
 public:
-   ModelManagerException(const std::string& msg) : m_msg(msg) {}
+   ModelManagerException(const std::string& msg) : 
+                        m_msg(msg),
+                        MessageBoxException{
+                           ExceptionType::Internal,
+                           XO("Model Manager Error")
+                        } {}
+   // internal message
    virtual const char* what() const throw () {return m_msg.c_str();}
+
+   // user facing message
+   virtual TranslatableString ErrorMessage() const
+      { return XO("An error occured within the model manager.");}
+
    const std::string m_msg;
 };
 
