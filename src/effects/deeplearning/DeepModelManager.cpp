@@ -142,14 +142,10 @@ void DeepModelManager::Install(ModelCardHolder card, ProgressCallback onProgress
    try 
    {
       // save the metadata
-      std::stringstream msg;
-      msg<<"saving model card for "<<card->GetRepoID()<<std::endl;
-      wxLogDebug(wxString(msg.str()));
+      wxLogDebug(wxString("saving modelcard for %s \n").Format(wxString(card->GetRepoID())));
       card->SerializeToFile(wxFileName(GetRepoDir(card), "metadata.json").GetFullPath().ToStdString());
 
-      msg = std::stringstream();
-      msg<<"downloading model for "<<card->GetRepoID()<<std::endl;
-      wxLogDebug(wxString(msg.str()));
+      wxLogDebug(wxString("downloading model for %s \n").Format(wxString(card->GetRepoID())));
 
       network_manager::ResponsePtr response = DownloadModel(card, progressHandler, installHandler);
 
@@ -224,10 +220,13 @@ void DeepModelManager::FetchModelCards(CardFetchedCallback onCardFetched, CardFe
          catch (const std::exception& e)
          {
             // TODO: GetRepoID should be a no-throw if we're going to use it here
-            std::stringstream msg;
-            msg<<"Failed to validate metadata.json for repo "<<card->GetRepoID()<<std::endl;
-            msg<<e.what()<<std::endl;
-            wxLogDebug(wxString(msg.str()));
+            wxLogDebug(
+               wxString("Failed to validate metadata.json for repo %s ;\n %s")
+                        .Format(
+                           wxString(card->GetRepoID()),
+                           wxString(e.what())
+                        )
+            );
          }
       }
       // pass it on
@@ -256,9 +255,8 @@ void DeepModelManager::FetchModelCards(CardFetchedCallback onCardFetched, CardFe
 
 std::string DeepModelManager::GetRootURL(const std::string &repoID)
 {
-   std::stringstream url;
-   url<<"https://huggingface.co/"<<repoID<<"/resolve/main/";
-   return url.str();
+   std::string url = "https://huggingface.co/"+repoID+"/resolve/main/";
+   return url;
 }
 
 void DeepModelManager::FetchLocalCards(CardFetchedCallback onCardFetched)
@@ -337,10 +335,10 @@ void DeepModelManager::FetchCard(const std::string &repoID, CardFetchedCallback 
    { 
       if (!(httpCode == 200))
       {
-         std::stringstream msg;
-         msg << "GET request failed for url " << modelCardUrl
-                 << ". Error code: " << httpCode << std::endl;
-         wxLogError(wxString(msg.str()));
+         wxLogError(
+            wxString("GET request failed for url %s. Error code: %d")
+                  .Format(wxString(modelCardUrl), httpCode)
+         );
       }
       else
       {
@@ -464,9 +462,9 @@ network_manager::ResponsePtr DeepModelManager::DownloadModel
    // its because huggingface returns 200s saying "Not Found"
    std::string url = GetRootURL(card->GetRepoID())  + "model.pt";
    
-   std::stringstream msg;
-   msg<<"downloading from "<<url<<std::endl;
-   wxLogDebug(wxString(msg.str()));
+   wxLogDebug(
+      wxString("downloading from %s").Format(wxString(url))
+   );
 
    Request request(url);
 

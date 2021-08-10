@@ -33,17 +33,15 @@ namespace validators
          throw InvalidModelCardDocument("provided document is not an object", doc);
       if(!doc->HasMember(key.c_str()))
       {
-         std::stringstream msg;
-         msg<<"JSON document missing field: "<<key<<std::endl;
-         throw InvalidModelCardDocument(msg.str(), doc);
+         wxString msg = wxString("JSON document missing field: %s").Format(wxString(key));
+         throw InvalidModelCardDocument(msg.ToStdString(), doc);
       }
    }
 
    void throwTypeError(const std::string &key, const char *type, DocHolder doc)
    {
-      std::stringstream msg;
-      msg << "field: " << key << " is not of type: " << type;
-      throw InvalidModelCardDocument(msg.str(), doc);
+      wxString msg = wxString("field: %s is not of type: %s").Format(wxString(key), wxString(type));
+      throw InvalidModelCardDocument(msg.ToStdString(), doc);
    }
 
    std::string tryGetString(const std::string &key, DocHolder doc)
@@ -289,9 +287,7 @@ void ModelCard::Deserialize(DocHolder doc, DocHolder schema)
 
 std::string ModelCard::GetRepoID() const
 {
-   std::stringstream repoid;
-   repoid<<this->author()<<"/"<<this->name();
-   return repoid.str();
+   return this->author() + '/' + this->name();
 }
 
 bool ModelCard::operator==(const ModelCard& that) const
