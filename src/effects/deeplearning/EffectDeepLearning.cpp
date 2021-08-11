@@ -232,6 +232,7 @@ torch::Tensor EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
          return output;
       }
 
+      ::wxSafeYield();
       wxMilliSleep(50);
    }
    thread.join();
