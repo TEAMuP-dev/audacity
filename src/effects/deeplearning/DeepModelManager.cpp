@@ -126,8 +126,7 @@ void DeepModelManager::Install(ModelCardHolder card, ProgressCallback onProgress
       }
 
       if (!(httpCode == 200) || 
-          !(httpCode == 302)  ||
-          !(body.size() > 0))
+          !(httpCode == 302))
          Uninstall(card);
           
       
@@ -294,15 +293,20 @@ void DeepModelManager::FetchRepos(RepoListFetchedCallback onReposFetched)
    // models which we show to the user, and allow the user to explore huggingface
    // on their own for more repos
    // std::string query = mAPIEndpoint + "models?filter=audacity";
-   std::string query = GetRootURL("hugggof/audacity-deepmodels") + "models.json";
+   std::string query = GetRootURL("hugggof/audacity-models") + "models.json";
 
    // TODO: handle exception in main thread
-   CompletionHandler handler = [onReposFetched = std::move(onReposFetched)]
+   CompletionHandler handler = 
+   [query, onReposFetched = std::move(onReposFetched)]
    (int httpCode, std::string body)
    {
       RepoIDList repos;
       if (!(httpCode == 200))
       {
+         wxLogError(
+            wxString("GET request failed for url %s. Error code: %d")
+               .Format(wxString(query), httpCode)
+         );
          onReposFetched(false, repos); 
       }
       else
