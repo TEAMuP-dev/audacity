@@ -294,7 +294,7 @@ void EffectDeepLearning::TensorToTrack(torch::Tensor waveform, WaveTrack::Holder
    // add the data to a temporary track, then
    // paste on our output track
    WaveTrack::Holder tmp = track->EmptyCopy();
-   tmp->Append((samplePtr)data, floatSample, outputLen);
+   tmp->Append(reinterpret_cast<samplePtr>(data), floatSample, outputLen);
    tmp->Flush();
 
    try
