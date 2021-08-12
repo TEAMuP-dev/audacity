@@ -56,8 +56,8 @@ void EffectDeepLearning::End()
    mModel.reset();
 
    // TODO:  how to clean up card panels?
-   if (mManagerPanel)
-      mManagerPanel->Clear();
+   // if (mManagerPanel)
+   //    mManagerPanel->Clear();
 }
 
 bool EffectDeepLearning::Process()
