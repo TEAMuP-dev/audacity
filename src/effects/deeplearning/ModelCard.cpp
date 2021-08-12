@@ -115,13 +115,13 @@ namespace parsers
 
    DocHolder ParseFile(const std::string &path)
    {
-      std::shared_ptr<wxString> docStr = std::make_shared<wxString>();
+      wxString docStr;
       wxFile file = wxFile(path);
 
-      if(!file.ReadAll(docStr.get()))
+      if(!file.ReadAll(&docStr))
          throw InvalidModelCardDocument("could not read file", nullptr);
 
-      return ParseString(docStr->ToStdString());
+      return ParseString(docStr.ToStdString());
    }
 }
 
