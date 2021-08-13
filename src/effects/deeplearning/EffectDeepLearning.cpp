@@ -29,8 +29,8 @@
 
 EffectDeepLearning::EffectDeepLearning()
 {
-   mManagerPanel = NULL;
-   mCard = NULL;
+   mManagerPanel = nullptr;
+   mCard = nullptr;
 }
 
 bool EffectDeepLearning::Init()
@@ -42,9 +42,7 @@ bool EffectDeepLearning::Init()
    if (mCard)
    {
       if (manager.IsInstalled(mCard))
-      {
          mModel = manager.GetModel(mCard);
-      }
    }
 
    return true;
@@ -52,8 +50,17 @@ bool EffectDeepLearning::Init()
 
 void EffectDeepLearning::End()
 {
+   DeepModelManager &manager = DeepModelManager::Get();
+
    // release model (may still be active in thread)
    mModel.reset();
+
+   // clean up in-progress installs
+   for (auto card : manager.GetCards())
+   {
+      if (manager.IsInstalling(card))
+         manager.CancelInstall(card);
+   }
 
    // TODO:  how to clean up card panels?
    // if (mManagerPanel)
@@ -316,9 +323,7 @@ void EffectDeepLearning::PopulateOrExchange(ShuttleGui &S)
 
    S.StartVerticalLay(wxCENTER, true);
    {
-
-      if (!mManagerPanel)
-         mManagerPanel.reset(safenew ModelManagerPanel(S.GetParent(), this));
+      mManagerPanel = safenew ModelManagerPanel(S.GetParent(), this);
       
       mManagerPanel->PopulateOrExchange(S);
 

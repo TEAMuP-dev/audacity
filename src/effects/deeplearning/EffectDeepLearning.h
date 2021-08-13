@@ -96,7 +96,7 @@ protected:
 
 private:
    ModelCardHolder mCard;
-   std::unique_ptr<ModelManagerPanel> mManagerPanel;
+   ModelManagerPanel *mManagerPanel;
    
    wxStaticText *mModelDesc;
 };
