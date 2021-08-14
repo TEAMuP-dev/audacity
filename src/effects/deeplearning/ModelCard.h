@@ -25,6 +25,7 @@
 #include <rapidjson/schema.h>
 #include "rapidjson/prettywriter.h" 
 #include <rapidjson/writer.h>
+#include <wx/string.h>
 
 #include "MemoryX.h"
 #include "AudacityException.h"
@@ -65,7 +66,8 @@ public:
 
    // user facing message
    virtual TranslatableString ErrorMessage() const
-      { return XO("An error occurred while validating model metadata.");}
+      { return XO("An error occurred while validating model metadata. \n Error: %s")
+               .Format(wxString(m_msg));}
 
    const std::string m_msg;
    DocHolder m_doc;
@@ -75,6 +77,27 @@ namespace parsers
 {
    DocHolder ParseString(const std::string &json);
    DocHolder ParseFile(const std::string &path);
+}
+
+// validators that accept a default value are no-throw
+namespace validators
+{
+   void validateExists(const std::string &key, DocHolder doc);
+   void throwTypeError(const std::string &key, const char *type, DocHolder doc);
+
+   std::string tryGetString(const std::string &key, DocHolder doc);
+   std::string tryGetString(const std::string &key, DocHolder doc, const std::string &defaultValue);
+
+   int tryGetInt(const std::string &key, DocHolder doc);
+   int tryGetInt(const std::string &key, DocHolder doc, int defaultValue);
+
+   std::vector<std::string> tryGetStringArray(const std::string &key, DocHolder doc);
+   std::vector<std::string> tryGetStringArray(const std::string &key, DocHolder doc, 
+                                              std::vector<std::string> &defaultValue);
+                                             
+   uint64_t tryGetUint64(const std::string &key, DocHolder doc);
+   uint64_t tryGetUint64(const std::string &key, DocHolder doc, uint64_t defaultValue);
+
 }
 
 class DeepModelManager;

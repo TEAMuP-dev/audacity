@@ -13,6 +13,7 @@
 #include "DeepModel.h"
 
 #include <wx/string.h>
+#include <wx/datetime.h>
 #include <wx/file.h>
 #include <wx/log.h>
 
@@ -53,6 +54,18 @@ namespace validators
       return (*doc)[key.c_str()].GetString();
    }
 
+   std::string tryGetString(const std::string &key, DocHolder doc, const std::string &defaultValue)
+   {
+      try
+      {
+         return tryGetString(key, doc);
+      }
+      catch (const InvalidModelCardDocument &e)
+      {
+         return defaultValue;
+      }
+   }
+
    int tryGetInt(const std::string &key, DocHolder doc)
    {
       validateExists(key, doc);
@@ -62,6 +75,18 @@ namespace validators
       return (*doc)[key.c_str()].GetInt();
    }
 
+   int tryGetInt(const std::string &key, DocHolder doc, int defaultValue)
+   {
+      try
+      {
+         return tryGetInt(key, doc);
+      }
+      catch (const InvalidModelCardDocument &e)
+      {
+         return defaultValue;
+      }
+   }
+
    bool tryGetBool(const std::string &key, DocHolder doc)
    {
       validateExists(key, doc);
@@ -69,6 +94,18 @@ namespace validators
          throwTypeError(key, "bool", doc);
       
       return (*doc)[key.c_str()].GetBool();
+   }
+
+   bool tryGetBool(const std::string &key, DocHolder doc, bool defaultValue)
+   {
+      try
+      {
+         return tryGetBool(key, doc);
+      }
+      catch (const InvalidModelCardDocument &e)
+      {
+         return defaultValue;
+      }
    }
 
    std::vector<std::string> tryGetStringArray(const std::string &key, DocHolder doc)
@@ -84,6 +121,19 @@ namespace validators
       return labels;
    }
 
+   std::vector<std::string> tryGetStringArray(const std::string &key, DocHolder doc,
+                                             std::vector<std::string> &defaultValue)
+   {
+      try
+      {
+         return tryGetStringArray(key, doc); 
+      }
+      catch (const InvalidModelCardDocument &e)
+      {
+         return defaultValue;
+      }
+   }
+
    uint64_t tryGetUint64(const std::string &key, DocHolder doc)
    {
       validateExists(key, doc);
@@ -93,6 +143,17 @@ namespace validators
       return (*doc)[key.c_str()].GetUint64();
    }
 
+   uint64_t tryGetUint64(const std::string &key, DocHolder doc, uint64_t defaultValue)
+   {
+      try
+      {
+         return tryGetUint64(key, doc);
+      }
+      catch (const InvalidModelCardDocument &e)
+      {
+         return defaultValue;
+      }
+   }
 }
 
 namespace parsers 
@@ -190,7 +251,8 @@ void ModelCard::SerializeToFile(const std::string &path) const
    writer.EndObject();
 
    wxFile file(path, wxFile::write);
-   file.Write(wxString(sb.GetString()));
+   if (!file.Write(wxString(sb.GetString())))
+      throw InvalidModelCardDocument("could not serialize ModelCard to file", nullptr);
 }
 
 void ModelCard::DeserializeFromFile(const std::string &path, DocHolder schema)
@@ -260,9 +322,18 @@ void ModelCard::Serialize(Writer &writer) const
 void ModelCard::Deserialize(DocHolder doc, DocHolder schema)
 {
    using namespace validators;
+   try
+   {
+      Validate(doc, schema);
+   }
+   catch(const InvalidModelCardDocument& e)
+   {
+      wxLogError(e.what());
+   }
+   
    Validate(doc, schema);
 
-   // these fields are not in HF metadata but rather added later,
+   // these fields are not in HF mettadata but rather added later,
    // so don't throw if they are not present
    try
    {
@@ -275,8 +346,10 @@ void ModelCard::Deserialize(DocHolder doc, DocHolder schema)
       wxLogDebug(e.what());
    }
 
-   m_long_description = tryGetString("long_description", doc);
-   m_short_description = tryGetString("short_description", doc);
+   m_long_description = tryGetString("long_description", doc, 
+                                       "no long description available");
+   m_short_description = tryGetString("short_description", doc, 
+                                       "no short description available");
    m_effect_type = tryGetString("effect_type", doc);
    m_domain_tags = tryGetStringArray("domain_tags", doc);
    m_tags = tryGetStringArray("tags", doc);
