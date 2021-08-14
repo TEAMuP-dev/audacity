@@ -136,10 +136,24 @@ std::vector<BlockIndex> EffectDeepLearning::GetBlockIndices(WaveTrack *track, do
 
    const WaveClipHolders &clips = track->GetClips();
 
+   sampleCount start = track->TimeToLongSamples(tStart);
+   sampleCount end = track->TimeToLongSamples(tEnd);
+
    for (const auto &clip : clips)
    {
       sampleCount clipStart = clip->GetStartSample();
       sampleCount clipEnd = clip->GetEndSample();
+
+      // skip if clip is out of bounds
+      if (start > clipEnd || end < clipStart)
+         continue;
+
+      // trim around the edges
+      start > clipStart ? 
+         clipStart = start : clipStart;
+
+      end < clipEnd ?
+         clipEnd = end : clipEnd;
 
       sampleCount samplePos = clipStart;
 
