@@ -284,14 +284,53 @@ void ModelCardPanel::PopulateNameAndAuthor(ShuttleGui &S)
    S.EndHorizontalLay();
 }
 
+class DomainTagPanel : public wxPanelWrapper
+{
+public:
+   DomainTagPanel(wxWindow *parent, const wxString &tag, const wxColour &color)
+                  :wxPanelWrapper(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize)
+   {
+      TranslatableString name = XO("%s").Format(tag);
+      SetLabel(name);
+
+      SetMaxSize(wxSize(110, 30));
+      SetWindowStyle(wxBORDER_SIMPLE);
+      SetBackgroundColour(color);
+
+      ShuttleGui S(this, eIsCreating);
+      wxStaticText *txt = S.AddVariableText(name, true);
+      SetVirtualSize(txt->GetSize());
+
+      txt->SetBackgroundColour(color);
+      Refresh();
+      
+      Fit();
+      Layout();
+   }
+};
+
+void ModelCardPanel::PopulateDomainTags(ShuttleGui &S)
+{
+   S.StartHorizontalLay(wxALIGN_LEFT, true);
+   {
+      for (auto &tag : mCard->domain_tags())
+      {
+         S.AddWindow(
+            safenew DomainTagPanel(this, tag, mTagColors[tag])
+         );
+      }
+   }
+   S.EndHorizontalLay();
+}
+
 void ModelCardPanel::PopulateDescription(ShuttleGui &S)
 {
    // model description
-   S.StartStatic(XO("Description"));
+   // S.StartStatic(XO("Description"));
    mModelDescription = S.AddVariableText(
                                        XO("%s").Format(wxString(mCard->short_description())),
                                        false, wxLEFT);
-   S.EndStatic();
+   // S.EndStatic();
 }
 
 void ModelCardPanel::PopulateMetadata(ShuttleGui &S)
@@ -302,11 +341,6 @@ void ModelCardPanel::PopulateMetadata(ShuttleGui &S)
           ->SetFont(wxFont(wxFontInfo().Bold()));
       S.AddVariableText(XO("%s")
                             .Format(mCard->effect_type()));
-
-      S.AddVariableText(XO("Domain: "))
-          ->SetFont(wxFont(wxFontInfo().Bold()));
-      S.AddVariableText(XO("%s")
-                            .Format(" NONE ")); // FIXME
 
       S.AddVariableText(XO("Sample Rate: "))
           ->SetFont(wxFont(wxFontInfo().Bold()));
@@ -372,12 +406,12 @@ void ModelCardPanel::PopulateOrExchange(ShuttleGui &S)
    S.StartMultiColumn(3, wxEXPAND);
    {
       // left column:
-      // repo name, repo author, and model description
+      // repo name, repo author, model tags, and model description
       S.SetStretchyCol(0);
       S.StartVerticalLay(wxALIGN_LEFT, true);
       {
          PopulateNameAndAuthor(S);
-
+         PopulateDomainTags(S);
          PopulateDescription(S);
       }
       S.EndVerticalLay();

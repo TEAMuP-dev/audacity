@@ -21,6 +21,7 @@
 
 #include "DeepModelManager.h"
 #include "ModelCard.h"
+#include "wx/colour.h"
 
 class EffectDeepLearning;
 class ShuttleGui;
@@ -42,7 +43,6 @@ private:
    wxStaticText *mFetchStatus;
    wxButton *mAddRepoButton;
    ModelManagerPanel *mManagerPanel;
-
 
 };
 
@@ -110,10 +110,20 @@ public:
 
    void SetInstallStatus(InstallStatus status);
    void SetModelStatus(ModelStatus status);
-   
+
+private:
+   using DomainTag = std::string;
+   std::map<DomainTag, wxColour> mTagColors = {
+      { "music",           wxColour("#CF6377") },
+      { "speech",          wxColour(233, 196, 106) },
+      { "environmental",   wxColour(42, 157, 143) },
+      { "other",           wxColour(168, 218, 220) },
+   };
+
 private:
    // handlers
    void PopulateNameAndAuthor(ShuttleGui &S);
+   void PopulateDomainTags(ShuttleGui &S);
    void PopulateDescription(ShuttleGui &S);
    void PopulateMetadata(ShuttleGui &S);
    void PopulateInstallCtrls(ShuttleGui &S);
