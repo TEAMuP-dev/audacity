@@ -45,7 +45,7 @@ public:
 
    // user facing message
    virtual TranslatableString ErrorMessage() const
-      { return XO("An error occured within the model manager.");}
+      { return XO("Model Manager Error: \n %s").Format(wxString(m_msg));}
 
    const std::string m_msg;
 };
@@ -61,7 +61,6 @@ using CardFetchProgressCallback = std::function<void(int64_t current, int64_t ex
 using RepoListFetchedCallback = std::function<void(bool success, RepoIDList repos)>;
 using CardFetchedCallback = std::function<void(bool succcess, ModelCardHolder card)>;
 
-// TODO: what happens when a user is NOT connected to the internet?
 class DeepModelManager
 {
    // private! Use Get()
@@ -93,6 +92,9 @@ public:
 
    // loads the deep model and passes ownership to the caller
    DeepModelHolder GetModel(ModelCardHolder card);
+
+   // returns a URL to the HF's repo's readme
+   std::string GetMoreInfoURL(ModelCardHolder card);
 
    // download and install a deep learning model
    bool IsInstalled(ModelCardHolder card);
