@@ -219,7 +219,7 @@ void ManagerToolsPanel::SetFetchProgress(int64_t current, int64_t total)
 
 ModelCardPanel::ModelCardPanel(wxWindow *parent, wxWindowID winid, ModelCardHolder card, 
                               EffectDeepLearning *effect)
-    : wxPanelWrapper(parent, winid, wxDefaultPosition )
+    : wxPanelWrapper(parent, winid, wxDefaultPosition, wxDefaultSize, wxBORDER_SIMPLE)
 {
    SetLabel(XO("Model Card"));
    SetName(XO("Model Card"));
