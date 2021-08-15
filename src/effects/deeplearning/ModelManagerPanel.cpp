@@ -25,9 +25,15 @@
 // ModelManagerPanel
 // TODO: need to get rid of the unique ptrs to UI elements
 ModelManagerPanel::ModelManagerPanel(wxWindow *parent, EffectDeepLearning *effect)
+                                    : wxPanelWrapper(parent)
 {
    mEffect = effect;
    mTools = nullptr;
+
+   ShuttleGui S(this, eIsCreating);
+   PopulateOrExchange(S);
+   Fit();
+   Center();
 }
 
 void ModelManagerPanel::PopulateOrExchange(ShuttleGui & S)
@@ -35,7 +41,8 @@ void ModelManagerPanel::PopulateOrExchange(ShuttleGui & S)
    S.StartVerticalLay(true);
    {
       mTools = safenew ManagerToolsPanel(S.GetParent(), this);
-      mTools->PopulateOrExchange(S);
+      // mTools->PopulateOrExchange(S);
+      S.AddWindow(mTools);
 
       mScroller = S.Style(wxVSCROLL | wxTAB_TRAVERSAL)
          .StartScroller();
@@ -76,7 +83,8 @@ void ModelManagerPanel::AddCard(ModelCardHolder card)
    mPanels[repoId] = std::make_unique<ModelCardPanel>(mScroller, wxID_ANY, card, mEffect);
 
    ShuttleGui S(mScroller, eIsCreating);
-   mPanels[repoId]->PopulateOrExchange(S);
+   S.AddWindow(mPanels[repoId].get(), wxEXPAND);
+   // mPanels[repoId]->PopulateOrExchange(S);
 
    wxSizer *sizer = mScroller->GetSizer();
    if (sizer)
@@ -139,6 +147,11 @@ ManagerToolsPanel::ManagerToolsPanel(wxWindow *parent, ModelManagerPanel *panel)
    mManagerPanel = panel;
    mFetchStatus = nullptr;
    mAddRepoButton = nullptr;
+
+   ShuttleGui S(this, eIsCreating);
+   PopulateOrExchange(S);
+   Fit();
+   // Center();
 }
 
 void ManagerToolsPanel::PopulateOrExchange(ShuttleGui &S)
@@ -217,8 +230,10 @@ ModelCardPanel::ModelCardPanel(wxWindow *parent, wxWindowID winid, ModelCardHold
 
    ShuttleGui S(this, eIsCreating);
    PopulateOrExchange(S);
+   Fit();
+   Center();
 
-   TransferDataToWindow();
+   // TransferDataToWindow();
 }
 
 bool ModelCardPanel::TransferDataToWindow()

@@ -338,8 +338,8 @@ void EffectDeepLearning::PopulateOrExchange(ShuttleGui &S)
    S.StartVerticalLay(wxCENTER, true);
    {
       mManagerPanel = safenew ModelManagerPanel(S.GetParent(), this);
-      
-      mManagerPanel->PopulateOrExchange(S);
+      S.AddWindow(mManagerPanel);
+      // mManagerPanel->PopulateOrExchange(S);
 
       S.StartHorizontalLay(wxCENTER, false);
       {
