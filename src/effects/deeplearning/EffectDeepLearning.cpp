@@ -354,8 +354,6 @@ void EffectDeepLearning::PopulateOrExchange(ShuttleGui &S)
    S.EndVerticalLay();
 }
 
-
-
 void EffectDeepLearning::SetModel(ModelCardHolder card)
 {
    // if card is empty, reset the model
