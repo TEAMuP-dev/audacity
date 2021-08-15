@@ -69,6 +69,7 @@ private:
    EffectDeepLearning *mEffect;
    
    friend class ManagerToolsPanel;
+   friend class EffectDeepLearning;
 };
 
 class ModelCardPanel final : public wxPanelWrapper
@@ -89,9 +90,10 @@ public:
    void OnEnable(wxCommandEvent &event);
    void OnMoreInfo(wxCommandEvent &event);
 
+   void OnClick(wxMouseEvent &event);
+
    ModelCardHolder GetCard() const { return mCard; }
 
-private:
 
    enum class InstallStatus 
    {
@@ -100,13 +102,21 @@ private:
       installed
    };
 
+   enum class ModelStatus
+   {
+      enabled,
+      disabled
+   };
+
+   void SetInstallStatus(InstallStatus status);
+   void SetModelStatus(ModelStatus status);
+   
+private:
    // handlers
    void PopulateNameAndAuthor(ShuttleGui &S);
    void PopulateDescription(ShuttleGui &S);
    void PopulateMetadata(ShuttleGui &S);
    void PopulateInstallCtrls(ShuttleGui &S);
-
-   void SetInstallStatus(InstallStatus status);
 
    void FetchModelSize();
 

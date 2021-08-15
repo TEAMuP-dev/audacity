@@ -22,6 +22,9 @@
 #include <wx/textdlg.h>
 #include <wx/stattext.h>
 
+#include "AllThemeResources.h"
+#include "Theme.h"
+
 // ModelManagerPanel
 // TODO: need to get rid of the unique ptrs to UI elements
 ModelManagerPanel::ModelManagerPanel(wxWindow *parent, EffectDeepLearning *effect)
@@ -365,7 +368,7 @@ void ModelCardPanel::PopulateOrExchange(ShuttleGui &S)
 
    // the layout is actually 2 columns,
    // but we add a small space in the middle, which takes up a column
-   S.StartStatic(XO(""), 1);
+   // S.StartStatic(XO(""), 1);
    S.StartMultiColumn(3, wxEXPAND);
    {
       // left column:
@@ -405,7 +408,7 @@ void ModelCardPanel::PopulateOrExchange(ShuttleGui &S)
       S.EndVerticalLay();
    }
    S.EndMultiColumn();
-   S.EndStatic();
+   // S.EndStatic();
 }
 
 void ModelCardPanel::FetchModelSize()
@@ -549,7 +552,6 @@ void ModelCardPanel::OnInstall(wxCommandEvent &event)
 
 void ModelCardPanel::OnEnable(wxCommandEvent &event)
 {
-   auto &manager = DeepModelManager::Get();
    mEffect->SetModel(mCard);
 }
 
@@ -558,4 +560,28 @@ void ModelCardPanel::OnMoreInfo(wxCommandEvent &event)
    DeepModelManager &manager = DeepModelManager::Get();
    wxString url = wxString(manager.GetMoreInfoURL(mCard));
    wxLaunchDefaultBrowser(url);
+}
+
+void ModelCardPanel::SetModelStatus(ModelStatus status)
+{
+   if (status == ModelStatus::enabled)
+   {
+      SetBackgroundColour(
+         theTheme.Colour(clrMediumSelected)
+      );
+   }
+   else
+   {
+      SetBackgroundColour(
+         theTheme.Colour(clrMedium)
+      );
+   }
+
+   // Fit();
+   Refresh();
+}
+
+void ModelCardPanel::OnClick(wxMouseEvent &event)
+{
+   mEffect->SetModel(mCard);
 }

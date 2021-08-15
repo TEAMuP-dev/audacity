@@ -354,6 +354,8 @@ void EffectDeepLearning::PopulateOrExchange(ShuttleGui &S)
    S.EndVerticalLay();
 }
 
+
+
 void EffectDeepLearning::SetModel(ModelCardHolder card)
 {
    // if card is empty, reset the model
@@ -363,25 +365,37 @@ void EffectDeepLearning::SetModel(ModelCardHolder card)
       mCard = nullptr;
 
       mModelDesc->SetLabel(XO("Not Ready").Translation());
-      return;
-   }
-
-
-   auto &manager = DeepModelManager::Get();
-
-   if (!manager.IsInstalled(card))
-   {
-      Effect::MessageBox(
-          XO("Please install the model before selecting it."),
-          wxICON_ERROR);
    }
    else
    {
-      if (!(mModel->IsLoaded() && ((*mModel->GetCard()) == (*card))))
+      auto &manager = DeepModelManager::Get();
+
+      if (!manager.IsInstalled(card))
       {
-         mModel = manager.GetModel(card);
-         mCard = card;
+         Effect::MessageBox(
+            XO("Please install the model before selecting it."),
+            wxICON_ERROR);
       }
-      mModelDesc->SetLabel(XO("%s is Ready").Format(mCard->GetRepoID()).Translation());
-   }  
+      else
+      {
+         if (!(mModel->IsLoaded() && ((*mModel->GetCard()) == (*card))))
+         {
+            mModel = manager.GetModel(card);
+            mCard = card;
+         }
+         mModelDesc->SetLabel(XO("%s is Ready").Format(mCard->GetRepoID()).Translation());
+      }  
+   }
+
+   // set all other card panels to disabled
+   for (auto& pair : mManagerPanel->mPanels)
+   {
+      pair.second->SetModelStatus(ModelCardPanel::ModelStatus::disabled);
+
+      if (mCard)
+      {
+         if (pair.first == mCard->GetRepoID())
+            pair.second->SetModelStatus(ModelCardPanel::ModelStatus::enabled);
+      }
+   }
 }
