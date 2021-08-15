@@ -87,6 +87,7 @@ public:
    void OnUninstall(wxCommandEvent &event);
 
    void OnEnable(wxCommandEvent &event);
+   void OnMoreInfo(wxCommandEvent &event);
 
    ModelCardHolder GetCard() const { return mCard; }
 
@@ -122,6 +123,7 @@ private:
    wxGauge *mInstallProgressGauge;
 
    wxButton *mEnableButton;
+   wxButton *mMoreInfoButton;
 
    ModelCardHolder mCard;
 

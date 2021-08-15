@@ -85,7 +85,10 @@ DeepModelHolder DeepModelManager::GetModel(ModelCardHolder card)
    return model;
 }
 
-//TODO fetch installed cards
+std::string DeepModelManager::GetMoreInfoURL(ModelCardHolder card)
+{
+   return "https://huggingface.co/" + card->GetRepoID();
+}
 
 bool DeepModelManager::IsInstalled(ModelCardHolder card)
 {

@@ -327,9 +327,17 @@ void ModelCardPanel::PopulateInstallCtrls(ShuttleGui &S)
       }
       S.EndHorizontalLay();
 
-      mEnableButton = S.AddButton(XO("Enable"));
-      mEnableButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
-                             wxCommandEventHandler(ModelCardPanel::OnEnable), NULL, this);
+      S.StartHorizontalLay(wxCENTER, true);
+      {
+         mMoreInfoButton = S.AddButton(XO("More Info"));
+         mMoreInfoButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
+                             wxCommandEventHandler(ModelCardPanel::OnMoreInfo), NULL, this);
+
+         mEnableButton = S.AddButton(XO("Enable"));
+         mEnableButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
+                              wxCommandEventHandler(ModelCardPanel::OnEnable), NULL, this);
+
+      }
 
       // mInstallProgressGauge->Hide();
    }
@@ -528,4 +536,11 @@ void ModelCardPanel::OnEnable(wxCommandEvent &event)
 {
    auto &manager = DeepModelManager::Get();
    mEffect->SetModel(mCard);
+}
+
+void ModelCardPanel::OnMoreInfo(wxCommandEvent &event)
+{
+   DeepModelManager &manager = DeepModelManager::Get();
+   wxString url = wxString(manager.GetMoreInfoURL(mCard));
+   wxLaunchDefaultBrowser(url);
 }
