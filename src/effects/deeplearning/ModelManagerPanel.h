@@ -38,12 +38,20 @@ public:
 
    void SetFetchProgress(int64_t current, int64_t total);
    void OnAddRepo(wxCommandEvent & WXUNUSED(event));
+   void OnExplore(wxCommandEvent & WXUNUSED(event));
 
 private:
    wxStaticText *mFetchStatus;
    wxButton *mAddRepoButton;
+   wxButton *mExploreButton;
    ModelManagerPanel *mManagerPanel;
 
+};
+
+class ExploreDialog : public wxDialogWrapper
+{
+public:
+   ExploreDialog(wxWindow *parent, ModelManagerPanel *panel);
 };
 
 class ModelManagerPanel final : public wxPanelWrapper

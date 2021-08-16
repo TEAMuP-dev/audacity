@@ -21,6 +21,8 @@
 #include <wx/sizer.h>
 #include <wx/textdlg.h>
 #include <wx/stattext.h>
+#include <wx/hyperlink.h>
+
 
 #include "AllThemeResources.h"
 #include "Theme.h"
@@ -164,12 +166,15 @@ void ManagerToolsPanel::PopulateOrExchange(ShuttleGui &S)
    {
       mFetchStatus = S.AddVariableText(XO("Fetching models..."), false);
 
-      mAddRepoButton = S.AddButton(XO("Add HuggingFace Repo"));
+      mAddRepoButton = S.AddButton(XO("Add From HuggingFace"));
+
+      mExploreButton = S.AddButton(XO("Explore Models"));
    }
    S.EndHorizontalLay();
    S.EndStatic();
 
    mAddRepoButton->Bind(wxEVT_BUTTON, &ManagerToolsPanel::OnAddRepo, this);
+   mExploreButton->Bind(wxEVT_BUTTON, &ManagerToolsPanel::OnExplore, this);
 }
 
 void ManagerToolsPanel::OnAddRepo(wxCommandEvent & WXUNUSED(event))
@@ -213,6 +218,51 @@ void ManagerToolsPanel::SetFetchProgress(int64_t current, int64_t total)
    {
       mFetchStatus->SetLabel(XO("manager ready").Translation());
    }
+}
+
+void ManagerToolsPanel::OnExplore(wxCommandEvent & WXUNUSED(event))
+{
+   ExploreDialog dialog = ExploreDialog(mManagerPanel->GetParent(), mManagerPanel);
+   dialog.ShowModal();
+}
+
+// ExploreDialog
+
+ExploreDialog::ExploreDialog(wxWindow *parent, ModelManagerPanel *panel)
+                           : wxDialogWrapper(parent, wxID_ANY, XO("Explore Models"))
+{
+   ShuttleGui S(this, eIsCreating);
+   S.StartStatic(XO(""), true);
+   {
+      S.AddFixedText(
+         XO(
+            "Deep learning models for Audacity are contributed by the open-source \n"
+            "community and are hosted in HuggingFace. You can explore models for Audacity\n"
+            "by clicking the following link: "
+         )
+      );
+
+      S.AddWindow(
+         safenew wxHyperlinkCtrl(
+            S.GetParent(), wxID_ANY, 
+            "https://huggingface.co/models?filter=audacity",
+            "https://huggingface.co/models?filter=audacity"
+         ) 
+      );
+
+      S.AddFixedText(
+         XO(
+            "To add a new model to your local collection, use the \n"
+            "\"Add From HuggingFace\" button."
+         )
+      );
+   }
+
+   Fit();
+   Layout();
+   Center();
+   SetMinSize(GetSize());
+   Refresh();
 }
 
 // ModelCardPanel
