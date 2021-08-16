@@ -27,6 +27,11 @@
 #include "AllThemeResources.h"
 #include "Theme.h"
 
+#define MANAGERPANEL_WIDTH 1000
+#define MODELCARDPANEL_WIDTH 400
+#define MODELCARDPANEL_HEIGHT 150
+#define DETAILEDMODELCARDPANEL_WIDTH 600
+
 // ModelManagerPanel
 // TODO: need to get rid of the unique ptrs to UI elements
 ModelManagerPanel::ModelManagerPanel(wxWindow *parent, EffectDeepLearning *effect)
@@ -56,8 +61,9 @@ void ModelManagerPanel::PopulateOrExchange(ShuttleGui & S)
       S.EndScroller();
       // TODO: this is a temporary hack. The scroller should
       // dynamicallyu adjust its size to fit the contents.
-      mScroller->SetVirtualSize(wxSize(1000, 400));
-      mScroller->SetMinSize(wxSize(1000, 400)); 
+      mScroller->SetVirtualSize(wxSize(MODELCARDPANEL_WIDTH, 400));
+      mScroller->SetSize(wxSize(MODELCARDPANEL_WIDTH, 400)); 
+      mScroller->SetMinSize(wxSize(MODELCARDPANEL_WIDTH, 400)); 
 
    }
    S.EndVerticalLay();
@@ -147,31 +153,33 @@ void ModelManagerPanel::FetchCards()
 // ManagerToolsPanel
 
 ManagerToolsPanel::ManagerToolsPanel(wxWindow *parent, ModelManagerPanel *panel)
-   : wxPanelWrapper((wxWindow *)parent, wxID_ANY)
+   : wxPanelWrapper((wxWindow *)parent, wxID_ANY, wxDefaultPosition, wxSize(MANAGERPANEL_WIDTH, 30))
 {
    mManagerPanel = panel;
    mFetchStatus = nullptr;
    mAddRepoButton = nullptr;
+   mExploreButton = nullptr;
 
    ShuttleGui S(this, eIsCreating);
    PopulateOrExchange(S);
-   Fit();
+
+   SetWindowStyle(wxBORDER_SIMPLE);
+   // Fit();
+   Layout();
    // Center();
+   // SetMinSize(GetSize());
+   Refresh();
 }
 
 void ManagerToolsPanel::PopulateOrExchange(ShuttleGui &S)
 {
-   S.StartStatic(XO("Tools"));
    S.StartHorizontalLay(wxLEFT, true);
    {
-      mFetchStatus = S.AddVariableText(XO("Fetching models..."), false);
-
       mAddRepoButton = S.AddButton(XO("Add From HuggingFace"));
-
       mExploreButton = S.AddButton(XO("Explore Models"));
+      mFetchStatus = S.AddVariableText(XO("Fetching models..."), false, wxRIGHT);
    }
    S.EndHorizontalLay();
-   S.EndStatic();
 
    mAddRepoButton->Bind(wxEVT_BUTTON, &ManagerToolsPanel::OnAddRepo, this);
    mExploreButton->Bind(wxEVT_BUTTON, &ManagerToolsPanel::OnExplore, this);
@@ -269,7 +277,7 @@ ExploreDialog::ExploreDialog(wxWindow *parent, ModelManagerPanel *panel)
 
 ModelCardPanel::ModelCardPanel(wxWindow *parent, wxWindowID winid, ModelCardHolder card, 
                               EffectDeepLearning *effect)
-    : wxPanelWrapper(parent, winid, wxDefaultPosition, wxDefaultSize, wxBORDER_SIMPLE)
+    : wxPanelWrapper(parent, winid, wxDefaultPosition, wxSize(MODELCARDPANEL_WIDTH, MODELCARDPANEL_HEIGHT), wxBORDER_SIMPLE)
 {
    SetLabel(XO("Model Card"));
    SetName(XO("Model Card"));
@@ -285,6 +293,7 @@ ModelCardPanel::ModelCardPanel(wxWindow *parent, wxWindowID winid, ModelCardHold
    PopulateOrExchange(S);
    Fit();
    Center();
+   Layout();
 
    // TransferDataToWindow();
 }
@@ -377,9 +386,11 @@ void ModelCardPanel::PopulateDescription(ShuttleGui &S)
 {
    // model description
    // S.StartStatic(XO("Description"));
+   S.SetBorder(10);
    mModelDescription = S.AddVariableText(
                                        XO("%s").Format(wxString(mCard->short_description())),
                                        false, wxLEFT);
+   S.SetBorder(10);
    // S.EndStatic();
 }
 
@@ -471,12 +482,12 @@ void ModelCardPanel::PopulateOrExchange(ShuttleGui &S)
 
       S.StartMultiColumn(1);
       {
-         // top: other model metadata
-         S.StartVerticalLay(wxALIGN_TOP, false);
-         {
-            PopulateMetadata(S);
-         }
-         S.EndVerticalLay();
+         // // top: other model metadata
+         // S.StartVerticalLay(wxALIGN_TOP, false);
+         // {
+         //    PopulateMetadata(S);
+         // }
+         // S.EndVerticalLay();
 
          // bottom: install and uninstall controls
          S.StartVerticalLay(wxALIGN_BOTTOM, false);
