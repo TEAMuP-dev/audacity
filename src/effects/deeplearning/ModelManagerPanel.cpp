@@ -10,6 +10,7 @@
 ******************************************************************/
 
 #include "EffectDeepLearning.h"
+#include "../EffectUI.h"
 
 #include "Shuttle.h"
 #include "ShuttleGui.h"
@@ -28,9 +29,10 @@
 #include "Theme.h"
 
 #define MANAGERPANEL_WIDTH 1000
-#define MODELCARDPANEL_WIDTH 400
+#define MODELCARDPANEL_WIDTH 600
 #define MODELCARDPANEL_HEIGHT 150
-#define DETAILEDMODELCARDPANEL_WIDTH 600
+#define DETAILEDMODELCARDPANEL_WIDTH 400
+#define DETAILEDMODELCARDPANEL_HEIGHT 400
 
 // ModelManagerPanel
 // TODO: need to get rid of the unique ptrs to UI elements
@@ -48,23 +50,36 @@ ModelManagerPanel::ModelManagerPanel(wxWindow *parent, EffectDeepLearning *effec
 
 void ModelManagerPanel::PopulateOrExchange(ShuttleGui & S)
 {
+   DeepModelManager &manager = DeepModelManager::Get();
+
    S.StartVerticalLay(true);
    {
       mTools = safenew ManagerToolsPanel(S.GetParent(), this);
       // mTools->PopulateOrExchange(S);
       S.AddWindow(mTools);
 
-      mScroller = S.Style(wxVSCROLL | wxTAB_TRAVERSAL)
-         .StartScroller();
+      S.StartMultiColumn(2, wxEXPAND);
       {
-      }
-      S.EndScroller();
-      // TODO: this is a temporary hack. The scroller should
-      // dynamicallyu adjust its size to fit the contents.
-      mScroller->SetVirtualSize(wxSize(MODELCARDPANEL_WIDTH, 400));
-      mScroller->SetSize(wxSize(MODELCARDPANEL_WIDTH, 400)); 
-      mScroller->SetMinSize(wxSize(MODELCARDPANEL_WIDTH, 400)); 
+         mScroller = S.Style(wxVSCROLL | wxTAB_TRAVERSAL)
+         .StartScroller();
+         {
+         }
+         S.EndScroller();
+         // TODO: this is a temporary hack. The scroller should
+         // dynamicallyu adjust its size to fit the contents.
+         wxSize size(MODELCARDPANEL_WIDTH+10, DETAILEDMODELCARDPANEL_HEIGHT);
+         mScroller->SetVirtualSize(size);
+         mScroller->SetSize(size); 
+         mScroller->SetMinSize(size); 
+         mScroller->SetMaxSize(size);
 
+         // S.SetStretchyCol(1);
+         mDetailedPanel = safenew DetailedModelCardPanel(
+               S.GetParent(), wxID_ANY, manager.GetEmptyCard(), mEffect, this);
+
+         S.AddWindow(mDetailedPanel);
+
+      }
    }
    S.EndVerticalLay();
 
@@ -89,9 +104,18 @@ void ModelManagerPanel::Clear()
 
 void ModelManagerPanel::AddCard(ModelCardHolder card)
 {
+   DeepModelManager &manager = DeepModelManager::Get();
+
    mScroller->EnableScrolling(true, true);
    std::string repoId = card->GetRepoID();
-   mPanels[repoId] = std::make_unique<ModelCardPanel>(mScroller, wxID_ANY, card, mEffect);
+   mPanels[repoId] = std::make_unique<SimpleModelCardPanel>(mScroller, wxID_ANY,
+                                                             card, mEffect, this);
+
+   // if this is the first card we're adding, go ahead and select it
+   if (mPanels.size() == 1)
+   {
+      mEffect->SetModel(card);
+   }
 
    ShuttleGui S(mScroller, eIsCreating);
    S.AddWindow(mPanels[repoId].get(), wxEXPAND);
@@ -144,10 +168,31 @@ void ModelManagerPanel::FetchCards()
       );
    };
 
-   // TODO: this needs a progress gauge
-   // Should go on the top panel
    manager.FetchModelCards(onCardFetched, onCardFetchedProgress);
    manager.FetchLocalCards(onCardFetched);
+}
+
+void ModelManagerPanel::SetSelectedCard(ModelCardHolder card)
+{
+   // set all other card panels to disabled
+   for (auto& pair : mPanels)
+   {
+      pair.second->SetModelStatus(ModelCardPanel::ModelStatus::disabled);
+
+      if (card)
+      {
+         if (pair.first == card->GetRepoID())
+            pair.second->SetModelStatus(ModelCardPanel::ModelStatus::enabled);
+      }
+   }
+
+   // configure the detailed panel
+   if (card)
+   {
+      mDetailedPanel->PopulateWithNewCard(card);
+      mDetailedPanel->SetModelStatus(ModelCardPanel::ModelStatus::enabled);
+   }
+
 }
 
 // ManagerToolsPanel
@@ -177,7 +222,8 @@ void ManagerToolsPanel::PopulateOrExchange(ShuttleGui &S)
    {
       mAddRepoButton = S.AddButton(XO("Add From HuggingFace"));
       mExploreButton = S.AddButton(XO("Explore Models"));
-      mFetchStatus = S.AddVariableText(XO("Fetching models..."), false, wxRIGHT);
+      mFetchStatus = S.AddVariableText(XO("Fetching models..."), 
+                                 true, wxALIGN_CENTER_VERTICAL);
    }
    S.EndHorizontalLay();
 
@@ -224,7 +270,7 @@ void ManagerToolsPanel::SetFetchProgress(int64_t current, int64_t total)
 
    if (current == total)
    {
-      mFetchStatus->SetLabel(XO("manager ready").Translation());
+      mFetchStatus->SetLabel(XO("Manager ready.").Translation());
    }
 }
 
@@ -273,11 +319,52 @@ ExploreDialog::ExploreDialog(wxWindow *parent, ModelManagerPanel *panel)
    Refresh();
 }
 
+// DomainTagPanel
+
+class DomainTagPanel : public wxPanelWrapper
+{
+public:
+   DomainTagPanel(wxWindow *parent, const wxString &tag, const wxColour &color)
+                  :wxPanelWrapper(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize)
+   {
+      TranslatableString name = XO("%s").Format(tag);
+      SetLabel(name);
+
+      SetMaxSize(wxSize(90, 25));
+      // SetWindowStyle(wxBORDER_SIMPLE);
+      SetBackgroundColour(color);
+
+      ShuttleGui S(this, eIsCreating);
+      wxStaticText *txt = S.AddVariableText(name, true);
+      SetVirtualSize(txt->GetSize());
+
+      txt->SetBackgroundColour(color);
+      wxFont font = txt->GetFont();
+      font.SetPointSize(11);
+      txt->SetFont(font);
+
+      Refresh();
+      
+      Fit();
+      Layout();
+   }
+};
+
 // ModelCardPanel
 
 ModelCardPanel::ModelCardPanel(wxWindow *parent, wxWindowID winid, ModelCardHolder card, 
-                              EffectDeepLearning *effect)
-    : wxPanelWrapper(parent, winid, wxDefaultPosition, wxSize(MODELCARDPANEL_WIDTH, MODELCARDPANEL_HEIGHT), wxBORDER_SIMPLE)
+                              EffectDeepLearning *effect, ModelManagerPanel *managerPanel, const wxSize& size)
+    : wxPanelWrapper(parent, winid, wxDefaultPosition, size, wxBORDER_SIMPLE), 
+      mModelName(nullptr),
+      mModelSize(nullptr),
+      mModelAuthor(nullptr), 
+      mShortDescription(nullptr),  
+      mLongDescription(nullptr),  
+      mInstallButton(nullptr), 
+      mInstallStatusText(nullptr),
+      mInstallProgressGauge(nullptr),
+      mSelectButton(nullptr), 
+      mMoreInfoButton(nullptr)
 {
    SetLabel(XO("Model Card"));
    SetName(XO("Model Card"));
@@ -285,17 +372,35 @@ ModelCardPanel::ModelCardPanel(wxWindow *parent, wxWindowID winid, ModelCardHold
    mParent = parent;
    mCard = card;
    mEffect = effect;
+   mManagerPanel = managerPanel;
+   // TransferDataToWindow();
+}
 
-   // this->SetBackgroundColour(wxColour())
+void ModelCardPanel::Populate()
+{
    SetAutoLayout(true);
-
    ShuttleGui S(this, eIsCreating);
    PopulateOrExchange(S);
    Fit();
    Center();
    Layout();
+}
 
-   // TransferDataToWindow();
+void ModelCardPanel::PopulateWithNewCard(ModelCardHolder card)
+{
+   DestroyChildren();
+   SetSizer(nullptr);
+
+   mCard = card;
+   Populate();
+   Refresh();
+   mParent->Fit();
+   mParent->Refresh();
+   mParent->Layout();
+   mParent->GetParent()->Fit();
+   mParent->GetParent()->Refresh();
+   mParent->GetParent()->Layout();
+
 }
 
 bool ModelCardPanel::TransferDataToWindow()
@@ -343,34 +448,9 @@ void ModelCardPanel::PopulateNameAndAuthor(ShuttleGui &S)
    S.EndHorizontalLay();
 }
 
-class DomainTagPanel : public wxPanelWrapper
-{
-public:
-   DomainTagPanel(wxWindow *parent, const wxString &tag, const wxColour &color)
-                  :wxPanelWrapper(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize)
-   {
-      TranslatableString name = XO("%s").Format(tag);
-      SetLabel(name);
-
-      SetMaxSize(wxSize(110, 30));
-      SetWindowStyle(wxBORDER_SIMPLE);
-      SetBackgroundColour(color);
-
-      ShuttleGui S(this, eIsCreating);
-      wxStaticText *txt = S.AddVariableText(name, true);
-      SetVirtualSize(txt->GetSize());
-
-      txt->SetBackgroundColour(color);
-      Refresh();
-      
-      Fit();
-      Layout();
-   }
-};
-
 void ModelCardPanel::PopulateDomainTags(ShuttleGui &S)
 {
-   S.StartHorizontalLay(wxALIGN_LEFT, true);
+   S.StartHorizontalLay(wxALIGN_LEFT | wxALIGN_TOP, true);
    {
       for (auto &tag : mCard->domain_tags())
       {
@@ -382,21 +462,32 @@ void ModelCardPanel::PopulateDomainTags(ShuttleGui &S)
    S.EndHorizontalLay();
 }
 
-void ModelCardPanel::PopulateDescription(ShuttleGui &S)
+void ModelCardPanel::PopulateShortDescription(ShuttleGui &S)
 {
    // model description
    // S.StartStatic(XO("Description"));
    S.SetBorder(10);
-   mModelDescription = S.AddVariableText(
+   mShortDescription = S.AddVariableText(
                                        XO("%s").Format(wxString(mCard->short_description())),
                                        false, wxLEFT);
    S.SetBorder(10);
    // S.EndStatic();
 }
 
+void ModelCardPanel::PopulateLongDescription(ShuttleGui &S)
+{
+   // model description
+   S.StartStatic(XO(""));
+   mLongDescription = S.AddVariableText(
+                                       XO("%s").Format(wxString(mCard->long_description())),
+                                       false, wxLEFT, 
+                                       GetSize().GetWidth() - 30);
+   S.EndStatic();
+}
+
 void ModelCardPanel::PopulateMetadata(ShuttleGui &S)
 {
-   S.StartMultiColumn(2, wxCENTER);
+   S.StartMultiColumn(2, wxALIGN_LEFT);
    {
       S.AddVariableText(XO("Effect: "))
           ->SetFont(wxFont(wxFontInfo().Bold()));
@@ -407,6 +498,8 @@ void ModelCardPanel::PopulateMetadata(ShuttleGui &S)
           ->SetFont(wxFont(wxFontInfo().Bold()));
       S.AddVariableText(XO("%d")
                             .Format(mCard->sample_rate()));
+
+      // TODO: add tags
    }
    S.EndMultiColumn();
 }
@@ -423,87 +516,34 @@ void ModelCardPanel::PopulateInstallCtrls(ShuttleGui &S)
       S.AddWindow(mInstallProgressGauge);
       mInstallProgressGauge->Show();
 
-      S.StartHorizontalLay(wxCENTER, true);
-      {
-         bool installed = manager.IsInstalled(mCard);
-         TranslatableString status = installed ? XO("installed") : XO("uninstalled");
-         mInstallStatusText = S.AddVariableText(status);
+      bool installed = manager.IsInstalled(mCard);
+      TranslatableString status = installed ? XO("installed") : XO("uninstalled");
+      mInstallStatusText = S.AddVariableText(status, true);
 
-         wxColour statusColor = installed ? *wxGREEN : *wxRED;
-         mInstallStatusText->SetForegroundColour(statusColor);
+      wxColour statusColor = installed ? *wxGREEN : *wxRED;
+      mInstallStatusText->SetForegroundColour(statusColor);
 
-         // TODO: do translatable strings here from the begginign
-         TranslatableString cmd = installed ? XO("Uninstall") : XO("Install");
-         mInstallButton = S.AddButton(cmd);
+      // TODO: do translatable strings here from the begginign
+      TranslatableString cmd = installed ? XO("Uninstall") : XO("Install");
+      mInstallButton = S.AddButton(cmd);
 
-         SetInstallStatus(installed ? InstallStatus::installed : InstallStatus::uninstalled);
-      }
-      S.EndHorizontalLay();
+      SetInstallStatus(installed ? InstallStatus::installed : InstallStatus::uninstalled);
 
-      S.StartHorizontalLay(wxCENTER, true);
-      {
-         mMoreInfoButton = S.AddButton(XO("More Info"));
-         mMoreInfoButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
-                             wxCommandEventHandler(ModelCardPanel::OnMoreInfo), NULL, this);
-
-         mEnableButton = S.AddButton(XO("Enable"));
-         mEnableButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
-                              wxCommandEventHandler(ModelCardPanel::OnEnable), NULL, this);
-
-      }
-
-      // mInstallProgressGauge->Hide();
+      mSelectButton = S.AddButton(XO("Select"));
+      mSelectButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
+                        wxCommandEventHandler(ModelCardPanel::OnSelect), NULL, this);
    }
    S.EndVerticalLay();
 }
 
-void ModelCardPanel::PopulateOrExchange(ShuttleGui &S)
+void ModelCardPanel::PopulateMoreInfo(ShuttleGui &S)
 {
-   DeepModelManager &manager = DeepModelManager::Get();
-
-   // the layout is actually 2 columns,
-   // but we add a small space in the middle, which takes up a column
-   // S.StartStatic(XO(""), 1);
-   S.StartMultiColumn(3, wxEXPAND);
+   S.StartHorizontalLay(wxCENTER, true);
    {
-      // left column:
-      // repo name, repo author, model tags, and model description
-      S.SetStretchyCol(0);
-      S.StartVerticalLay(wxALIGN_LEFT, true);
-      {
-         PopulateNameAndAuthor(S);
-         PopulateDomainTags(S);
-         PopulateDescription(S);
-      }
-      S.EndVerticalLay();
-
-      // dead space (center column)
-      S.AddSpace(5, 0);
-
-      S.StartMultiColumn(1);
-      {
-         // // top: other model metadata
-         // S.StartVerticalLay(wxALIGN_TOP, false);
-         // {
-         //    PopulateMetadata(S);
-         // }
-         // S.EndVerticalLay();
-
-         // bottom: install and uninstall controls
-         S.StartVerticalLay(wxALIGN_BOTTOM, false);
-         {
-            S.StartHorizontalLay(wxALIGN_RIGHT);
-            {
-               PopulateInstallCtrls(S);
-            }
-            S.EndHorizontalLay();
-         }
-         S.EndVerticalLay();
-      }
-      S.EndVerticalLay();
+      mMoreInfoButton = S.AddButton(XO("More Info"));
+      mMoreInfoButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
+                           wxCommandEventHandler(ModelCardPanel::OnMoreInfo), NULL, this);
    }
-   S.EndMultiColumn();
-   // S.EndStatic();
 }
 
 void ModelCardPanel::FetchModelSize()
@@ -573,7 +613,6 @@ void ModelCardPanel::OnCancelInstall(wxCommandEvent &event)
 {
    DeepModelManager &manager = DeepModelManager::Get();
 
-   // TODO: cleanup!!
    manager.CancelInstall(mCard);
    manager.Uninstall(mCard);
    SetInstallStatus(InstallStatus::uninstalled);
@@ -585,9 +624,6 @@ void ModelCardPanel::OnInstall(wxCommandEvent &event)
 {
    DeepModelManager &manager = DeepModelManager::Get();
 
-   // TODO: what if the user closes the window while this is downloading?
-   // should the destructor of something make sure that no installation was left halfway thru?
-   // what does the network manager do in that case? 
    ProgressCallback onProgress([this, &manager](int64_t current, int64_t expected)
    {
       this->CallAfter(
@@ -645,6 +681,11 @@ void ModelCardPanel::OnInstall(wxCommandEvent &event)
    }
 }
 
+void ModelCardPanel::OnSelect(wxCommandEvent &event)
+{  
+   mEffect->SetModel(mCard);
+}
+
 void ModelCardPanel::OnEnable(wxCommandEvent &event)
 {
    mEffect->SetModel(mCard);
@@ -679,4 +720,77 @@ void ModelCardPanel::SetModelStatus(ModelStatus status)
 void ModelCardPanel::OnClick(wxMouseEvent &event)
 {
    mEffect->SetModel(mCard);
+}
+
+// SimpleModelCardPanel
+
+SimpleModelCardPanel::SimpleModelCardPanel(wxWindow *parent, wxWindowID id,
+                           ModelCardHolder card, EffectDeepLearning *effect, ModelManagerPanel *managerPanel)
+      : ModelCardPanel(parent, id, card, effect, managerPanel, wxSize(MODELCARDPANEL_WIDTH, MODELCARDPANEL_HEIGHT))
+{
+   Populate();
+}
+
+
+void SimpleModelCardPanel::PopulateOrExchange(ShuttleGui &S)
+{
+   // the layout is actually 2 columns,
+   // but we add a small space in the middle, which takes up a column
+   S.StartMultiColumn(3, wxEXPAND);
+   {
+      // left column:
+      // repo name, repo author, model tags, and model description
+      S.SetStretchyCol(0);
+      S.StartVerticalLay(wxALIGN_LEFT, true);
+      {
+         PopulateNameAndAuthor(S);
+         PopulateDomainTags(S);
+         PopulateShortDescription(S);
+      }
+      S.EndVerticalLay();
+
+      // dead space (center column)
+      S.AddSpace(5, 0);
+
+      S.StartMultiColumn(1);
+      {
+         // bottom: install and uninstall controls
+         S.StartVerticalLay(wxALIGN_BOTTOM, false);
+         {
+            S.StartHorizontalLay(wxALIGN_RIGHT);
+            {
+               PopulateInstallCtrls(S);
+            }
+            S.EndHorizontalLay();
+         }
+         S.EndVerticalLay();
+      }
+      S.EndVerticalLay();
+   }
+   S.EndMultiColumn();
+}
+
+// DetailedModelCardPanel
+
+DetailedModelCardPanel::DetailedModelCardPanel(wxWindow *parent, wxWindowID id,
+                                               ModelCardHolder card, EffectDeepLearning *effect, 
+                                                ModelManagerPanel *managerPanel)
+      : ModelCardPanel(parent, id, card, effect, managerPanel,
+                       wxSize(DETAILEDMODELCARDPANEL_WIDTH, 
+                              DETAILEDMODELCARDPANEL_HEIGHT))
+{
+   if (card)
+      Populate();
+}
+
+void DetailedModelCardPanel::PopulateOrExchange(ShuttleGui &S)
+{
+   S.StartVerticalLay(wxALIGN_LEFT, true);
+   {
+      PopulateNameAndAuthor(S);
+      PopulateDomainTags(S);
+      PopulateLongDescription(S);
+      PopulateMetadata(S);
+      PopulateMoreInfo(S);
+   }
 }

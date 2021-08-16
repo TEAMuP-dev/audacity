@@ -21,8 +21,7 @@
 #include <wx/log.h>
 
 using namespace audacity;
-
-// TODO: the manager is not thread safe? 
+ 
 DeepModelManager::DeepModelManager() : mCards(ModelCardCollection()),
                                        mAPIEndpoint("https://huggingface.co/api/")
 {
@@ -55,8 +54,6 @@ FilePath DeepModelManager::BuiltInModulesDir()
 
 FilePath DeepModelManager::GetRepoDir(ModelCardHolder card)
 {
-   // TODO: do we really want these fields in the JSON file?
-   // or should they be members of the ModelCard class? 
    static const std::string sep = "_";
 
    FilePath repoDir = FileNames::MkDir( 
@@ -213,8 +210,6 @@ void DeepModelManager::FetchModelCards(CardFetchedCallback onCardFetched, CardFe
          // validate it and insert it into collection
          try
          {
-            // TODO: this since we're fetching multiple cards at once,
-            // this results in a race condition
             std::lock_guard<std::mutex> guard(mCardMutex);
                this->mCards.Insert(card);
 
@@ -298,7 +293,7 @@ void DeepModelManager::FetchRepos(RepoListFetchedCallback onReposFetched)
    // std::string query = mAPIEndpoint + "models?filter=audacity";
    std::string query = GetRootURL("hugggof/audacity-models") + "models.json";
 
-   // TODO: handle exception in main thread
+   // TODO: handle exception in main thread. try using a broken url?
    CompletionHandler handler = 
    [query, onReposFetched = std::move(onReposFetched)]
    (int httpCode, std::string body)
@@ -423,6 +418,12 @@ void DeepModelManager::FetchModelSize(ModelCardHolder card, ModelSizeCallback on
    }
 }
 
+ModelCardHolder DeepModelManager::GetEmptyCard()
+{
+   ModelCardHolder card(safenew ModelCard());
+   return card;
+}
+
 bool DeepModelManager::NewCardFromHuggingFace(ModelCardHolder card, const std::string &jsonBody, const std::string &repoID)
 {
    bool success = true;
@@ -538,7 +539,6 @@ network_manager::ResponsePtr DeepModelManager::DownloadModel
                const std::string responseData = response->readAll<std::string>();
                file->Write(responseData.c_str(), responseData.size());
             }
-            // TODO: what to catch here? if anything
             catch (const char *msg)
             {
                // clean up 

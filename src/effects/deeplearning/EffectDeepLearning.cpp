@@ -31,6 +31,8 @@ EffectDeepLearning::EffectDeepLearning()
 {
    mManagerPanel = nullptr;
    mCard = nullptr;
+
+   EnablePreview(false);
 }
 
 bool EffectDeepLearning::Init()
@@ -61,10 +63,6 @@ void EffectDeepLearning::End()
       if (manager.IsInstalling(card))
          manager.CancelInstall(card);
    }
-
-   // TODO:  how to clean up card panels?
-   // if (mManagerPanel)
-   //    mManagerPanel->Clear();
 }
 
 bool EffectDeepLearning::Process()
@@ -73,7 +71,7 @@ bool EffectDeepLearning::Process()
    if (!mModel->IsLoaded())
    {
       Effect::MessageBox(
-          XO("Please load a model before applying the effect."),
+          XO("Please install the selected model before applying the effect."),
           wxICON_ERROR);
       return false;
    }
@@ -173,8 +171,6 @@ std::vector<BlockIndex> EffectDeepLearning::GetBlockIndices(WaveTrack *track, do
    return blockIndices;
 }
 
-// TODO: get rid of the Floats entirely and simply pass the data_ptr
-// to empty torch contiguous zeros
 torch::Tensor EffectDeepLearning::BuildMonoTensor(WaveTrack *track, float *buffer,
                                                   sampleCount start, size_t len)
 {
@@ -368,13 +364,7 @@ void EffectDeepLearning::SetModel(ModelCardHolder card)
    {
       auto &manager = DeepModelManager::Get();
 
-      if (!manager.IsInstalled(card))
-      {
-         Effect::MessageBox(
-            XO("Please install the model before selecting it."),
-            wxICON_ERROR);
-      }
-      else
+      if (manager.IsInstalled(card))
       {
          if (!(mModel->IsLoaded() && ((*mModel->GetCard()) == (*card))))
          {
@@ -385,15 +375,6 @@ void EffectDeepLearning::SetModel(ModelCardHolder card)
       }  
    }
 
-   // set all other card panels to disabled
-   for (auto& pair : mManagerPanel->mPanels)
-   {
-      pair.second->SetModelStatus(ModelCardPanel::ModelStatus::disabled);
-
-      if (mCard)
-      {
-         if (pair.first == mCard->GetRepoID())
-            pair.second->SetModelStatus(ModelCardPanel::ModelStatus::enabled);
-      }
-   }
+   if (mManagerPanel)
+      mManagerPanel->SetSelectedCard(card);
 }

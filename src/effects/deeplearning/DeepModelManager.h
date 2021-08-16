@@ -13,8 +13,6 @@
 \class DeepModelManager
 \brief tools for downloading and managing Audacity models hosted in HuggingFace
 
-TODO: add a more thorough description
-
 */
 /*******************************************************************/
 
@@ -115,6 +113,7 @@ public:
    // if this fails, the callback is not called. 
    void FetchModelSize(ModelCardHolder card, ModelSizeCallback onModelSizeRetrieved);
 
+   ModelCardHolder GetEmptyCard();
    ModelCardCollection GetCards() { return mCards; }
    ModelCardCollection GetCards(std::string effect_type);
 

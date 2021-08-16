@@ -25,7 +25,8 @@
 
 class EffectDeepLearning;
 class ShuttleGui;
-class ModelCardPanel;
+class SimpleModelCardPanel;
+class DetailedModelCardPanel;
 class ModelManagerPanel;
 
 class ManagerToolsPanel : public wxPanelWrapper
@@ -67,26 +68,30 @@ public:
    void AddCard(ModelCardHolder card);
    void RemoveCard(ModelCardHolder card); // TODO
 
+   void SetSelectedCard(ModelCardHolder card);
+
    void FetchCards();
 
 private:
    wxScrolledWindow *mScroller;
 
    ManagerToolsPanel *mTools;
-   std::map<std::string, std::unique_ptr<ModelCardPanel>> mPanels;
+   std::map<std::string, std::unique_ptr<SimpleModelCardPanel>> mPanels;
+   DetailedModelCardPanel *mDetailedPanel;
    EffectDeepLearning *mEffect;
    
    friend class ManagerToolsPanel;
    friend class EffectDeepLearning;
 };
 
-class ModelCardPanel final : public wxPanelWrapper
+class ModelCardPanel /* not final */: public wxPanelWrapper
 {
 public:
    ModelCardPanel(wxWindow *parent, wxWindowID winid, 
-                  ModelCardHolder card, EffectDeepLearning *effect);
+                  ModelCardHolder card, EffectDeepLearning *effect,
+                  ModelManagerPanel *panel, const wxSize& size);
 
-   void PopulateOrExchange(ShuttleGui &S);
+   virtual void PopulateOrExchange(ShuttleGui &S) = 0;
    bool TransferDataToWindow() override;
    bool TransferDataFromWindow() override;
 
@@ -96,6 +101,8 @@ public:
    void OnUninstall(wxCommandEvent &event);
 
    void OnEnable(wxCommandEvent &event);
+   void OnSelect(wxCommandEvent &event);
+   void OnApply(wxCommandEvent &event);
    void OnMoreInfo(wxCommandEvent &event);
 
    void OnClick(wxMouseEvent &event);
@@ -118,8 +125,9 @@ public:
 
    void SetInstallStatus(InstallStatus status);
    void SetModelStatus(ModelStatus status);
+   void PopulateWithNewCard(ModelCardHolder card);
 
-private:
+protected:
    using DomainTag = std::string;
    std::map<DomainTag, wxColour> mTagColors = {
       { "music",           wxColour("#CF6377") },
@@ -128,11 +136,14 @@ private:
       { "other",           wxColour(168, 218, 220) },
    };
 
-private:
-   // handlers
+protected:
+
+   void Populate();
    void PopulateNameAndAuthor(ShuttleGui &S);
    void PopulateDomainTags(ShuttleGui &S);
-   void PopulateDescription(ShuttleGui &S);
+   void PopulateShortDescription(ShuttleGui &S);
+   void PopulateLongDescription(ShuttleGui &S);
+   void PopulateMoreInfo(ShuttleGui &S);
    void PopulateMetadata(ShuttleGui &S);
    void PopulateInstallCtrls(ShuttleGui &S);
 
@@ -144,17 +155,37 @@ private:
    wxStaticText *mModelName;
    wxStaticText *mModelSize;
    wxStaticText *mModelAuthor;
-   wxStaticText *mModelDescription;
+   wxStaticText *mShortDescription;
+   wxStaticText *mLongDescription;
 
    wxButton *mInstallButton;
    wxStaticText *mInstallStatusText;
    wxGauge *mInstallProgressGauge;
 
-   wxButton *mEnableButton;
+   wxButton *mSelectButton;
+   wxButton *mApplyButton;
    wxButton *mMoreInfoButton;
 
    ModelCardHolder mCard;
 
    EffectDeepLearning *mEffect;
+   ModelManagerPanel *mManagerPanel;
 };
 
+class SimpleModelCardPanel final : public ModelCardPanel
+{
+public:
+   SimpleModelCardPanel(wxWindow *parent, wxWindowID id, 
+                           ModelCardHolder card, EffectDeepLearning *effect, 
+                           ModelManagerPanel *managerPanel);
+   void PopulateOrExchange(ShuttleGui &S);
+};
+
+class DetailedModelCardPanel final : public ModelCardPanel
+{
+public:
+   DetailedModelCardPanel(wxWindow *parent, wxWindowID id, 
+                        ModelCardHolder card, EffectDeepLearning *effect, 
+                        ModelManagerPanel *managerPanel);
+   void PopulateOrExchange(ShuttleGui &S);
+};
