@@ -89,7 +89,7 @@ std::string DeepModelManager::GetMoreInfoURL(ModelCardHolder card)
 
 bool DeepModelManager::IsInstalled(ModelCardHolder card)
 {
-   FilePath repoDir = wxFileName(card->local_path()).GetFullPath();
+   FilePath repoDir = wxFileName(card->GetLocalPath()).GetFullPath();
 
    wxFileName modelPath = wxFileName(repoDir, "model.pt");
    wxFileName metadataPath = wxFileName(repoDir, "metadata.json");
@@ -372,7 +372,7 @@ void DeepModelManager::FetchCard(const std::string &repoID, CardFetchedCallback 
 
 void DeepModelManager::FetchModelSize(ModelCardHolder card, ModelSizeCallback onModelSizeRetrieved)
 {
-   if (card->is_local())
+   if (card->IsLocal())
    {
       FilePath repoDir = GetRepoDir(card);
       wxFileName modelPath = wxFileName(repoDir, "model.pt");
@@ -438,8 +438,8 @@ bool DeepModelManager::NewCardFromHuggingFace(ModelCardHolder card, const std::s
       card->Deserialize(doc, mModelCardSchema);
       card->name(sName);
       card->author(sAuthor);
-      card->set_local(false);
-      card->local_path(GetRepoDir(card).ToStdString());
+      card->SetLocal(false);
+      card->GetLocalPath(GetRepoDir(card).ToStdString());
 
    }
    catch (const InvalidModelCardDocument &e)
@@ -465,8 +465,8 @@ bool DeepModelManager::NewCardFromLocal(ModelCardHolder card, const std::string 
    {
       std::string localPath = wxFileName(wxString(filePath)).GetPath().ToStdString();
       card->DeserializeFromFile(filePath, mModelCardSchema);
-      card->set_local(true);
-      card->local_path(localPath);
+      card->SetLocal(true);
+      card->GetLocalPath(localPath);
    }
    catch (const InvalidModelCardDocument &e)
    {

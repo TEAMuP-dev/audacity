@@ -120,13 +120,14 @@ private:
 
    void Validate(DocHolder doc, DocHolder schema);
 
-public:
+   bool IsLocal() { return m_is_local; }
+   void SetLocal(bool local) { m_is_local = local; }
 
-   bool is_local() { return m_is_local; }
-   void set_local(bool local) { m_is_local = local; }
+   std::string GetLocalPath() const { return m_local_path; }
+   void GetLocalPath(const std::string& path) { m_local_path = path; }
 
-   std::string local_path() const { return m_local_path; }
-   void local_path(const std::string& path) { m_local_path = path; }
+   // returns {author}/{name}
+   std::string GetRepoID() const;
 
 public:
 
@@ -184,9 +185,6 @@ public:
    // TODO: add versioning?
    bool operator==(const ModelCard& that) const;
    bool operator!=(const ModelCard& that) const;
-
-   // returns {author}/{name}
-   std::string GetRepoID() const;
 };
 
 using ModelCardHolder = std::shared_ptr<ModelCard>;
