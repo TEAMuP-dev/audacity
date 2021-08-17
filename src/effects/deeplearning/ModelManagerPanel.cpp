@@ -28,11 +28,12 @@
 #include "AllThemeResources.h"
 #include "Theme.h"
 
-#define MANAGERPANEL_WIDTH 1000
 #define MODELCARDPANEL_WIDTH 600
 #define MODELCARDPANEL_HEIGHT 150
 #define DETAILEDMODELCARDPANEL_WIDTH 400
 #define DETAILEDMODELCARDPANEL_HEIGHT 400
+#define MODELCARDPANEL_X_OFFSET 20
+#define MANAGERPANEL_WIDTH (MODELCARDPANEL_WIDTH + DETAILEDMODELCARDPANEL_WIDTH + MODELCARDPANEL_X_OFFSET)
 
 // ModelManagerPanel
 // TODO: need to get rid of the unique ptrs to UI elements
@@ -44,6 +45,7 @@ ModelManagerPanel::ModelManagerPanel(wxWindow *parent, EffectDeepLearning *effec
 
    ShuttleGui S(this, eIsCreating);
    PopulateOrExchange(S);
+   Layout();
    Fit();
    Center();
 }
@@ -60,18 +62,19 @@ void ModelManagerPanel::PopulateOrExchange(ShuttleGui & S)
 
       S.StartMultiColumn(2, wxEXPAND);
       {
-         mScroller = S.Style(wxVSCROLL | wxTAB_TRAVERSAL)
-         .StartScroller();
+         mScroller = S.StartScroller(wxVSCROLL | wxTAB_TRAVERSAL);
          {
          }
          S.EndScroller();
-         // TODO: this is a temporary hack. The scroller should
-         // dynamicallyu adjust its size to fit the contents.
-         wxSize size(MODELCARDPANEL_WIDTH+10, DETAILEDMODELCARDPANEL_HEIGHT);
-         mScroller->SetVirtualSize(size);
+         wxSize size(MODELCARDPANEL_WIDTH+50, DETAILEDMODELCARDPANEL_HEIGHT);
+         wxSize vsize(MODELCARDPANEL_WIDTH+MODELCARDPANEL_X_OFFSET, 
+                     DETAILEDMODELCARDPANEL_HEIGHT);
+         mScroller->SetVirtualSize(vsize);
          mScroller->SetSize(size); 
          mScroller->SetMinSize(size); 
          mScroller->SetMaxSize(size);
+         mScroller->SetWindowStyle(wxBORDER_SIMPLE);
+         mScroller->SetScrollRate(0, 10);
 
          // S.SetStretchyCol(1);
          mDetailedPanel = safenew DetailedModelCardPanel(
@@ -127,6 +130,7 @@ void ModelManagerPanel::AddCard(ModelCardHolder card)
       sizer->SetSizeHints(mScroller);
    }
    mScroller->FitInside();
+   mScroller->Layout();
    mScroller->GetParent()->Layout();
 }
 
