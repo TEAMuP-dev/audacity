@@ -380,16 +380,11 @@ ModelCardCollection::ModelCardCollection()
 }
 
 void ModelCardCollection::Insert(ModelCardHolder card)
-{
-   // a lambda that dereferences the ModelCardHolder
-   // and checks if the contents are equal
-   auto isSame = [&](ModelCardHolder a)
-   {
+{  
+    // only add it if its not already there
+   auto it = std::find_if(this->begin(), this->end(), [&](ModelCardHolder a){
       return (*card) == (*a);
-   };
-   
-    // only add it if its new
-   auto it = std::find_if(this->begin(), this->end(), isSame);
+   };);
 
    bool isMissing = (it == this->end());
    if (isMissing)
