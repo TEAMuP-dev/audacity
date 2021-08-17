@@ -355,7 +355,7 @@ void EffectDeepLearning::SetModel(ModelCardHolder card)
    // if card is empty, reset the model
    if (!card)
    {
-      mModel.reset(safenew DeepModel());
+      mModel = std::make_unique<DeepModel>();
       mCard = nullptr;
 
       mModelDesc->SetLabel(XO("Not Ready").Translation());
