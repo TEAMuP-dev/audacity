@@ -499,7 +499,19 @@ void ModelCardPanel::PopulateMetadata(ShuttleGui &S)
       S.AddVariableText(XO("%d")
                             .Format(mCard->sample_rate()));
 
-      // TODO: add tags
+      std::string tagString;
+      for (auto &tag : mCard->tags())
+      {
+         if (!tagString.empty())
+            tagString = tagString +  ", " + tag;
+         else
+            tagString = tag;
+      }
+      
+      S.AddVariableText(XO("Tags: "))
+          ->SetFont(wxFont(wxFontInfo().Bold()));
+      S.AddVariableText(XO("%s")
+                            .Format(tagString));
    }
    S.EndMultiColumn();
 }
