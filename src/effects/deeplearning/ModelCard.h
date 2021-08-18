@@ -126,6 +126,7 @@ private:
    std::string GetLocalPath() const { return m_local_path; }
    void GetLocalPath(const std::string& path) { m_local_path = path; }
 
+public:
    // returns {author}/{name}
    std::string GetRepoID() const;
 
