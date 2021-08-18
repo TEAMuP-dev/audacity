@@ -384,7 +384,8 @@ void ModelCardCollection::Insert(ModelCardHolder card)
     // only add it if its not already there
    auto it = std::find_if(this->begin(), this->end(), [&](ModelCardHolder a){
       return (*card) == (*a);
-   };);
+   });
+   
 
    bool isMissing = (it == this->end());
    if (isMissing)
