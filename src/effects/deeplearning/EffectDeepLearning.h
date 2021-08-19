@@ -69,9 +69,6 @@ protected:
    // to keep the main thread alive. 
    torch::Tensor ForwardPassInThread(torch::Tensor input);
 
-   // wraps resample in a message box exception 
-   torch::Tensor Resample(torch::Tensor input, int SampleRateIn, int SampleRateOut);
-
    // wraps the forward pass in an exception
    torch::Tensor ForwardPass(torch::Tensor input); 
 

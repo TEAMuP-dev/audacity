@@ -32,20 +32,27 @@
 class ModelManagerException : public MessageBoxException
 {
 public:
-   ModelManagerException(const std::string& msg) : 
+   ModelManagerException(const TranslatableString msg, std::string trace) : 
                         m_msg(msg),
+                        m_trace(trace),
                         MessageBoxException{
                            ExceptionType::Internal,
                            XO("Model Manager Error")
-                        } {}
+                        } 
+   { 
+      if (!m_trace.empty()) 
+         wxLogError(wxString(m_trace)); 
+   }
    // internal message
-   virtual const char* what() const throw () {return m_msg.c_str();}
+   virtual const char* what() const throw () 
+      { return m_msg.Translation().c_str(); }
 
    // user facing message
    virtual TranslatableString ErrorMessage() const
-      { return XO("Model Manager Error: \n %s").Format(wxString(m_msg));}
+      { return XO("Model Manager Error: \n %s").Format(m_msg);}
 
-   const std::string m_msg;
+   const TranslatableString m_msg;
+   const std::string m_trace;
 };
 
 using RepoIDList = std::vector<std::string>;

@@ -26,6 +26,7 @@
 #include "rapidjson/prettywriter.h" 
 #include <rapidjson/writer.h>
 #include <wx/string.h>
+#include <wx/log.h>
 
 #include "MemoryX.h"
 #include "AudacityException.h"
@@ -38,21 +39,26 @@ using DocHolder = std::shared_ptr<rapidjson::Document>;
 class InvalidModelCardDocument : public MessageBoxException
 {
 public:
-   InvalidModelCardDocument(const std::string& msg, 
-                           DocHolder doc)
-                           : m_msg(msg), m_doc(doc) ,
+   InvalidModelCardDocument(const TranslatableString msg, std::string trace,
+                           DocHolder doc): 
+                           m_msg(msg), 
+                           m_doc(doc),
+                           m_trace(trace),
                             MessageBoxException {
                                ExceptionType::Internal,
                                XO("Invalid Model Card Document")
                             }
-   {}
+   { 
+      if (!m_trace.empty()) 
+         wxLogError(wxString(m_trace)); 
+   }
 
    // detailed internal error message
    virtual const char* what() const throw () 
    {
       // TODO: also print the document
       // TODO: check if document is nullptr
-      return m_msg.c_str();
+      return m_msg.Translation().c_str();
       // rapidjson::StringBuffer sb;
       // rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
 
@@ -66,10 +72,11 @@ public:
 
    // user facing message
    virtual TranslatableString ErrorMessage() const
-      { return XO("An error occurred while validating model metadata. \n Error: %s")
-               .Format(wxString(m_msg));}
+      { return XO("Model Card Error: %s")
+               .Format(m_msg);}
 
-   const std::string m_msg;
+   const TranslatableString m_msg;
+   const std::string m_trace;
    DocHolder m_doc;
 };
 

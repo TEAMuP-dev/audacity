@@ -31,18 +31,19 @@ namespace validators
    void validateExists(const std::string &key, DocHolder doc)
    {
       if(!doc->IsObject())
-         throw InvalidModelCardDocument("provided document is not an object", doc);
+         throw InvalidModelCardDocument(XO("The provided JSON document is not an object."), "", doc);
       if(!doc->HasMember(key.c_str()))
       {
-         wxString msg = wxString("JSON document missing field: %s").Format(wxString(key));
-         throw InvalidModelCardDocument(msg.ToStdString(), doc);
+         
+         throw InvalidModelCardDocument(
+            XO("JSON document missing field: %s").Format(wxString(key)), "", doc);
       }
    }
 
    void throwTypeError(const std::string &key, const char *type, DocHolder doc)
    {
-      wxString msg = wxString("field: %s is not of type: %s").Format(wxString(key), wxString(type));
-      throw InvalidModelCardDocument(msg.ToStdString(), doc);
+      throw InvalidModelCardDocument(
+         XO("field: %s is not of type: %s").Format(wxString(key), wxString(type)), "", doc);
    }
 
    std::string tryGetString(const std::string &key, DocHolder doc)
@@ -165,10 +166,10 @@ namespace parsers
       d->Parse(data.c_str());
       if (d->Parse(data.c_str()).HasParseError()) 
       {
-         std::string msg = "error parsing JSON from string: \n";
-         msg += rapidjson::GetParseError_En(d->GetParseError());
-         msg += "\n document: \n\t" + std::string(data.c_str()) + "\n";
-         throw InvalidModelCardDocument(msg.c_str(), d);
+         TranslatableString msg = XO("Error parsing JSON from string:\n%s\nDocument: %s ")
+                                       .Format(wxString(rapidjson::GetParseError_En(d->GetParseError())), 
+                                                wxString(data));
+         throw InvalidModelCardDocument(msg, "", d);
       }
       
       return d;
@@ -180,7 +181,7 @@ namespace parsers
       wxFile file = wxFile(path);
 
       if(!file.ReadAll(&docStr))
-         throw InvalidModelCardDocument("could not read file", nullptr);
+         throw InvalidModelCardDocument(XO("Could not read file."), "", nullptr);
 
       return ParseString(docStr.ToStdString());
    }
@@ -237,7 +238,7 @@ void ModelCard::Validate(DocHolder doc, DocHolder schema)
       message += "schema document: \n\t" 
                   + std::string(sb.GetString()) + "\n";
 
-      throw InvalidModelCardDocument(message.c_str(), doc);
+      throw InvalidModelCardDocument(Verbatim(message), "", doc);
    }
 }
 
@@ -252,7 +253,7 @@ void ModelCard::SerializeToFile(const std::string &path) const
 
    wxFile file(path, wxFile::write);
    if (!file.Write(wxString(sb.GetString())))
-      throw InvalidModelCardDocument("could not serialize ModelCard to file", nullptr);
+      throw InvalidModelCardDocument(XO("Could not serialize ModelCard to file"), "", nullptr);
 }
 
 void ModelCard::DeserializeFromFile(const std::string &path, DocHolder schema)
@@ -385,7 +386,7 @@ void ModelCardCollection::Insert(ModelCardHolder card)
    auto it = std::find_if(this->begin(), this->end(), [&](ModelCardHolder a){
       return (*card) == (*a);
    });
-   
+
 
    bool isMissing = (it == this->end());
    if (isMissing)

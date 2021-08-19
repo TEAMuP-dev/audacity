@@ -264,38 +264,10 @@ torch::Tensor EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
    return output;
 }
 
-torch::Tensor EffectDeepLearning::Resample(torch::Tensor input, int SampleRateIn, int SampleRateOut)
-{
-   try
-   {
-      input = mModel->Resample(input, SampleRateIn, SampleRateOut);
-   }
-   catch(const ModelException& e)
-   {
-      Effect::MessageBox(XO("An error occurred while resampling the audio data."),
-                         wxOK | wxICON_ERROR);
-   }
-
-   return input;
-}
-
 torch::Tensor EffectDeepLearning::ForwardPass(torch::Tensor input)
 {
    torch::Tensor output;
-   try
-   {
-      output = mModel->Forward(input);
-   }
-   catch (const std::exception &e)
-   {
-      wxLogError(e.what());
-      wxLogDebug(e.what());
-      Effect::MessageBox(XO("An error occurred during the forward pass"
-                            "This model may be broken."),
-                         wxOK | wxICON_ERROR);
-
-      output = torch::zeros_like(input);
-   }
+   output = mModel->Forward(input);
    return output;
 }
 
@@ -303,7 +275,7 @@ void EffectDeepLearning::TensorToTrack(torch::Tensor waveform, WaveTrack::Holder
                                        double tStart, double tEnd)
 {
    if (!(waveform.size(0) == 1))
-      throw std::runtime_error("Input waveform tensor should be shape (1, samples)");
+      throw Effect::MessageBox(XO("Internal Effect Error: input waveform is not mono."));
 
    // get the data pointer
    const void *data = waveform.contiguous().data_ptr<float>();

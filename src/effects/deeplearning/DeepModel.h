@@ -19,6 +19,7 @@
 #pragma once
 
 #include "ModelCard.h"
+#include "wx/log.h"
 
 #include <torch/script.h>
 #include <torch/torch.h>
@@ -32,21 +33,28 @@ using DeepModelHolder = std::shared_ptr<DeepModel>;
 class ModelException final : public MessageBoxException
 {
 public:
-   ModelException(const std::string& msg) :
+   ModelException(const TranslatableString msg, std::string trace) :
                   m_msg(msg),
+                  m_trace(trace),
                   MessageBoxException{
                      ExceptionType::Internal,
                      XO("Deep Model Error")
-   } {}
+                  }
+   { 
+      if (!m_trace.empty()) 
+         wxLogError(wxString(m_trace)); 
+   }
 
    // internal message
-   virtual const char* what() const throw () {return m_msg.c_str();}
+   virtual const char* what() const throw () 
+      { return m_msg.Translation().c_str(); }
 
    // user facing message
    virtual TranslatableString ErrorMessage() const
-      { return XO("An internal error occurred within the deep learning model.");}
+      { return XO("Deep Model Error: %s").Format(m_msg);}
    
-   const std::string m_msg;
+   const TranslatableString m_msg;
+   const std::string m_trace;
 };
 
 class DeepModel final

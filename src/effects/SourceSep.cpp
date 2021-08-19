@@ -109,7 +109,7 @@ bool EffectSourceSep::ProcessOne(WaveTrack *leader,
                                             samplePos, blockSize).sum(0, true, torch::kFloat); 
 
       // resample!
-      input = Resample(input, origRate, mModel->GetSampleRate());
+      input = mModel->Resample(input, origRate, mModel->GetSampleRate());
 
       // forward pass!
       torch::Tensor output = ForwardPassInThread(input);

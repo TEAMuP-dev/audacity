@@ -68,7 +68,7 @@ FilePath DeepModelManager::GetRepoDir(ModelCardHolder card)
 DeepModelHolder DeepModelManager::GetModel(ModelCardHolder card)
 {
    if (!IsInstalled(card))
-      throw ModelManagerException("model is not loaded.");
+      throw ModelManagerException(XO("Model is not loaded."), "");
 
    DeepModelHolder model = std::make_shared<DeepModel>();
    model->SetCard(card);

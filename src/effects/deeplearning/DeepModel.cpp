@@ -34,7 +34,7 @@ void DeepModel::LoadResampler()
    catch (const std::exception &e)
    {
       Cleanup();
-      throw ModelException(e.what());
+      throw ModelException(XO("Error an error occurred while loading the resampler"), e.what());
    }
 }
 
@@ -56,7 +56,7 @@ void DeepModel::Load(const std::string &modelPath)
    catch (const std::exception &e)
    {
       Cleanup();
-      throw ModelException(e.what());
+      throw ModelException(XO("Error while loading model"), e.what());
    }
 }
 
@@ -78,7 +78,7 @@ void DeepModel::Load(std::istream &bytes)
    catch (const std::exception &e)
    {
       Cleanup();
-      throw ModelException(e.what());
+      throw ModelException(XO("Error while loading model"), e.what());
    }
 }
 
@@ -90,7 +90,7 @@ bool DeepModel::IsLoaded() const
 void DeepModel::Save(const std::string &modelPath) const
 {
    if (!mLoaded)
-      throw ModelException("attempted save when no module was loaded.");
+      throw ModelException(XO("attempted save when no module was loaded."), "");
 
    mModel->save(modelPath);
 }
@@ -120,8 +120,8 @@ torch::Tensor DeepModel::Resample(const torch::Tensor &waveform, int sampleRateI
                                   int sampleRateOut) const
 {
    if (!mLoaded) 
-      throw ModelException("Attempted resample while is not loaded."
-                                       " Please call Load() first."); 
+      throw ModelException(XO("Attempted resample while is not loaded."
+                                       " Please call Load() first."), ""); 
 
    // set up inputs
    // torchaudio likes that sample rates are cast to float, for some reason.
@@ -135,7 +135,7 @@ torch::Tensor DeepModel::Resample(const torch::Tensor &waveform, int sampleRateI
    }
    catch (const std::exception &e)
    {
-      throw ModelException(e.what());
+      throw ModelException(XO("A libtorch error occured while resampling."), e.what());
    }
 }
 
@@ -147,8 +147,8 @@ torch::Tensor DeepModel::Forward(const torch::Tensor &waveform) const
    torch::NoGradGuard NoGrad;
 
    if (!mLoaded) 
-      throw ModelException("Attempted forward pass while model is not loaded."
-                                       " Please call Load() first."); 
+      throw ModelException(XO("Attempted forward pass while model is not loaded."
+                                       " Please call Load() first."), ""); 
 
    // set up for jit model
    std::vector<torch::jit::IValue> inputs = {waveform};
@@ -160,6 +160,6 @@ torch::Tensor DeepModel::Forward(const torch::Tensor &waveform) const
    }
    catch (const std::exception &e)
    {
-      throw ModelException(e.what());
+      throw ModelException(XO("A libtorch error occurred during the forward pass"), e.what());
    }
 }
