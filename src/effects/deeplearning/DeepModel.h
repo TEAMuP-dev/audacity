@@ -29,7 +29,7 @@ class DeepModel;
 using ModulePtr = std::unique_ptr<torch::jit::script::Module>;
 using DeepModelHolder = std::shared_ptr<DeepModel>;
 
-class ModelException : public MessageBoxException
+class ModelException final : public MessageBoxException
 {
 public:
    ModelException(const std::string& msg) :
@@ -49,14 +49,10 @@ public:
    const std::string m_msg;
 };
 
-class DeepModel
+class DeepModel final
 {
-   void LoadModel(const std::string &path);
-   void LoadResampler();
-   void Cleanup();
-
 public:
-   DeepModel();
+   DeepModel() = default;
    DeepModel(ModelCard &card);
 
    // @execsafety: strong 
@@ -64,26 +60,26 @@ public:
    // which is stored in a ModelCard.
    void Load(const std::string &modelPath);
    void Load(std::istream &bytes);
-   bool IsLoaded();
+   bool IsLoaded() const;
 
    // @execsafety: strong (will throw if model is not loaded)
-   void Save(const std::string &modelPath);
+   void Save(const std::string &modelPath) const;
 
    // use the ModelCard to access metadata attribute's in the 
    // models metadata.json file. 
    void SetCard(ModelCardHolder card);
-   ModelCardHolder GetCard();
-   int GetSampleRate(){return mSampleRate;}
+   ModelCardHolder GetCard() const;
+   int GetSampleRate() const {return mSampleRate;}
 
    // @execsafety: strong (may throw if model is not loaded or 
    // forward pass fails)
    // waveform should be shape (channels, samples)
-   torch::Tensor Resample(const torch::Tensor &waveform, int sampleRateIn, int sampleRateOut);
+   torch::Tensor Resample(const torch::Tensor &waveform, int sampleRateIn, int sampleRateOut) const;
 
    // @execsafety: strong (may throw if model is not loaded or 
    // forward pass fails)
    // waveform should be shape (channels, samples)
-   torch::Tensor Forward(const torch::Tensor &waveform);
+   torch::Tensor Forward(const torch::Tensor &waveform) const;
 
 private:
    ModulePtr mModel;
@@ -91,8 +87,12 @@ private:
 
    ModelCardHolder mCard;
 
-   int mSampleRate;
-   bool mLoaded;
+   int mSampleRate {0};
+   bool mLoaded {false};
 
+private:
+   void LoadModel(const std::string &path);
+   void LoadResampler();
+   void Cleanup();
 };
 

@@ -20,10 +20,6 @@
 
 // DeepModel Implementation
 
-DeepModel::DeepModel() : mLoaded(false)
-                        //  mCard(ModelCardHolder())
-{}
-
 void DeepModel::LoadResampler()
 {
    // load the resampler module
@@ -86,12 +82,12 @@ void DeepModel::Load(std::istream &bytes)
    }
 }
 
-bool DeepModel::IsLoaded()
+bool DeepModel::IsLoaded() const
 {
    return mLoaded; 
 }
 
-void DeepModel::Save(const std::string &modelPath)
+void DeepModel::Save(const std::string &modelPath) const
 {
    if (!mLoaded)
       throw ModelException("attempted save when no module was loaded.");
@@ -108,7 +104,7 @@ void DeepModel::SetCard(ModelCardHolder card)
    mSampleRate = mCard->sample_rate();
 }
 
-ModelCardHolder DeepModel::GetCard()
+ModelCardHolder DeepModel::GetCard() const
 {
    return ModelCardHolder(mCard);
 }
@@ -121,9 +117,10 @@ void DeepModel::Cleanup()
 }
 
 torch::Tensor DeepModel::Resample(const torch::Tensor &waveform, int sampleRateIn, 
-                                  int sampleRateOut)
+                                  int sampleRateOut) const
 {
-   if (!mLoaded) throw ModelException("Attempted resample while is not loaded."
+   if (!mLoaded) 
+      throw ModelException("Attempted resample while is not loaded."
                                        " Please call Load() first."); 
 
    // set up inputs
@@ -132,41 +129,37 @@ torch::Tensor DeepModel::Resample(const torch::Tensor &waveform, int sampleRateI
                                              static_cast<float>(sampleRateIn), 
                                              static_cast<float>(sampleRateOut)};
 
-   torch::Tensor output;
    try
    {
-      output = mResampler->forward(inputs).toTensor();
+      return mResampler->forward(inputs).toTensor();
    }
    catch (const std::exception &e)
    {
       throw ModelException(e.what());
    }
-
-   return output.contiguous();
 }
 
 // forward pass through the model!
-torch::Tensor DeepModel::Forward(const torch::Tensor &waveform)
+torch::Tensor DeepModel::Forward(const torch::Tensor &waveform) const
 {
-   torch::NoGradGuard no_grad;
-   if (!mLoaded) throw ModelException("Attempted forward pass while model is not loaded."
+   // NoGradGuard prevets the model from storing gradients, which should
+   // make computation faster and memory usage lower. 
+   torch::NoGradGuard NoGrad;
+
+   if (!mLoaded) 
+      throw ModelException("Attempted forward pass while model is not loaded."
                                        " Please call Load() first."); 
 
    // set up for jit model
    std::vector<torch::jit::IValue> inputs = {waveform};
 
    // forward pass!
-   torch::Tensor output;
    try
    {
-      output = mModel->forward(inputs).toTensor();
+      return  mModel->forward(inputs).toTensor().contiguous();
    }
    catch (const std::exception &e)
    {
       throw ModelException(e.what());
    }
-   // make tensor contiguous to return to track
-   output = output.contiguous();
-
-   return output;
 }
