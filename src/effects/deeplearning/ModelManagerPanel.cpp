@@ -569,7 +569,7 @@ void ModelCardPanel::FetchModelSize()
 
    ModelSizeCallback onGetModelSize = [this](size_t size)
    {
-      float sizeMB = (float)size / (float)(1024 * 1024);
+      float sizeMB = static_cast<float>(size) / static_cast<float>(1024 * 1024);
       mModelSize->SetLabel(XO("[%.1f MB]").Format(sizeMB).Translation());
    }; 
 

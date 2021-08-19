@@ -306,13 +306,13 @@ void EffectDeepLearning::TensorToTrack(torch::Tensor waveform, WaveTrack::Holder
       throw std::runtime_error("Input waveform tensor should be shape (1, samples)");
 
    // get the data pointer
-   float *data = waveform.contiguous().data_ptr<float>();
+   const void *data = waveform.contiguous().data_ptr<float>();
    size_t outputLen = waveform.size(-1);
 
    // add the data to a temporary track, then
    // paste on our output track
    WaveTrack::Holder tmp = track->EmptyCopy();
-   tmp->Append(reinterpret_cast<samplePtr>(data), floatSample, outputLen);
+   tmp->Append(static_cast<constSamplePtr>(data), floatSample, outputLen);
    tmp->Flush();
 
    try

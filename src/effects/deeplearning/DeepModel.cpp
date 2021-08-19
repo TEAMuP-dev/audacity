@@ -129,8 +129,8 @@ torch::Tensor DeepModel::Resample(const torch::Tensor &waveform, int sampleRateI
    // set up inputs
    // torchaudio likes that sample rates are cast to float, for some reason.
    std::vector<torch::jit::IValue> inputs = {waveform, 
-                                             (float)sampleRateIn, 
-                                             (float)sampleRateOut};
+                                             static_cast<float>(sampleRateIn), 
+                                             static_cast<float>(sampleRateOut)};
 
    torch::Tensor output;
    try

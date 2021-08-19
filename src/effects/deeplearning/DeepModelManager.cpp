@@ -379,7 +379,7 @@ void DeepModelManager::FetchModelSize(ModelCardHolder card, ModelSizeCallback on
 
       if (modelPath.FileExists())
       {
-         size_t model_size = (size_t)wxFile(modelPath.GetFullPath(), wxFile::read).Length();
+         size_t model_size = static_cast<size_t>(wxFile(modelPath.GetFullPath(), wxFile::read).Length());
 
          card->model_size(model_size);
          onModelSizeRetrieved(model_size);
