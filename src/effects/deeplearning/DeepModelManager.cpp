@@ -46,7 +46,7 @@ FilePath DeepModelManager::BuiltInModulesDir()
    return FileNames::MkDir( wxFileName( FileNames::BaseDir(), wxT("deeplearning-models") ).GetFullPath() );
 }
 
-FilePath DeepModelManager::GetRepoDir(ModelCardHolder card)
+FilePath DeepModelManager::GetRepoDir(ModelCardHolder card) const
 {
    static const std::string sep = "_";
 
@@ -59,7 +59,7 @@ FilePath DeepModelManager::GetRepoDir(ModelCardHolder card)
    return repoDir;
 }
 
-DeepModelHolder DeepModelManager::GetModel(ModelCardHolder card)
+DeepModelHolder DeepModelManager::GetModel(ModelCardHolder card) const
 {
    if (!IsInstalled(card))
       throw ModelManagerException(XO("Model is not loaded."), "");
@@ -76,12 +76,12 @@ DeepModelHolder DeepModelManager::GetModel(ModelCardHolder card)
    return model;
 }
 
-std::string DeepModelManager::GetMoreInfoURL(ModelCardHolder card)
+std::string DeepModelManager::GetMoreInfoURL(ModelCardHolder card) const
 {
    return "https://huggingface.co/" + card->GetRepoID();
 }
 
-bool DeepModelManager::IsInstalled(ModelCardHolder card)
+bool DeepModelManager::IsInstalled(ModelCardHolder card) const
 {
    FilePath repoDir = wxFileName(card->GetLocalPath()).GetFullPath();
 
@@ -162,7 +162,7 @@ void DeepModelManager::Uninstall(ModelCardHolder card)
    
 }
 
-bool DeepModelManager::IsInstalling(ModelCardHolder card)
+bool DeepModelManager::IsInstalling(ModelCardHolder card) const
 {
    return mResponseMap.find(card->GetRepoID()) != mResponseMap.end();
 }
@@ -244,12 +244,12 @@ void DeepModelManager::FetchModelCards(CardFetchedCallback onCardFetched, CardFe
    FetchRepos(onRepoListFetched);
 }
 
-std::string DeepModelManager::GetRootURL(const std::string &repoID)
+std::string DeepModelManager::GetRootURL(const std::string &repoID) const
 {
    return "https://huggingface.co/"+repoID+"/resolve/main/";
 }
 
-std::string DeepModelManager::GetFileURL(const std::string &repoID, const std::string &filePath)
+std::string DeepModelManager::GetFileURL(const std::string &repoID, const std::string &filePath) const
 {
    return GetRootURL(repoID)+filePath;
 }
@@ -370,7 +370,7 @@ void DeepModelManager::FetchCard(const std::string &repoID, CardFetchedCallback 
    doGet(modelCardUrl, completionHandler);
 }
 
-void DeepModelManager::FetchModelSize(ModelCardHolder card, ModelSizeCallback onModelSizeRetrieved)
+void DeepModelManager::FetchModelSize(ModelCardHolder card, ModelSizeCallback onModelSizeRetrieved) const
 {
    if (card->IsLocal())
    {
@@ -418,7 +418,7 @@ void DeepModelManager::FetchModelSize(ModelCardHolder card, ModelSizeCallback on
    }
 }
 
-ModelCardHolder DeepModelManager::GetEmptyCard()
+ModelCardHolder DeepModelManager::GetEmptyCard() const
 {
    ModelCardHolder card(safenew ModelCard());
    return card;

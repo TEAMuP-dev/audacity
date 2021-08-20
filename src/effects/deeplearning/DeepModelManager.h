@@ -33,7 +33,7 @@ class ModelManagerException final : public MessageBoxException
 {
 public:
    ModelManagerException(const TranslatableString msg, std::string trace) : 
-                        m_msg(msg),
+                        m_msg(std::move(msg)),
                         m_trace(trace),
                         MessageBoxException{
                            ExceptionType::Internal,
@@ -72,10 +72,10 @@ class DeepModelManager final
    DeepModelManager(); 
    ~DeepModelManager() = default;
 
-   FilePath GetRepoDir(ModelCardHolder card);
+   FilePath GetRepoDir(ModelCardHolder card) const;
 
-   std::string GetRootURL(const std::string &repoID);
-   std::string GetFileURL(const std::string &repoID, const std::string &filePath);
+   std::string GetRootURL(const std::string &repoID) const;
+   std::string GetFileURL(const std::string &repoID, const std::string &filePath) const;
    audacity::network_manager::ResponsePtr doGet(std::string url, CompletionHandler completionHandler, 
                                                 ProgressCallback onProgress=NULL);
 
@@ -97,14 +97,14 @@ public:
    static FilePath BuiltInModulesDir();
 
    // loads the deep model and passes ownership to the caller
-   DeepModelHolder GetModel(ModelCardHolder card);
+   DeepModelHolder GetModel(ModelCardHolder card) const;
 
    // returns a URL to the HF's repo's readme
-   std::string GetMoreInfoURL(ModelCardHolder card);
+   std::string GetMoreInfoURL(ModelCardHolder card) const;
 
    // download and install a deep learning model
-   bool IsInstalled(ModelCardHolder card);
-   bool IsInstalling(ModelCardHolder card);
+   bool IsInstalled(ModelCardHolder card) const;
+   bool IsInstalling(ModelCardHolder card) const;
 
    // may fail silently, check with IsInstalled()
    void Install(ModelCardHolder card, ProgressCallback onProgress, 
@@ -119,10 +119,10 @@ public:
    // if the card is local, checks the model.pt file
    // else, it sends a HEAD request for the HF repo's model file
    // if this fails, the callback is not called. 
-   void FetchModelSize(ModelCardHolder card, ModelSizeCallback onModelSizeRetrieved);
+   void FetchModelSize(ModelCardHolder card, ModelSizeCallback onModelSizeRetrieved) const;
 
-   ModelCardHolder GetEmptyCard();
-   ModelCardCollection GetCards() { return mCards; }
+   ModelCardHolder GetEmptyCard() const;
+   ModelCardCollection GetCards() const { return mCards; }
    ModelCardCollection GetCards(std::string effect_type);
 
 private:
@@ -131,7 +131,7 @@ private:
    bool NewCardFromLocal(ModelCardHolder card, const std::string &filePath);
 
    std::mutex mCardMutex;
-      ModelCardCollection mCards;
+   ModelCardCollection mCards;
    
    std::map<std::string, audacity::network_manager::ResponsePtr> mResponseMap;
 

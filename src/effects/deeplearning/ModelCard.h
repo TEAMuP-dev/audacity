@@ -43,7 +43,7 @@ public:
                            DocHolder doc): 
                            m_msg(msg), 
                            m_doc(doc),
-                           m_trace(trace),
+                           m_trace(std::move(trace)),
                             MessageBoxException {
                                ExceptionType::Internal,
                                XO("Invalid Model Card Document")
@@ -212,7 +212,7 @@ public:
    void Insert(ModelCardHolder card);
 
    // returns an empty copy, but with the appropriate schema
-   ModelCardCollection EmptyCopy();
+   ModelCardCollection EmptyCopy() const;
    // returns a view of a subset as dictated by the filter
    ModelCardCollection Filter(ModelCardFilter filter);
 

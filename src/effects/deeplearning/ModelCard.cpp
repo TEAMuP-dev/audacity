@@ -402,7 +402,7 @@ ModelCardCollection ModelCardCollection::Filter(ModelCardFilter filter)
    return that;
 }
 
-ModelCardCollection ModelCardCollection::EmptyCopy()
+ModelCardCollection ModelCardCollection::EmptyCopy() const
 {
    ModelCardCollection that;
    that.mCards = std::vector<ModelCardHolder>(mCards.size());

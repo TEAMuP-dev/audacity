@@ -35,7 +35,7 @@ class ModelException final : public MessageBoxException
 public:
    ModelException(const TranslatableString msg, std::string trace) :
                   m_msg(msg),
-                  m_trace(trace),
+                  m_trace(std::move(trace)),
                   MessageBoxException{
                      ExceptionType::Internal,
                      XO("Deep Model Error")
