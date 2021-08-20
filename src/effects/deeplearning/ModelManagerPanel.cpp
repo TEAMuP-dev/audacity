@@ -11,6 +11,7 @@
 
 #include "EffectDeepLearning.h"
 #include "ModelManagerPanel.h"
+#include "ExploreHuggingFaceDialog.h"
 #include "../EffectUI.h"
 
 #include "Shuttle.h"
@@ -294,45 +295,6 @@ void ManagerToolsPanel::SetFetchProgress(int64_t current, int64_t total)
 
 void ManagerToolsPanel::OnExplore(wxCommandEvent & WXUNUSED(event))
 {
-   ExploreDialog dialog = ExploreDialog(mManagerPanel->GetParent(), mManagerPanel);
+   ExploreHuggingFaceDialog dialog(mManagerPanel->GetParent(), mManagerPanel);
    dialog.ShowModal();
-}
-
-// ExploreDialog
-
-ExploreDialog::ExploreDialog(wxWindow *parent, ModelManagerPanel *panel)
-                           : wxDialogWrapper(parent, wxID_ANY, XO("Explore Models"))
-{
-   ShuttleGui S(this, eIsCreating);
-   S.StartStatic(Verbatim(""), true);
-   {
-      S.AddFixedText(
-         XO(
-            "Deep learning models for Audacity are contributed by the open-source \n"
-            "community and are hosted in HuggingFace. You can explore models for Audacity\n"
-            "by clicking the following link: "
-         )
-      );
-
-      S.AddWindow(
-         safenew wxHyperlinkCtrl(
-            S.GetParent(), wxID_ANY, 
-            "https://huggingface.co/models?filter=audacity",
-            "https://huggingface.co/models?filter=audacity"
-         ) 
-      );
-
-      S.AddFixedText(
-         XO(
-            "To add a new model to your local collection, use the \n"
-            "\"Add From HuggingFace\" button."
-         )
-      );
-   }
-
-   Fit();
-   Layout();
-   Center();
-   SetMinSize(GetSize());
-   Refresh();
 }

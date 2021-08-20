@@ -52,12 +52,6 @@ private:
 
 };
 
-class ExploreDialog : public wxDialogWrapper
-{
-public:
-   ExploreDialog(wxWindow *parent, ModelManagerPanel *panel);
-};
-
 class ModelManagerPanel final : public wxPanelWrapper
 {
    CardFetchedCallback GetCardFetchedCallback();
