@@ -344,7 +344,7 @@ void ModelCard::Deserialize(DocHolder doc, DocHolder schema)
    }
    catch (const InvalidModelCardDocument &e)
    {
-      wxLogDebug(e.what());
+      wxLogDebug(wxString(e.what()));
    }
 
    m_long_description = tryGetString("long_description", doc, 

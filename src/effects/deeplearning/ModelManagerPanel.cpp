@@ -25,7 +25,7 @@
 #include <wx/stattext.h>
 #include <wx/hyperlink.h>
 
-
+#include "Internat.h"
 #include "AllThemeResources.h"
 #include "Theme.h"
 
@@ -233,8 +233,6 @@ void ManagerToolsPanel::OnAddRepo(wxCommandEvent & WXUNUSED(event))
 {
    DeepModelManager &manager = DeepModelManager::Get();
 
-   CardFetchedCallback onCardFetched = mManagerPanel->GetCardFetchedCallback();
-
    wxString msg = XO("Enter a HuggingFace Repo ID \n"
                     "For example: \"huggof/ConvTasNet-DAMP-Vocals\"\n").Translation();
    wxString caption = XO("AddRepo").Translation();
@@ -242,8 +240,30 @@ void ManagerToolsPanel::OnAddRepo(wxCommandEvent & WXUNUSED(event))
 
    if (dialog.ShowModal() == wxID_OK)
    {
-      std::string repoId = dialog.GetValue().ToStdString();
-      manager.FetchCard(repoId, onCardFetched);
+      wxString repoId = dialog.GetValue();
+      // wrap the card fetched callback 
+      CardFetchedCallback onCardFetched(
+         [this, repoId](bool success, ModelCardHolder card)
+         {
+            this->CallAfter(
+               [this, success, card, repoId]()
+               {
+                  this->mManagerPanel->GetCardFetchedCallback()(success, card);
+                  if (!success)
+                  {
+                     this->mManagerPanel->mEffect->Effect::MessageBox(
+                        XO("An error occurred while fetching  %s from HuggingFace. "
+                        "This model may be broken. If you are the model developer, "
+                         "check the error log for more details.")
+                           .Format(repoId)
+                     );
+                  }
+               }
+            );
+         }
+      );
+
+      manager.FetchCard(repoId.ToStdString(), onCardFetched);
    }
 }
 
@@ -284,7 +304,7 @@ ExploreDialog::ExploreDialog(wxWindow *parent, ModelManagerPanel *panel)
                            : wxDialogWrapper(parent, wxID_ANY, XO("Explore Models"))
 {
    ShuttleGui S(this, eIsCreating);
-   S.StartStatic(XO(""), true);
+   S.StartStatic(Verbatim(""), true);
    {
       S.AddFixedText(
          XO(

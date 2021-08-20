@@ -25,7 +25,7 @@
 #include <wx/stattext.h>
 #include <wx/hyperlink.h>
 
-
+#include "Internat.h"
 #include "AllThemeResources.h"
 #include "Theme.h"
 
@@ -134,13 +134,13 @@ void ModelCardPanel::PopulateNameAndAuthor(ShuttleGui &S)
    // S.StartHorizontalLay(wxALIGN_LEFT, true);
    S.StartMultiColumn(2, wxALIGN_LEFT);
    {
-      mModelName = S.AddVariableText(XO("%s")
+      mModelName = S.AddVariableText(Verbatim("%s")
                                           .Format(mCard->name()),
                                        false, wxLEFT);
       mModelName->SetFont(wxFont(wxFontInfo().Bold()));
 
       // model size
-      mModelSize = S.AddVariableText(XO("[- MB]"));
+      mModelSize = S.AddVariableText(Verbatim("[- MB]"));
       FetchModelSize();
 
    }
@@ -151,7 +151,7 @@ void ModelCardPanel::PopulateNameAndAuthor(ShuttleGui &S)
    S.StartHorizontalLay(wxALIGN_LEFT, true);
    {
       S.AddVariableText(XO("by"));
-      mModelAuthor = S.AddVariableText(XO("%s")
+      mModelAuthor = S.AddVariableText(Verbatim("%s")
                                               .Format(mCard->author()));
       mModelAuthor->SetFont(wxFont(wxFontInfo().Bold()));
    }
@@ -178,9 +178,8 @@ void ModelCardPanel::PopulateShortDescription(ShuttleGui &S)
    // S.StartStatic(XO("Description"));
    S.SetBorder(10);
    mShortDescription = S.AddVariableText(
-                                       XO("%s").Format(wxString(mCard->short_description())),
+                                       Verbatim("%s").Format(wxString(mCard->short_description())),
                                        false, wxLEFT);
-   S.SetBorder(10);
    // S.EndStatic();
 }
 
@@ -189,7 +188,7 @@ void ModelCardPanel::PopulateLongDescription(ShuttleGui &S)
    // model description
    S.StartStatic(XO(""));
    mLongDescription = S.AddVariableText(
-                                       XO("%s").Format(wxString(mCard->long_description())),
+                                       Verbatim("%s").Format(wxString(mCard->long_description())),
                                        false, wxLEFT, 
                                        GetSize().GetWidth() - 30);
    S.EndStatic();
@@ -201,12 +200,12 @@ void ModelCardPanel::PopulateMetadata(ShuttleGui &S)
    {
       S.AddVariableText(XO("Effect: "))
           ->SetFont(wxFont(wxFontInfo().Bold()));
-      S.AddVariableText(XO("%s")
+      S.AddVariableText(Verbatim("%s")
                             .Format(mCard->effect_type()));
 
       S.AddVariableText(XO("Sample Rate: "))
           ->SetFont(wxFont(wxFontInfo().Bold()));
-      S.AddVariableText(XO("%d")
+      S.AddVariableText(Verbatim("%d")
                             .Format(mCard->sample_rate()));
 
       std::string tagString;
@@ -220,7 +219,7 @@ void ModelCardPanel::PopulateMetadata(ShuttleGui &S)
       
       S.AddVariableText(XO("Tags: "))
           ->SetFont(wxFont(wxFontInfo().Bold()));
-      S.AddVariableText(XO("%s")
+      S.AddVariableText(Verbatim("%s")
                             .Format(tagString));
    }
    S.EndMultiColumn();
@@ -236,7 +235,6 @@ void ModelCardPanel::PopulateInstallCtrls(ShuttleGui &S)
       mInstallProgressGauge = safenew wxGauge(S.GetParent(), wxID_ANY, 100); // TODO:  sizing
       mInstallProgressGauge->SetSize(wxSize(80, 20));
       S.AddWindow(mInstallProgressGauge);
-      mInstallProgressGauge->Show();
 
       bool installed = manager.IsInstalled(mCard);
       TranslatableString status = installed ? XO("installed") : XO("uninstalled");
@@ -252,7 +250,7 @@ void ModelCardPanel::PopulateInstallCtrls(ShuttleGui &S)
 
       SetInstallStatus(installed ? InstallStatus::Installed : InstallStatus::Uninstalled);
 
-      mSelectButton = S.AddButton(XO("Select"));
+      mSelectButton = S.AddButton(XC("Select", "model"));
       mSelectButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
                         wxCommandEventHandler(ModelCardPanel::OnSelect), NULL, this);
    }
@@ -263,7 +261,7 @@ void ModelCardPanel::PopulateMoreInfo(ShuttleGui &S)
 {
    S.StartHorizontalLay(wxCENTER, true);
    {
-      mMoreInfoButton = S.AddButton(XO("More Info"));
+      mMoreInfoButton = S.AddButton(XC("More Info", "model"));
       mMoreInfoButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
                            wxCommandEventHandler(ModelCardPanel::OnMoreInfo), NULL, this);
    }
@@ -276,7 +274,7 @@ void ModelCardPanel::FetchModelSize()
    ModelSizeCallback onGetModelSize = [this](size_t size)
    {
       float sizeMB = static_cast<float>(size) / static_cast<float>(1024 * 1024);
-      mModelSize->SetLabel(XO("[%.1f MB]").Format(sizeMB).Translation());
+      mModelSize->SetLabel(Verbatim("[%.1f MB]").Format(sizeMB).Translation());
    }; 
 
    manager.FetchModelSize(mCard, onGetModelSize);
@@ -286,29 +284,29 @@ void ModelCardPanel::SetInstallStatus(InstallStatus status)
 {
    if (status == InstallStatus::Installed)
    {
-      this->mInstallButton->SetLabel("Uninstall");
+      this->mInstallButton->SetLabel(XO("Uninstall").Translation());
       this->mInstallButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
                                  wxCommandEventHandler(ModelCardPanel::OnUninstall), NULL, this);
       this->mInstallProgressGauge->Hide();
-      this->mInstallStatusText->SetLabel("installed");
+      this->mInstallStatusText->SetLabel(XO("installed").Translation());
    }
    else if (status == InstallStatus::Installing)
    {
-      this->mInstallButton->SetLabel("Cancel");
+      this->mInstallButton->SetLabel(XC("Cancel", "install").Translation());
       this->mInstallButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
                                  wxCommandEventHandler(ModelCardPanel::OnCancelInstall), NULL, this);
       this->mInstallProgressGauge->Show();
 
-      this->mInstallStatusText->SetLabel("installing...");
+      this->mInstallStatusText->SetLabel(XO("installing...").Translation());
    }
    else
    {
-      this->mInstallButton->SetLabel("Install");
+      this->mInstallButton->SetLabel(XO("Install").Translation());
       this->mInstallButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
                                  wxCommandEventHandler(ModelCardPanel::OnInstall), NULL, this);
       this->mInstallProgressGauge->Hide();
 
-      this->mInstallStatusText->SetLabel("uninstalled");
+      this->mInstallStatusText->SetLabel(XO("uninstalled").Translation());
    }
    
    wxColour statusColor = mInstallStatusColors[status];

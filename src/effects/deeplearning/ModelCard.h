@@ -49,6 +49,7 @@ public:
                                XO("Invalid Model Card Document")
                             }
    { 
+      wxLogError(m_msg.Translation());
       if (!m_trace.empty()) 
          wxLogError(wxString(m_trace)); 
    }

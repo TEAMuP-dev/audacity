@@ -350,19 +350,21 @@ void DeepModelManager::FetchCard(const std::string &repoID, CardFetchedCallback 
    [this, modelCardUrl, repoID, onCardFetched = std::move(onCardFetched)]
    (int httpCode, std::string body)
    { 
+      ModelCardHolder card(safenew ModelCard());
       if (httpCode != 200)
       {
          wxLogError(
             wxString("GET request failed for url %s. Error code: %d")
                   .Format(wxString(modelCardUrl), httpCode)
          );
+         onCardFetched(false, card);
       }
       else
       {
-         ModelCardHolder card(safenew ModelCard());
          bool success = NewCardFromHuggingFace(card, body, repoID);
          onCardFetched(success, card);
       }
+
    };
 
    doGet(modelCardUrl, completionHandler);
@@ -441,7 +443,6 @@ bool DeepModelManager::NewCardFromHuggingFace(ModelCardHolder card, const std::s
    }
    catch (const InvalidModelCardDocument &e)
    {
-      wxLogError(wxString(e.what()));
       return false;
    }
    catch (const char *msg)
@@ -464,7 +465,6 @@ bool DeepModelManager::NewCardFromLocal(ModelCardHolder card, const std::string 
    }
    catch (const InvalidModelCardDocument &e)
    {
-      wxLogError(wxString(e.what()));
       return false;
    }
 }
