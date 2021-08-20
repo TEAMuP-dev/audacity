@@ -36,7 +36,7 @@ using DocHolder = std::shared_ptr<rapidjson::Document>;
 // this exception should be caught internally, but we 
 // derive from MessageBoxException just in case it needs to 
 // get handled by Audacity
-class InvalidModelCardDocument : public MessageBoxException
+class InvalidModelCardDocument final : public MessageBoxException
 {
 public:
    InvalidModelCardDocument(const TranslatableString msg, std::string trace,
@@ -90,8 +90,6 @@ namespace parsers
 // validators that accept a default value are no-throw
 namespace validators
 {
-   void validateExists(const std::string &key, DocHolder doc);
-   void throwTypeError(const std::string &key, const char *type, DocHolder doc);
 
    std::string tryGetString(const std::string &key, DocHolder doc);
    std::string tryGetString(const std::string &key, DocHolder doc, const std::string &defaultValue);
@@ -110,13 +108,13 @@ namespace validators
 
 class DeepModelManager;
 
-class ModelCard
+class ModelCard final
 {
 private:
    friend class DeepModelManager;
 
-   ModelCard();
-   ModelCard(const ModelCard&);
+   ModelCard() = default;
+   ModelCard(const ModelCard&) = default;
 
    // throws InvalidModelCardDocument if the given json is not valid. 
    void DeserializeFromFile(const std::string& path, DocHolder schema);
@@ -174,20 +172,20 @@ public:
    void model_size(size_t model_size) { m_model_size = model_size; }
 
 private:
-   std::string m_name;
-   std::string m_author;
-   std::string m_long_description;
-   std::string m_short_description;
-   int m_sample_rate;
-   bool m_multichannel;
-   std::string m_effect_type;
+   std::string m_name {""};
+   std::string m_author {""};
+   std::string m_long_description {""};
+   std::string m_short_description {""};
+   int m_sample_rate {0};
+   bool m_multichannel  {false};
+   std::string m_effect_type {""};
    std::vector<std::string> m_domain_tags;
    std::vector<std::string> m_tags;
    std::vector<std::string> m_labels;
-   size_t m_model_size;
+   size_t m_model_size {0};
 
-   bool m_is_local;
-   std::string m_local_path;
+   bool m_is_local {false};
+   std::string m_local_path {""};
 
 public:
 
@@ -199,11 +197,11 @@ public:
 using ModelCardHolder = std::shared_ptr<ModelCard>;
 using ModelCardFilter = std::function<bool(ModelCardHolder card)>;
 
-class ModelCardCollection
+class ModelCardCollection final
 {
 public:
    // set the JSON schema to be used when Validate() is called. 
-   ModelCardCollection();
+   ModelCardCollection() = default;
 
    // insert a model card into the collection if it matches the schema
    // will throw if the card does not match the schema

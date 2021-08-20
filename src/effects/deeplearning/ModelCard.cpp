@@ -189,26 +189,6 @@ namespace parsers
 
 // ModelCard Implementation
 
-// copy constructor
-ModelCard::ModelCard(const ModelCard &other)
-: m_name(other.name()),
-  m_author(other.author()),
-  m_long_description(other.long_description()),
-  m_short_description(other.short_description()),
-  m_sample_rate(other.sample_rate()),
-  m_multichannel(other.multichannel()),
-  m_effect_type(other.effect_type()),
-  m_domain_tags(other.domain_tags()),
-  m_tags(other.tags()),
-  m_labels(other.labels())
-{
-   
-}
-
-ModelCard::ModelCard()
-{
-}
-
 void ModelCard::Validate(DocHolder doc, DocHolder schema)
 {
    rapidjson::SchemaDocument schemaDoc(*schema);
@@ -331,21 +311,12 @@ void ModelCard::Deserialize(DocHolder doc, DocHolder schema)
    {
       wxLogError(e.what());
    }
-   
-   Validate(doc, schema);
 
    // these fields are not in HF mettadata but rather added later,
    // so don't throw if they are not present
-   try
-   {
-      m_author = tryGetString("author", doc);
-      m_name = tryGetString("name", doc);
-      m_model_size = (size_t)tryGetUint64("model_size", doc);
-   }
-   catch (const InvalidModelCardDocument &e)
-   {
-      wxLogDebug(wxString(e.what()));
-   }
+   m_author = tryGetString("author", doc, "");
+   m_name = tryGetString("name", doc, "");
+   m_model_size = (size_t)tryGetUint64("model_size", doc, 0);
 
    m_long_description = tryGetString("long_description", doc, 
                                        "no long description available");
@@ -366,7 +337,7 @@ std::string ModelCard::GetRepoID() const
 
 bool ModelCard::operator==(const ModelCard& that) const
 {
-    return (*this).GetRepoID() == that.GetRepoID();
+    return GetRepoID() == that.GetRepoID();
 } 
 
 bool ModelCard::operator!=(const ModelCard& that) const
@@ -376,9 +347,6 @@ bool ModelCard::operator!=(const ModelCard& that) const
 
 // ModelCardCollection implementation
 
-ModelCardCollection::ModelCardCollection()
-{
-}
 
 void ModelCardCollection::Insert(ModelCardHolder card)
 {  
@@ -387,9 +355,7 @@ void ModelCardCollection::Insert(ModelCardHolder card)
       return (*card) == (*a);
    });
 
-
-   bool isMissing = (it == this->end());
-   if (isMissing)
+   if (it == this->end())
       mCards.push_back(card);
 }
 
