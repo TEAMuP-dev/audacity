@@ -570,6 +570,8 @@ list( APPEND SOURCES
          effects/deeplearning/EffectDeepLearning.h
          effects/deeplearning/ModelManagerPanel.cpp
          effects/deeplearning/ModelManagerPanel.h
+         effects/deeplearning/ModelCardPanel.cpp
+         effects/deeplearning/ModelCardPanel.h
       
          effects/SourceSep.cpp 
          effects/SourceSep.h

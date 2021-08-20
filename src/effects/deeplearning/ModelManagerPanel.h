@@ -1,4 +1,3 @@
-
 /**********************************************************************
 
    Audacity: A Digital Audio Editor
@@ -20,14 +19,18 @@
 #pragma once
 
 #include "DeepModelManager.h"
-#include "ModelCard.h"
-#include "wx/colour.h"
+#include "ModelCardPanel.h"
 
 class EffectDeepLearning;
 class ShuttleGui;
-class SimpleModelCardPanel;
-class DetailedModelCardPanel;
 class ModelManagerPanel;
+
+#define MODELCARDPANEL_WIDTH 600
+#define MODELCARDPANEL_HEIGHT 150
+#define DETAILEDMODELCARDPANEL_WIDTH 400
+#define DETAILEDMODELCARDPANEL_HEIGHT 400
+#define MODELCARDPANEL_X_OFFSET 20
+#define MANAGERPANEL_WIDTH (MODELCARDPANEL_WIDTH + DETAILEDMODELCARDPANEL_WIDTH + MODELCARDPANEL_X_OFFSET)
 
 class ManagerToolsPanel : public wxPanelWrapper
 {
@@ -82,116 +85,4 @@ private:
    
    friend class ManagerToolsPanel;
    friend class EffectDeepLearning;
-};
-
-class ModelCardPanel /* not final */: public wxPanelWrapper
-{
-public:
-   ModelCardPanel(wxWindow *parent, wxWindowID winid, 
-                  ModelCardHolder card, EffectDeepLearning *effect,
-                  ModelManagerPanel *panel, const wxSize& size);
-
-   virtual void PopulateOrExchange(ShuttleGui &S) = 0;
-   bool TransferDataToWindow() override;
-   bool TransferDataFromWindow() override;
-
-   // calbacks
-   void OnInstall(wxCommandEvent &event);
-   void OnCancelInstall(wxCommandEvent &event);
-   void OnUninstall(wxCommandEvent &event);
-
-   void OnEnable(wxCommandEvent &event);
-   void OnSelect(wxCommandEvent &event);
-   void OnApply(wxCommandEvent &event);
-   void OnMoreInfo(wxCommandEvent &event);
-
-   void OnClick(wxMouseEvent &event);
-
-   ModelCardHolder GetCard() const { return mCard; }
-
-
-   enum class InstallStatus 
-   {
-      uninstalled, 
-      installing, 
-      installed
-   };
-
-   enum class ModelStatus
-   {
-      enabled,
-      disabled
-   };
-
-   void SetInstallStatus(InstallStatus status);
-   void SetModelStatus(ModelStatus status);
-   void PopulateWithNewCard(ModelCardHolder card);
-
-protected:
-   std::map<InstallStatus, wxColour> mInstallStatusColors = {
-      { InstallStatus::uninstalled, wxColour("#CF6377") },
-      { InstallStatus::installing,  wxColour(233, 196, 106) },
-      { InstallStatus::installed,   wxColour(42, 157, 143) }
-   };
-
-   using DomainTag = std::string;
-   std::map<DomainTag, wxColour> mTagColors = {
-      { "music",           wxColour("#CF6377") },
-      { "speech",          wxColour(233, 196, 106) },
-      { "environmental",   wxColour(42, 157, 143) },
-      { "other",           wxColour(168, 218, 220) },
-   };
-
-protected:
-
-   void Populate();
-   void PopulateNameAndAuthor(ShuttleGui &S);
-   void PopulateDomainTags(ShuttleGui &S);
-   void PopulateShortDescription(ShuttleGui &S);
-   void PopulateLongDescription(ShuttleGui &S);
-   void PopulateMoreInfo(ShuttleGui &S);
-   void PopulateMetadata(ShuttleGui &S);
-   void PopulateInstallCtrls(ShuttleGui &S);
-
-   void FetchModelSize();
-
-private:
-   wxWindow *mParent;
-
-   wxStaticText *mModelName;
-   wxStaticText *mModelSize;
-   wxStaticText *mModelAuthor;
-   wxStaticText *mShortDescription;
-   wxStaticText *mLongDescription;
-
-   wxButton *mInstallButton;
-   wxStaticText *mInstallStatusText;
-   wxGauge *mInstallProgressGauge;
-
-   wxButton *mSelectButton;
-   wxButton *mApplyButton;
-   wxButton *mMoreInfoButton;
-
-   ModelCardHolder mCard;
-
-   EffectDeepLearning *mEffect;
-   ModelManagerPanel *mManagerPanel;
-};
-
-class SimpleModelCardPanel final : public ModelCardPanel
-{
-public:
-   SimpleModelCardPanel(wxWindow *parent, wxWindowID id, 
-                           ModelCardHolder card, EffectDeepLearning *effect, 
-                           ModelManagerPanel *managerPanel);
-   void PopulateOrExchange(ShuttleGui &S);
-};
-
-class DetailedModelCardPanel final : public ModelCardPanel
-{
-public:
-   DetailedModelCardPanel(wxWindow *parent, wxWindowID id, 
-                        ModelCardHolder card, EffectDeepLearning *effect, 
-                        ModelManagerPanel *managerPanel);
-   void PopulateOrExchange(ShuttleGui &S);
 };
