@@ -55,15 +55,15 @@ public:
 
    enum class InstallStatus 
    {
-      uninstalled, 
-      installing, 
-      installed
+      Uninstalled, 
+      Installing, 
+      Installed
    };
 
    enum class ModelStatus
    {
-      enabled,
-      disabled
+      Enabled,
+      Disabled
    };
 
    void SetInstallStatus(InstallStatus status);
@@ -72,9 +72,9 @@ public:
 
 protected:
    std::map<InstallStatus, wxColour> mInstallStatusColors = {
-      { InstallStatus::uninstalled, wxColour("#CF6377") },
-      { InstallStatus::installing,  wxColour(233, 196, 106) },
-      { InstallStatus::installed,   wxColour(42, 157, 143) }
+      { InstallStatus::Uninstalled, wxColour("#CF6377") },
+      { InstallStatus::Installing,  wxColour(233, 196, 106) },
+      { InstallStatus::Installed,   wxColour(42, 157, 143) }
    };
 
    using DomainTag = std::string;

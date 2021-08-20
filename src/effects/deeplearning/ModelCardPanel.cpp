@@ -242,7 +242,7 @@ void ModelCardPanel::PopulateInstallCtrls(ShuttleGui &S)
       TranslatableString status = installed ? XO("installed") : XO("uninstalled");
       mInstallStatusText = S.AddVariableText(status, true);
 
-      InstallStatus iStatus = installed ? InstallStatus::installed : InstallStatus::uninstalled;
+      InstallStatus iStatus = installed ? InstallStatus::Installed : InstallStatus::Uninstalled;
       wxColour statusColor = mInstallStatusColors[iStatus];
       mInstallStatusText->SetForegroundColour(statusColor);
 
@@ -250,7 +250,7 @@ void ModelCardPanel::PopulateInstallCtrls(ShuttleGui &S)
       TranslatableString cmd = installed ? XO("Uninstall") : XO("Install");
       mInstallButton = S.AddButton(cmd);
 
-      SetInstallStatus(installed ? InstallStatus::installed : InstallStatus::uninstalled);
+      SetInstallStatus(installed ? InstallStatus::Installed : InstallStatus::Uninstalled);
 
       mSelectButton = S.AddButton(XO("Select"));
       mSelectButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
@@ -284,7 +284,7 @@ void ModelCardPanel::FetchModelSize()
 
 void ModelCardPanel::SetInstallStatus(InstallStatus status)
 {
-   if (status == InstallStatus::installed)
+   if (status == InstallStatus::Installed)
    {
       this->mInstallButton->SetLabel("Uninstall");
       this->mInstallButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
@@ -292,7 +292,7 @@ void ModelCardPanel::SetInstallStatus(InstallStatus status)
       this->mInstallProgressGauge->Hide();
       this->mInstallStatusText->SetLabel("installed");
    }
-   else if (status == InstallStatus::installing)
+   else if (status == InstallStatus::Installing)
    {
       this->mInstallButton->SetLabel("Cancel");
       this->mInstallButton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
@@ -323,7 +323,7 @@ void ModelCardPanel::OnUninstall(wxCommandEvent &event)
 
    // TODO: show a prompt to confirm?
    manager.Uninstall(mCard);
-   this->SetInstallStatus(InstallStatus::uninstalled);
+   this->SetInstallStatus(InstallStatus::Uninstalled);
 
    mEffect->SetModel(nullptr);      
 }
@@ -334,7 +334,7 @@ void ModelCardPanel::OnCancelInstall(wxCommandEvent &event)
 
    manager.CancelInstall(mCard);
    manager.Uninstall(mCard);
-   SetInstallStatus(InstallStatus::uninstalled);
+   SetInstallStatus(InstallStatus::Uninstalled);
 }
 
 // TODO: this is good, but still hangs on "installing"
@@ -368,19 +368,19 @@ void ModelCardPanel::OnInstall(wxCommandEvent &event)
             {
                // check if install succeeded
                if (manager.IsInstalled(this->mCard))
-                  this->SetInstallStatus(InstallStatus::installed);
+                  this->SetInstallStatus(InstallStatus::Installed);
                else
                {
                   this->mEffect->Effect::MessageBox(
                      XO("An error ocurred while installing the model with Repo ID %s. ")
                         .Format(this->mCard->GetRepoID())
                   );
-                  this->SetInstallStatus(InstallStatus::uninstalled);
+                  this->SetInstallStatus(InstallStatus::Uninstalled);
                }
             }
             else
             {
-               this->SetInstallStatus(InstallStatus::uninstalled);
+               this->SetInstallStatus(InstallStatus::Uninstalled);
                this->mEffect->Effect::MessageBox(
                   XO("An error ocurred while downloading the model with Repo ID %s. \n"
                      "HTTP Code: %d").Format(this->mCard->GetRepoID(), httpCode)
@@ -392,7 +392,7 @@ void ModelCardPanel::OnInstall(wxCommandEvent &event)
 
    if (!manager.IsInstalled(mCard))
    {
-      this->SetInstallStatus(InstallStatus::installing);
+      this->SetInstallStatus(InstallStatus::Installing);
 
       // TODO: since this is done in another thread, how do I catch an error, like
       // losing the connection in the middle of a download? 
@@ -419,7 +419,7 @@ void ModelCardPanel::OnMoreInfo(wxCommandEvent &event)
 
 void ModelCardPanel::SetModelStatus(ModelStatus status)
 {
-   if (status == ModelStatus::enabled)
+   if (status == ModelStatus::Enabled)
    {
       SetBackgroundColour(
          theTheme.Colour(clrMediumSelected)

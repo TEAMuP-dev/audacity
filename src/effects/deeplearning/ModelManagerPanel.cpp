@@ -175,12 +175,12 @@ void ModelManagerPanel::SetSelectedCard(ModelCardHolder card)
    // set all other card panels to disabled
    for (auto& pair : mPanels)
    {
-      pair.second->SetModelStatus(ModelCardPanel::ModelStatus::disabled);
+      pair.second->SetModelStatus(ModelCardPanel::ModelStatus::Disabled);
 
       if (card)
       {
          if (pair.first == card->GetRepoID())
-            pair.second->SetModelStatus(ModelCardPanel::ModelStatus::enabled);
+            pair.second->SetModelStatus(ModelCardPanel::ModelStatus::Enabled);
       }
    }
 
@@ -188,7 +188,7 @@ void ModelManagerPanel::SetSelectedCard(ModelCardHolder card)
    if (card)
    {
       mDetailedPanel->PopulateWithNewCard(card);
-      mDetailedPanel->SetModelStatus(ModelCardPanel::ModelStatus::enabled);
+      mDetailedPanel->SetModelStatus(ModelCardPanel::ModelStatus::Enabled);
    }
 
 }
