@@ -22,23 +22,17 @@
 
 using namespace audacity;
  
-DeepModelManager::DeepModelManager() : mCards(ModelCardCollection()),
-                                       mAPIEndpoint("https://huggingface.co/api/")
+DeepModelManager::DeepModelManager() :
+   mAPIEndpoint("https://huggingface.co/api/")
 {
-   std::string schemaPath = wxFileName(BuiltInModulesDir(), wxT("modelcard-schema.json"))
+   const std::string schemaPath = wxFileName(BuiltInModulesDir(), wxT("modelcard-schema.json"))
                            .GetFullPath().ToStdString();
    mModelCardSchema = parsers::ParseFile(schemaPath);
-}
-
-DeepModelManager::~DeepModelManager()
-{
-
 }
 
 DeepModelManager& DeepModelManager::Get()
 {
    static DeepModelManager manager;
-
    return manager;
 }
 
@@ -170,7 +164,7 @@ void DeepModelManager::Uninstall(ModelCardHolder card)
 
 bool DeepModelManager::IsInstalling(ModelCardHolder card)
 {
-   return !(mResponseMap.find(card->GetRepoID()) == mResponseMap.end());
+   return mResponseMap.find(card->GetRepoID()) != mResponseMap.end();
 }
 
 void DeepModelManager::CancelInstall(ModelCardHolder card)
@@ -192,7 +186,7 @@ void DeepModelManager::CancelInstall(ModelCardHolder card)
 
 ModelCardCollection DeepModelManager::GetCards(std::string effect_type)
 {
-   ModelCardFilter filterId([=](ModelCardHolder card)
+   ModelCardFilter filterId([&effect_type](ModelCardHolder card)
    {
       return card->effect_type() == effect_type;
    });
@@ -252,8 +246,12 @@ void DeepModelManager::FetchModelCards(CardFetchedCallback onCardFetched, CardFe
 
 std::string DeepModelManager::GetRootURL(const std::string &repoID)
 {
-   std::string url = "https://huggingface.co/"+repoID+"/resolve/main/";
-   return url;
+   return "https://huggingface.co/"+repoID+"/resolve/main/";
+}
+
+std::string DeepModelManager::GetFileURL(const std::string &repoID, const std::string &filePath)
+{
+   return GetRootURL(repoID)+filePath;
 }
 
 void DeepModelManager::FetchLocalCards(CardFetchedCallback onCardFetched)
@@ -291,7 +289,7 @@ void DeepModelManager::FetchRepos(RepoListFetchedCallback onReposFetched)
    // models which we show to the user, and allow the user to explore huggingface
    // on their own for more repos
    // std::string query = mAPIEndpoint + "models?filter=audacity";
-   std::string query = GetRootURL("hugggof/audacity-models") + "models.json";
+   std::string query = GetFileURL("hugggof/audacity-models", "models.json");
 
    // TODO: handle exception in main thread. try using a broken url?
    CompletionHandler handler = 
@@ -299,7 +297,7 @@ void DeepModelManager::FetchRepos(RepoListFetchedCallback onReposFetched)
    (int httpCode, std::string body)
    {
       RepoIDList repos;
-      if (!(httpCode == 200))
+      if (httpCode != 200)
       {
          wxLogError(
             wxString("GET request failed for url %s. Error code: %d")
@@ -346,13 +344,13 @@ void DeepModelManager::FetchRepos(RepoListFetchedCallback onReposFetched)
 
 void DeepModelManager::FetchCard(const std::string &repoID, CardFetchedCallback onCardFetched)
 { 
-   std::string modelCardUrl = GetRootURL(repoID) + "metadata.json";
+   const std::string modelCardUrl = GetFileURL(repoID, "metadata.json");
    // TODO: how do you handle an exception inside a thread, like this one? 
    CompletionHandler completionHandler = 
    [this, modelCardUrl, repoID, onCardFetched = std::move(onCardFetched)]
    (int httpCode, std::string body)
    { 
-      if (!(httpCode == 200))
+      if (httpCode != 200)
       {
          wxLogError(
             wxString("GET request failed for url %s. Error code: %d")
@@ -367,7 +365,7 @@ void DeepModelManager::FetchCard(const std::string &repoID, CardFetchedCallback 
       }
    };
 
-   network_manager::ResponsePtr response = doGet(modelCardUrl, completionHandler);
+   doGet(modelCardUrl, completionHandler);
 }
 
 void DeepModelManager::FetchModelSize(ModelCardHolder card, ModelSizeCallback onModelSizeRetrieved)
@@ -389,7 +387,7 @@ void DeepModelManager::FetchModelSize(ModelCardHolder card, ModelSizeCallback on
    {
       using namespace network_manager;
 
-      std::string modelUrl = GetRootURL(card->GetRepoID()) + "model.pt";
+      const std::string modelUrl = GetFileURL(card->GetRepoID(), "model.pt");
 
       Request request(modelUrl);
 
@@ -399,13 +397,13 @@ void DeepModelManager::FetchModelSize(ModelCardHolder card, ModelSizeCallback on
       response->setRequestFinishedCallback(
          [card, response, handler = std::move(onModelSizeRetrieved)](IResponse*)
          {
-            if (!((response->getHTTPCode() == 200) || (response->getHTTPCode() == 302)))
+            if ((response->getHTTPCode() != 200) 
+                  && (response->getHTTPCode() != 302))
                return;
 
             if (response->hasHeader("x-linked-size"))
             {
                std::string length = response->getHeader("x-linked-size");
-               std::cerr << length << std::endl;
 
                size_t modelSize = std::stoi(length, nullptr, 10);
                handler(modelSize);
@@ -426,55 +424,49 @@ ModelCardHolder DeepModelManager::GetEmptyCard()
 
 bool DeepModelManager::NewCardFromHuggingFace(ModelCardHolder card, const std::string &jsonBody, const std::string &repoID)
 {
-   bool success = true;
-
    wxStringTokenizer st(wxString(repoID), wxT("/"));
-   std::string sAuthor = st.GetNextToken().ToStdString();
-   std::string sName = st.GetNextToken().ToStdString();
+   const std::string cardAuthor = st.GetNextToken().ToStdString();
+   const std::string cardName = st.GetNextToken().ToStdString();
    
    try
    {
       DocHolder doc = parsers::ParseString(jsonBody);
       card->Deserialize(doc, mModelCardSchema);
-      card->name(sName);
-      card->author(sAuthor);
+      card->name(cardName);
+      card->author(cardAuthor);
       card->SetLocal(false);
       card->GetLocalPath(GetRepoDir(card).ToStdString());
 
+      return true;
    }
    catch (const InvalidModelCardDocument &e)
    {
       wxLogError(wxString(e.what()));
-      success = false;
+      return false;
    }
    catch (const char *msg)
    { 
-      success = false;
       wxLogError(wxString(msg));
       wxASSERT(false);
+      return false;
    }
-   
-   return success;
 }
 
 bool DeepModelManager::NewCardFromLocal(ModelCardHolder card, const std::string &filePath)
 {
-   bool success = true; 
-
    try
    {
       std::string localPath = wxFileName(wxString(filePath)).GetPath().ToStdString();
       card->DeserializeFromFile(filePath, mModelCardSchema);
       card->SetLocal(true);
       card->GetLocalPath(localPath);
+      return true;
    }
    catch (const InvalidModelCardDocument &e)
    {
       wxLogError(wxString(e.what()));
-      success = false;
+      return false;
    }
-
-   return success;
 }
 
 network_manager::ResponsePtr DeepModelManager::DownloadModel
@@ -485,7 +477,7 @@ network_manager::ResponsePtr DeepModelManager::DownloadModel
    // TODO: this is not raising an error for an invalid URL 
    // try adding a double slash anyuwhere to break it. 
    // its because huggingface returns 200s saying "Not Found"
-   std::string url = GetRootURL(card->GetRepoID())  + "model.pt";
+   const std::string url = GetFileURL(card->GetRepoID(), "model.pt");
    
    wxLogDebug(
       wxString("downloading from %s").Format(wxString(url))
@@ -498,7 +490,7 @@ network_manager::ResponsePtr DeepModelManager::DownloadModel
    ResponsePtr response = manager.doGet(request);
 
    // open a file to write the model to 
-   std::string repoId = card->GetRepoID(); 
+   const std::string repoId = card->GetRepoID(); 
    wxString path = wxFileName(this->GetRepoDir(card), "model.pt").GetFullPath();
    std::shared_ptr<wxFile> file = std::make_shared<wxFile>(path, wxFile::write);
 

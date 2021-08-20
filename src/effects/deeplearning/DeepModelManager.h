@@ -29,7 +29,7 @@
 // this exception should be caught internally, but we 
 // derive from MessageBoxException just in case it needs to 
 // get handled by Audacity
-class ModelManagerException : public MessageBoxException
+class ModelManagerException final : public MessageBoxException
 {
 public:
    ModelManagerException(const TranslatableString msg, std::string trace) : 
@@ -66,15 +66,16 @@ using CardFetchProgressCallback = std::function<void(int64_t current, int64_t ex
 using RepoListFetchedCallback = std::function<void(bool success, RepoIDList repos)>;
 using CardFetchedCallback = std::function<void(bool succcess, ModelCardHolder card)>;
 
-class DeepModelManager
+class DeepModelManager final
 {
    // private! Use Get()
    DeepModelManager(); 
-   ~DeepModelManager();
+   ~DeepModelManager() = default;
 
    FilePath GetRepoDir(ModelCardHolder card);
 
    std::string GetRootURL(const std::string &repoID);
+   std::string GetFileURL(const std::string &repoID, const std::string &filePath);
    audacity::network_manager::ResponsePtr doGet(std::string url, CompletionHandler completionHandler, 
                                                 ProgressCallback onProgress=NULL);
 
