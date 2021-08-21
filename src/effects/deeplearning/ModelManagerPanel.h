@@ -25,12 +25,15 @@ class EffectDeepLearning;
 class ShuttleGui;
 class ModelManagerPanel;
 
-#define MODELCARDPANEL_WIDTH 600
-#define MODELCARDPANEL_HEIGHT 150
-#define DETAILEDMODELCARDPANEL_WIDTH 400
-#define DETAILEDMODELCARDPANEL_HEIGHT 400
-#define MODELCARDPANEL_X_OFFSET 20
-#define MANAGERPANEL_WIDTH (MODELCARDPANEL_WIDTH + DETAILEDMODELCARDPANEL_WIDTH + MODELCARDPANEL_X_OFFSET)
+static const int cardPanel_w = 600;
+static const int cardPanel_h = 150;
+static const int cardPanel_x_offset = 20;
+
+static const int detailedCardPanel_w = 400;
+static const int detailedCardPanel_h = 400;
+
+static const int managerPanel_w = cardPanel_w + detailedCardPanel_h + 
+                                   cardPanel_x_offset + 20;
 
 class ManagerToolsPanel : public wxPanelWrapper
 {

@@ -61,9 +61,9 @@ void ModelManagerPanel::PopulateOrExchange(ShuttleGui & S)
          {
          }
          S.EndScroller();
-         wxSize size(MODELCARDPANEL_WIDTH+50, DETAILEDMODELCARDPANEL_HEIGHT);
-         wxSize vsize(MODELCARDPANEL_WIDTH+MODELCARDPANEL_X_OFFSET, 
-                     DETAILEDMODELCARDPANEL_HEIGHT);
+         wxSize size(cardPanel_w+50, detailedCardPanel_h);
+         wxSize vsize(cardPanel_w+cardPanel_x_offset, 
+                     detailedCardPanel_h);
          mScroller->SetVirtualSize(vsize);
          mScroller->SetSize(size); 
          mScroller->SetMinSize(size); 
@@ -197,7 +197,7 @@ void ModelManagerPanel::SetSelectedCard(ModelCardHolder card)
 // ManagerToolsPanel
 
 ManagerToolsPanel::ManagerToolsPanel(wxWindow *parent, ModelManagerPanel *panel)
-   : wxPanelWrapper((wxWindow *)parent, wxID_ANY, wxDefaultPosition, wxSize(MANAGERPANEL_WIDTH, 30))
+   : wxPanelWrapper((wxWindow *)parent, wxID_ANY, wxDefaultPosition, wxSize(managerPanel_w, 30))
 {
    mManagerPanel = panel;
    mFetchStatus = nullptr;
