@@ -110,12 +110,16 @@ class DeepModelManager;
 
 class ModelCard final
 {
-private:
-   friend class DeepModelManager;
-
+public: 
    ModelCard() = default;
    ModelCard(const ModelCard&) = default;
 
+   // returns {author}/{name}
+   std::string GetRepoID() const;
+
+private:
+   friend class DeepModelManager;
+   
    // throws InvalidModelCardDocument if the given json is not valid. 
    void DeserializeFromFile(const std::string& path, DocHolder schema);
    void SerializeToFile(const std::string& path) const;
@@ -131,10 +135,6 @@ private:
 
    std::string GetLocalPath() const { return m_local_path; }
    void GetLocalPath(const std::string& path) { m_local_path = path; }
-
-public:
-   // returns {author}/{name}
-   std::string GetRepoID() const;
 
 public:
 

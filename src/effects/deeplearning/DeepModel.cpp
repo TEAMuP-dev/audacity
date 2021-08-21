@@ -18,13 +18,15 @@
 #include "../../WaveTrack.h"
 #include "../../WaveClip.h"
 
+#include "CodeConversions.h"
+
 // DeepModel Implementation
 
 void DeepModel::LoadResampler()
 {
    // load the resampler module
-   std::string resamplerPath = wxFileName(DeepModelManager::BuiltInModulesDir(), wxT("resampler.pt"))
-                                       .GetFullPath().ToStdString();
+   std::string resamplerPath = audacity::ToUTF8(wxFileName(DeepModelManager::BuiltInModulesDir(), wxT("resampler.pt"))
+                                       .GetFullPath());
    try
    {
       mResampler = std::make_unique<torch::jit::script::Module>

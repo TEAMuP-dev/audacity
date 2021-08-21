@@ -24,6 +24,7 @@
 #include <rapidjson/filereadstream.h>
 #include <rapidjson/error/en.h>
 
+#include "CodeConversions.h"
 
 namespace validators 
 {
@@ -183,7 +184,7 @@ namespace parsers
       if(!file.ReadAll(&docStr))
          throw InvalidModelCardDocument(XO("Could not read file."), "", nullptr);
 
-      return ParseString(docStr.ToStdString());
+      return ParseString(audacity::ToUTF8(docStr));
    }
 }
 

@@ -10,6 +10,7 @@
 ******************************************************************/
 
 #include "EffectDeepLearning.h"
+#include "CodeConversions.h"
 #include "ModelManagerPanel.h"
 #include "ExploreHuggingFaceDialog.h"
 #include "../EffectUI.h"
@@ -264,7 +265,7 @@ void ManagerToolsPanel::OnAddRepo(wxCommandEvent & WXUNUSED(event))
          }
       );
 
-      manager.FetchCard(repoId.ToStdString(), onCardFetched);
+      manager.FetchCard(audacity::ToUTF8(repoId), onCardFetched);
    }
 }
 
