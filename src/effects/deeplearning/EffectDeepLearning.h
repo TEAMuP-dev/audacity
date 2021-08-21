@@ -69,9 +69,6 @@ protected:
    // to keep the main thread alive. 
    torch::Tensor ForwardPassInThread(torch::Tensor input);
 
-   // wraps the forward pass in an exception
-   torch::Tensor ForwardPass(torch::Tensor input); 
-
    // writes an output tensor to a track
    // tensor should be shape (1, samples)
    void TensorToTrack(torch::Tensor waveform, WaveTrack::Holder track,
@@ -91,9 +88,11 @@ protected:
    // populate this with the current progress in ProcessOne
    double mCurrentProgress {0.0};
 
+   void SetModelDescription();
+
 private:
-   ModelCardHolder mCard;
-   ModelManagerPanel *mManagerPanel;
+   ModelCardHolder mCard {nullptr};
+   ModelManagerPanel *mManagerPanel {nullptr};
    
-   wxStaticText *mModelDesc;
+   wxStaticText *mModelDesc {nullptr};
 };

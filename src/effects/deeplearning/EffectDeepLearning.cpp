@@ -29,9 +29,6 @@
 
 EffectDeepLearning::EffectDeepLearning()
 {
-   mManagerPanel = nullptr;
-   mCard = nullptr;
-
    EnablePreview(false);
 }
 
@@ -223,7 +220,7 @@ torch::Tensor EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
             if (success)
                output = tempOut;
          }
-         catch (const std::exception &e)
+         catch (const ModelException &e)
          {
             wxLogError(e.what());
             wxLogDebug(e.what());
@@ -264,17 +261,10 @@ torch::Tensor EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
    return output;
 }
 
-torch::Tensor EffectDeepLearning::ForwardPass(torch::Tensor input)
-{
-   torch::Tensor output;
-   output = mModel->Forward(input);
-   return output;
-}
-
 void EffectDeepLearning::TensorToTrack(torch::Tensor waveform, WaveTrack::Holder track,
                                        double tStart, double tEnd)
 {
-   if (!(waveform.size(0) == 1))
+   if (waveform.size(0) != 1)
       throw Effect::MessageBox(XO("Internal Effect Error: input waveform is not mono."));
 
    // get the data pointer
@@ -287,15 +277,7 @@ void EffectDeepLearning::TensorToTrack(torch::Tensor waveform, WaveTrack::Holder
    tmp->Append(static_cast<constSamplePtr>(data), floatSample, outputLen);
    tmp->Flush();
 
-   try
-   {
-      track->ClearAndPaste(tStart, tEnd, tmp.get());
-   }
-   catch (const std::exception &e)
-   {
-      Effect::MessageBox(XO("Error copying tensor data to output track"),
-                         wxOK | wxICON_ERROR);
-   }
+   track->ClearAndPaste(tStart, tEnd, tmp.get());
 }
 
 // UI stuff
@@ -312,14 +294,23 @@ void EffectDeepLearning::PopulateOrExchange(ShuttleGui &S)
       S.StartHorizontalLay(wxCENTER, false);
       {
          std::string modelDesc;
-         if (mModel->IsLoaded())
-            mModelDesc = S.AddVariableText(XO("%s is Ready").Format(mCard->GetRepoID()));
-         else
-            mModelDesc = S.AddVariableText(XO("Not Ready"));
+         mModelDesc = S.AddVariableText(Verbatim(""));
+         SetModelDescription();
       }
       S.EndHorizontalLay();
    }
    S.EndVerticalLay();
+}
+
+void EffectDeepLearning::SetModelDescription()
+{
+   TranslatableString msg;
+   if (mModel->IsLoaded())
+      msg = XC("%s is Ready", "model").Format(mCard->GetRepoID());
+   else
+      msg = XC("Not Ready", "model");
+
+   mModelDesc->SetLabel(msg.Translation());
 }
 
 void EffectDeepLearning::SetModel(ModelCardHolder card)
@@ -329,8 +320,6 @@ void EffectDeepLearning::SetModel(ModelCardHolder card)
    {
       mModel = std::make_unique<DeepModel>();
       mCard = nullptr;
-
-      mModelDesc->SetLabel(XO("Not Ready").Translation());
    }
    else
    {
@@ -343,10 +332,11 @@ void EffectDeepLearning::SetModel(ModelCardHolder card)
             mModel = manager.GetModel(card);
             mCard = card;
          }
-         mModelDesc->SetLabel(XO("%s is Ready").Format(mCard->GetRepoID()).Translation());
       }  
    }
 
    if (mManagerPanel)
       mManagerPanel->SetSelectedCard(card);
+
+   SetModelDescription();
 }
