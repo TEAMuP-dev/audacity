@@ -37,7 +37,7 @@ public:
    DomainTagPanel(wxWindow *parent, const wxString &tag, const wxColour &color)
                   :wxPanelWrapper(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize)
    {
-      TranslatableString name = XO("%s").Format(tag);
+      TranslatableString name = Verbatim("%s").Format(tag);
       SetLabel(name);
 
       SetMaxSize(wxSize(90, 25));
@@ -150,7 +150,7 @@ void ModelCardPanel::PopulateNameAndAuthor(ShuttleGui &S)
    // by {author}
    S.StartHorizontalLay(wxALIGN_LEFT, true);
    {
-      S.AddVariableText(XO("by"));
+      S.AddVariableText(XC("by", "author of the model"));
       mModelAuthor = S.AddVariableText(Verbatim("%s")
                                               .Format(mCard->author()));
       mModelAuthor->SetFont(wxFont(wxFontInfo().Bold()));
@@ -186,7 +186,7 @@ void ModelCardPanel::PopulateShortDescription(ShuttleGui &S)
 void ModelCardPanel::PopulateLongDescription(ShuttleGui &S)
 {
    // model description
-   S.StartStatic(XO(""));
+   S.StartStatic(Verbatim(""));
    mLongDescription = S.AddVariableText(
                                        Verbatim("%s").Format(wxString(mCard->long_description())),
                                        false, wxLEFT, 

@@ -253,7 +253,7 @@ torch::Tensor EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
 
    if (!success)
    {
-      Effect::MessageBox(XO("An error occurred during the forward pass"
+      Effect::MessageBox(XO("An internal error occurred within the neural network model"
                         "This model may be broken."),
                         wxOK | wxICON_ERROR);
    }
@@ -265,7 +265,7 @@ void EffectDeepLearning::TensorToTrack(torch::Tensor waveform, WaveTrack::Holder
                                        double tStart, double tEnd)
 {
    if (waveform.size(0) != 1)
-      throw Effect::MessageBox(XO("Internal Effect Error: input waveform is not mono."));
+      throw Effect::MessageBox(XO("Internal error: input waveform is not mono."));
 
    // get the data pointer
    const void *data = waveform.contiguous().data_ptr<float>();
@@ -306,10 +306,15 @@ void EffectDeepLearning::SetModelDescription()
 {
    TranslatableString msg;
    if (mModel->IsLoaded())
+   {  
+      /* i18n-hint: Refers to whether the neural network model is ready to perform the effect or not.*/
       msg = XC("%s is Ready", "model").Format(mCard->GetRepoID());
+   }
    else
+   {  
+      /* i18n-hint: Refers to whether the neural network model is ready to perform the effect or not.*/
       msg = XC("Not Ready", "model");
-
+   }
    mModelDesc->SetLabel(msg.Translation());
 }
 
