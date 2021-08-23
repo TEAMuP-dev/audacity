@@ -117,6 +117,8 @@ public:
    // returns {author}/{name}
    std::string GetRepoID() const;
 
+   bool IsSame(const ModelCard& other) const { return (*this) == other; };
+
 private:
    friend class DeepModelManager;
    
@@ -209,14 +211,12 @@ public:
    // @execsafety strong
    void Insert(ModelCardHolder card);
 
-   // returns an empty copy, but with the appropriate schema
-   ModelCardCollection EmptyCopy() const;
    // returns a view of a subset as dictated by the filter
-   ModelCardCollection Filter(ModelCardFilter filter);
+   ModelCardCollection Filter(ModelCardFilter filter) const;
 
    // returns an iterator to the cards
-   std::vector<ModelCardHolder>::iterator begin() {return mCards.begin();}
-   std::vector<ModelCardHolder>::iterator end() {return mCards.end();}
+   std::vector<ModelCardHolder>::const_iterator begin() const {return mCards.begin();}
+   std::vector<ModelCardHolder>::const_iterator end() const {return mCards.end();}
    size_t Size() {return mCards.size();}
 
    // ModelCard Find(std::string repoID) { return std::find(, repoID);}

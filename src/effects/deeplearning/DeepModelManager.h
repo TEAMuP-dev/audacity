@@ -123,7 +123,7 @@ public:
 
    ModelCardHolder GetEmptyCard() const;
    ModelCardCollection GetCards() const { return mCards; }
-   ModelCardCollection GetCards(const std::string &effect_type);
+   ModelCardCollection GetCards(const std::string &effect_type) const;
 
 private:
    // factory functions for model cards

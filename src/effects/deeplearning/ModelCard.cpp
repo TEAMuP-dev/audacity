@@ -360,18 +360,10 @@ void ModelCardCollection::Insert(ModelCardHolder card)
       mCards.push_back(card);
 }
 
-ModelCardCollection ModelCardCollection::Filter(ModelCardFilter filter)
-{
-   ModelCardCollection that = EmptyCopy();
-   std::vector<ModelCardHolder>::iterator it = std::copy_if(this->begin(), this->end(), that.begin(), filter);
-   that.mCards.resize(std::distance(that.begin(), it));
-
-   return that;
-}
-
-ModelCardCollection ModelCardCollection::EmptyCopy() const
+ModelCardCollection ModelCardCollection::Filter(ModelCardFilter filter) const
 {
    ModelCardCollection that;
-   that.mCards = std::vector<ModelCardHolder>(mCards.size());
+   std::copy_if(this->mCards.begin(), this->mCards.end(), 
+               std::back_inserter(that.mCards), filter);
    return that;
 }

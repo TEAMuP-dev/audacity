@@ -192,7 +192,7 @@ void DeepModelManager::CancelInstall(ModelCardHolder card)
    }
 }
 
-ModelCardCollection DeepModelManager::GetCards(const std::string &effect_type)
+ModelCardCollection DeepModelManager::GetCards(const std::string &effect_type) const
 {
    ModelCardFilter filterId([&effect_type](ModelCardHolder card)
    {

@@ -55,7 +55,7 @@ void EffectDeepLearning::End()
    mModel.reset();
 
    // clean up in-progress installs
-   for (auto card : manager.GetCards())
+   for (auto card : manager.GetCards(GetDeepEffectID()))
    {
       if (manager.IsInstalling(card))
          manager.CancelInstall(card);
@@ -327,7 +327,9 @@ void EffectDeepLearning::SetModel(ModelCardHolder card)
 
       if (manager.IsInstalled(card))
       {
-         if (!(mModel->IsLoaded() && ((*mModel->GetCard()) == (*card))))
+         // check if the current model is loaded (and that it's the one requested)
+         bool ready = mModel->IsLoaded() && card->IsSame(*mModel->GetCard());
+         if (!ready)
          {
             mModel = manager.GetModel(card);
             mCard = card;
