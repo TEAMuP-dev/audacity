@@ -128,6 +128,12 @@ public:
    void PopulateWithNewCard(ModelCardHolder card);
 
 protected:
+   std::map<InstallStatus, wxColour> mInstallStatusColors = {
+      { InstallStatus::uninstalled, wxColour("#CF6377") },
+      { InstallStatus::installing,  wxColour(233, 196, 106) },
+      { InstallStatus::installed,   wxColour(42, 157, 143) }
+   };
+
    using DomainTag = std::string;
    std::map<DomainTag, wxColour> mTagColors = {
       { "music",           wxColour("#CF6377") },

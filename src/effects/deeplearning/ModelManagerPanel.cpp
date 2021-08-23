@@ -532,7 +532,8 @@ void ModelCardPanel::PopulateInstallCtrls(ShuttleGui &S)
       TranslatableString status = installed ? XO("installed") : XO("uninstalled");
       mInstallStatusText = S.AddVariableText(status, true);
 
-      wxColour statusColor = installed ? *wxGREEN : *wxRED;
+      InstallStatus iStatus = installed ? InstallStatus::installed : InstallStatus::uninstalled;
+      wxColour statusColor = mInstallStatusColors[iStatus];
       mInstallStatusText->SetForegroundColour(statusColor);
 
       // TODO: do translatable strings here from the begginign
@@ -573,7 +574,6 @@ void ModelCardPanel::FetchModelSize()
 
 void ModelCardPanel::SetInstallStatus(InstallStatus status)
 {
-   wxColour statusColor;
    if (status == InstallStatus::installed)
    {
       this->mInstallButton->SetLabel("Uninstall");
@@ -581,8 +581,6 @@ void ModelCardPanel::SetInstallStatus(InstallStatus status)
                                  wxCommandEventHandler(ModelCardPanel::OnUninstall), NULL, this);
       this->mInstallProgressGauge->Hide();
       this->mInstallStatusText->SetLabel("installed");
-
-      statusColor = *wxGREEN;
    }
    else if (status == InstallStatus::installing)
    {
@@ -592,7 +590,6 @@ void ModelCardPanel::SetInstallStatus(InstallStatus status)
       this->mInstallProgressGauge->Show();
 
       this->mInstallStatusText->SetLabel("installing...");
-      statusColor = *wxBLACK; 
    }
    else
    {
@@ -602,9 +599,9 @@ void ModelCardPanel::SetInstallStatus(InstallStatus status)
       this->mInstallProgressGauge->Hide();
 
       this->mInstallStatusText->SetLabel("uninstalled");
-      statusColor = *wxRED;
    }
-
+   
+   wxColour statusColor = mInstallStatusColors[status];
    mInstallStatusText->SetForegroundColour(statusColor);
    this->Layout();
    this->GetParent()->Layout();
