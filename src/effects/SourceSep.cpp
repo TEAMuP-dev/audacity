@@ -163,6 +163,6 @@ void EffectSourceSep::PostProcessSources
 
       // if the parent track used to be stereo,
       // make the source mono anyway
-      mOutputTracks->GroupChannels(*track, 1);
+      mOutputTracks->UnlinkChannels(*track);
    }
 }
