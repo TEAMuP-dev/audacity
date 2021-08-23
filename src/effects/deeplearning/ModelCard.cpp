@@ -199,27 +199,35 @@ void ModelCard::Validate(const Doc& doc, const Doc& schema)
    {
       // Input JSON is invalid according to the schema
       // Output diagnostic information
+      TranslatableString msg = XO(
+         "A schema violation was found in the Model Card.\n "
+         "- violation found in URI: %s\n"
+         "- schema field violated: %s\n"
+         "- invalid document: %s\n"
+         "- schema document: %s\n"
+      );
+
       std::string message("A Schema violation was found in the Model Card.\n");
 
       rapidjson::StringBuffer sb;
+
       validator.GetInvalidSchemaPointer().StringifyUriFragment(sb);
-      message += "violation found in URI: " + std::string(sb.GetString()) + "\n";
-      message += "the following schema field was violated: " 
-                  + std::string(validator.GetInvalidSchemaKeyword()) + "\n";
+      wxString uri(sb.GetString());
       sb.Clear();
+
+      wxString invalidSchemaField(validator.GetInvalidSchemaKeyword());
 
       rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
       doc.Accept(writer);
-      message += "invalid document: \n\t" 
-                  + std::string(sb.GetString()) + "\n";
-
+      wxString invalidDocument(sb.GetString());
       sb.Clear();
+   
       rapidjson::Writer<rapidjson::StringBuffer> swriter(sb);
       schema.Accept(swriter);
-      message += "schema document: \n\t" 
-                  + std::string(sb.GetString()) + "\n";
+      wxString schemaDocument(sb.GetString());
 
-      throw InvalidModelCardDocument(Verbatim(message), "");
+      throw InvalidModelCardDocument(msg.Format(uri, invalidSchemaField, 
+                                                invalidDocument, schemaDocument), "");
    }
 }
 
