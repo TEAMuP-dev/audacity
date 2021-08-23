@@ -29,34 +29,34 @@
 namespace validators 
 {
 
-   void validateExists(const std::string &key, DocHolder doc)
+   void validateExists(const std::string &key, const Doc& doc)
    {
-      if(!doc->IsObject())
-         throw InvalidModelCardDocument(XO("The provided JSON document is not an object."), "", doc);
-      if(!doc->HasMember(key.c_str()))
+      if(!doc.IsObject())
+         throw InvalidModelCardDocument(XO("The provided JSON document is not an object."), "");
+      if(!doc.HasMember(key.c_str()))
       {
          
          throw InvalidModelCardDocument(
-            XO("JSON document missing field: %s").Format(wxString(key)), "", doc);
+            XO("JSON document missing field: %s").Format(wxString(key)), "");
       }
    }
 
-   void throwTypeError(const std::string &key, const char *type, DocHolder doc)
+   void throwTypeError(const std::string &key, const char *type, const Doc& doc)
    {
       throw InvalidModelCardDocument(
-         XO("field: %s is not of type: %s").Format(wxString(key), wxString(type)), "", doc);
+         XO("field: %s is not of type: %s").Format(wxString(key), wxString(type)), "");
    }
 
-   std::string tryGetString(const std::string &key, DocHolder doc)
+   std::string tryGetString(const std::string &key, const Doc& doc)
    {
       validateExists(key, doc);
-      if(!(*doc)[key.c_str()].IsString())
+      if(!doc[key.c_str()].IsString())
          throwTypeError(key, "string", doc);
 
-      return (*doc)[key.c_str()].GetString();
+      return doc[key.c_str()].GetString();
    }
 
-   std::string tryGetString(const std::string &key, DocHolder doc, const std::string &defaultValue)
+   std::string tryGetString(const std::string &key, const Doc& doc, const std::string &defaultValue)
    {
       try
       {
@@ -68,16 +68,16 @@ namespace validators
       }
    }
 
-   int tryGetInt(const std::string &key, DocHolder doc)
+   int tryGetInt(const std::string &key, const Doc& doc)
    {
       validateExists(key, doc);
-      if(!(*doc)[key.c_str()].IsInt())
+      if(!doc[key.c_str()].IsInt())
          throwTypeError(key, "int", doc);
       
-      return (*doc)[key.c_str()].GetInt();
+      return doc[key.c_str()].GetInt();
    }
 
-   int tryGetInt(const std::string &key, DocHolder doc, int defaultValue)
+   int tryGetInt(const std::string &key, const Doc& doc, int defaultValue)
    {
       try
       {
@@ -89,16 +89,16 @@ namespace validators
       }
    }
 
-   bool tryGetBool(const std::string &key, DocHolder doc)
+   bool tryGetBool(const std::string &key, const Doc& doc)
    {
       validateExists(key, doc);
-      if(!(*doc)[key.c_str()].IsBool())
+      if(!doc[key.c_str()].IsBool())
          throwTypeError(key, "bool", doc);
       
-      return (*doc)[key.c_str()].GetBool();
+      return doc[key.c_str()].GetBool();
    }
 
-   bool tryGetBool(const std::string &key, DocHolder doc, bool defaultValue)
+   bool tryGetBool(const std::string &key, const Doc& doc, bool defaultValue)
    {
       try
       {
@@ -110,20 +110,20 @@ namespace validators
       }
    }
 
-   std::vector<std::string> tryGetStringArray(const std::string &key, DocHolder doc)
+   std::vector<std::string> tryGetStringArray(const std::string &key, const Doc& doc)
    {
       validateExists(key, doc);
-      if(!(*doc)[key.c_str()].IsArray())
+      if(!doc[key.c_str()].IsArray())
          throwTypeError(key, "array", doc);
       
       std::vector<std::string> labels;
-      for (auto itr = (*doc)[key.c_str()].Begin(); itr != (*doc)[key.c_str()].End();  ++itr)
+      for (auto itr = doc[key.c_str()].Begin(); itr != doc[key.c_str()].End();  ++itr)
          labels.emplace_back(itr->GetString());
 
       return labels;
    }
 
-   std::vector<std::string> tryGetStringArray(const std::string &key, DocHolder doc,
+   std::vector<std::string> tryGetStringArray(const std::string &key, const Doc& doc,
                                              std::vector<std::string> &defaultValue)
    {
       try
@@ -136,16 +136,16 @@ namespace validators
       }
    }
 
-   uint64_t tryGetUint64(const std::string &key, DocHolder doc)
+   uint64_t tryGetUint64(const std::string &key, const Doc& doc)
    {
       validateExists(key, doc);
-      if(!(*doc)[key.c_str()].IsUint64())
+      if(!doc[key.c_str()].IsUint64())
          throwTypeError(key, "uint64", doc);
       
-      return (*doc)[key.c_str()].GetUint64();
+      return doc[key.c_str()].GetUint64();
    }
 
-   uint64_t tryGetUint64(const std::string &key, DocHolder doc, uint64_t defaultValue)
+   uint64_t tryGetUint64(const std::string &key, const Doc& doc, uint64_t defaultValue)
    {
       try
       {
@@ -160,29 +160,29 @@ namespace validators
 
 namespace parsers 
 {
-   DocHolder ParseString(const std::string &data)
+   Doc ParseString(const std::string &data)
    {
-      DocHolder d = std::make_shared<rapidjson::Document>();
+      Doc d;
       // parse the data
-      d->Parse(data.c_str());
-      if (d->Parse(data.c_str()).HasParseError()) 
+      d.Parse(data.c_str());
+      if (d.Parse(data.c_str()).HasParseError()) 
       {
          TranslatableString msg = XO("Error parsing JSON from string:\n%s\nDocument: %s ")
-                                       .Format(wxString(rapidjson::GetParseError_En(d->GetParseError())), 
+                                       .Format(wxString(rapidjson::GetParseError_En(d.GetParseError())), 
                                                 wxString(data));
-         throw InvalidModelCardDocument(msg, "", d);
+         throw InvalidModelCardDocument(msg, "");
       }
       
       return d;
    }
 
-   DocHolder ParseFile(const std::string &path)
+   Doc ParseFile(const std::string &path)
    {
       wxString docStr;
       wxFile file = wxFile(path);
 
       if(!file.ReadAll(&docStr))
-         throw InvalidModelCardDocument(XO("Could not read file."), "", nullptr);
+         throw InvalidModelCardDocument(XO("Could not read file."), "");
 
       return ParseString(audacity::ToUTF8(docStr));
    }
@@ -190,12 +190,12 @@ namespace parsers
 
 // ModelCard Implementation
 
-void ModelCard::Validate(DocHolder doc, DocHolder schema)
+void ModelCard::Validate(const Doc& doc, const Doc& schema)
 {
-   rapidjson::SchemaDocument schemaDoc(*schema);
+   rapidjson::SchemaDocument schemaDoc(schema);
    rapidjson::SchemaValidator validator(schemaDoc);
 
-   if (!doc->Accept(validator)) 
+   if (!doc.Accept(validator)) 
    {
       // Input JSON is invalid according to the schema
       // Output diagnostic information
@@ -209,17 +209,17 @@ void ModelCard::Validate(DocHolder doc, DocHolder schema)
       sb.Clear();
 
       rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
-      doc->Accept(writer);
+      doc.Accept(writer);
       message += "invalid document: \n\t" 
                   + std::string(sb.GetString()) + "\n";
 
       sb.Clear();
       rapidjson::Writer<rapidjson::StringBuffer> swriter(sb);
-      schema->Accept(swriter);
+      schema.Accept(swriter);
       message += "schema document: \n\t" 
                   + std::string(sb.GetString()) + "\n";
 
-      throw InvalidModelCardDocument(Verbatim(message), "", doc);
+      throw InvalidModelCardDocument(Verbatim(message), "");
    }
 }
 
@@ -234,12 +234,12 @@ void ModelCard::SerializeToFile(const std::string &path) const
 
    wxFile file(path, wxFile::write);
    if (!file.Write(wxString(sb.GetString())))
-      throw InvalidModelCardDocument(XO("Could not serialize ModelCard to file"), "", nullptr);
+      throw InvalidModelCardDocument(XO("Could not serialize ModelCard to file"), "");
 }
 
-void ModelCard::DeserializeFromFile(const std::string &path, DocHolder schema)
+void ModelCard::DeserializeFromFile(const std::string &path, const Doc& schema)
 {
-   DocHolder d = parsers::ParseFile(path);
+   Doc d = parsers::ParseFile(path);
    Deserialize(d, schema);
 }
 
@@ -301,7 +301,7 @@ void ModelCard::Serialize(Writer &writer) const
 
 }
 
-void ModelCard::Deserialize(DocHolder doc, DocHolder schema)
+void ModelCard::Deserialize(const Doc& doc, const Doc& schema)
 {
    using namespace validators;
    try

@@ -31,7 +31,7 @@
 #include "MemoryX.h"
 #include "AudacityException.h"
 
-using DocHolder = std::shared_ptr<rapidjson::Document>;
+using Doc = rapidjson::Document;
 
 // this exception should be caught internally, but we 
 // derive from MessageBoxException just in case it needs to 
@@ -39,10 +39,8 @@ using DocHolder = std::shared_ptr<rapidjson::Document>;
 class InvalidModelCardDocument final : public MessageBoxException
 {
 public:
-   InvalidModelCardDocument(const TranslatableString msg, std::string trace,
-                           DocHolder doc): 
+   InvalidModelCardDocument(const TranslatableString msg, std::string trace): 
                            m_msg(msg), 
-                           m_doc(doc),
                            m_trace(std::move(trace)),
                             MessageBoxException {
                                ExceptionType::Internal,
@@ -78,31 +76,30 @@ public:
 
    const TranslatableString m_msg;
    const std::string m_trace;
-   DocHolder m_doc;
 };
 
 namespace parsers 
 {
-   DocHolder ParseString(const std::string &json);
-   DocHolder ParseFile(const std::string &path);
+   Doc ParseString(const std::string &json);
+   Doc ParseFile(const std::string &path);
 }
 
 // validators that accept a default value are no-throw
 namespace validators
 {
 
-   std::string tryGetString(const std::string &key, DocHolder doc);
-   std::string tryGetString(const std::string &key, DocHolder doc, const std::string &defaultValue);
+   std::string tryGetString(const std::string &key, const Doc& doc);
+   std::string tryGetString(const std::string &key, const Doc& doc, const std::string &defaultValue);
 
-   int tryGetInt(const std::string &key, DocHolder doc);
-   int tryGetInt(const std::string &key, DocHolder doc, int defaultValue);
+   int tryGetInt(const std::string &key, const Doc& doc);
+   int tryGetInt(const std::string &key, const Doc& doc, int defaultValue);
 
-   std::vector<std::string> tryGetStringArray(const std::string &key, DocHolder doc);
-   std::vector<std::string> tryGetStringArray(const std::string &key, DocHolder doc, 
+   std::vector<std::string> tryGetStringArray(const std::string &key, const Doc& doc);
+   std::vector<std::string> tryGetStringArray(const std::string &key, const Doc& doc, 
                                               std::vector<std::string> &defaultValue);
                                              
-   uint64_t tryGetUint64(const std::string &key, DocHolder doc);
-   uint64_t tryGetUint64(const std::string &key, DocHolder doc, uint64_t defaultValue);
+   uint64_t tryGetUint64(const std::string &key, const Doc& doc);
+   uint64_t tryGetUint64(const std::string &key, const Doc& doc, uint64_t defaultValue);
 
 }
 
@@ -123,14 +120,14 @@ private:
    friend class DeepModelManager;
    
    // throws InvalidModelCardDocument if the given json is not valid. 
-   void DeserializeFromFile(const std::string& path, DocHolder schema);
+   void DeserializeFromFile(const std::string& path, const Doc& schema);
    void SerializeToFile(const std::string& path) const;
 
    template < typename Writer >
    void Serialize(Writer &writer) const;
-   void Deserialize(DocHolder doc, DocHolder schema);
+   void Deserialize(const Doc& doc, const Doc& schema);
 
-   void Validate(DocHolder doc, DocHolder schema);
+   void Validate(const Doc& doc, const Doc& schema);
 
    bool IsLocal() { return m_is_local; }
    void SetLocal(bool local) { m_is_local = local; }

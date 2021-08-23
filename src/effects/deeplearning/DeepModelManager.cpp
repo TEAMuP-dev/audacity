@@ -309,7 +309,7 @@ void DeepModelManager::FetchRepos(RepoListFetchedCallback onReposFetched)
       {
          bool success = true;
 
-         DocHolder reposDoc;
+         Doc reposDoc;
          try
          {
             reposDoc = parsers::ParseString(body);
@@ -321,9 +321,9 @@ void DeepModelManager::FetchRepos(RepoListFetchedCallback onReposFetched)
             success = false;
          }
 
-         if (success && reposDoc->IsArray())
+         if (success && reposDoc.IsArray())
          {
-            for (auto itr = reposDoc->Begin(); itr != reposDoc->End(); ++itr)
+            for (auto itr = reposDoc.Begin(); itr != reposDoc.End(); ++itr)
             {
                wxLogDebug("Found repo with name %s", itr->GetString());
                repos.emplace_back(itr->GetString());
@@ -429,7 +429,7 @@ bool DeepModelManager::NewCardFromHuggingFace(ModelCardHolder card, const std::s
    
    try
    {
-      DocHolder doc = parsers::ParseString(jsonBody);
+      Doc doc = parsers::ParseString(jsonBody);
       card->Deserialize(doc, mModelCardSchema);
       card->name(cardName);
       card->author(cardAuthor);
