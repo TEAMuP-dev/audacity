@@ -2,7 +2,6 @@
 
    Audacity: A Digital Audio Editor
    Audacity(R) is copyright (c) 1999-2021 Audacity Team.
-   License: GPL v2.  See License.txt.
 
    DeepModelManager.cpp
    Hugo Flores Garcia

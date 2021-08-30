@@ -2,7 +2,6 @@
 
    Audacity: A Digital Audio Editor
    Audacity(R) is copyright (c) 1999-2021 Audacity Team.
-   License: GPL v2.  See License.txt.
 
    ModelManagerPanel.cpp
    Hugo Flores Garcia
@@ -32,7 +31,6 @@
 #include "Theme.h"
 
 // ModelManagerPanel
-// TODO: need to get rid of the unique ptrs to UI elements
 ModelManagerPanel::ModelManagerPanel(wxWindow *parent, EffectDeepLearning *effect)
                                     : wxPanelWrapper(parent)
 {
