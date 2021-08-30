@@ -66,7 +66,7 @@ protected:
 
    // performs a forward pass on a helper thread, and sends updates to a progress dialog 
    // to keep the main thread alive. 
-   torch::Tensor ForwardPassInThread(torch::Tensor input);
+   torch::jit::IValue ForwardPassInThread(torch::Tensor input);
 
    // writes an output tensor to a track
    // tensor should be shape (1, samples)

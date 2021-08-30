@@ -54,8 +54,8 @@ ComponentInterfaceSymbol EffectSourceSep::GetSymbol()
 
 TranslatableString EffectSourceSep::GetDescription()
 {
-   return XO("The goal of audio source separation is to isolate \
-             the sound sources in a given mixture of sounds.");
+   return XO("The goal of audio source separation is to isolate "
+             "the sound sources in a given mixture of sounds.");
 }
 
 ManualPageID EffectSourceSep::ManualPage()
@@ -105,13 +105,17 @@ bool EffectSourceSep::ProcessOne(WaveTrack *leader,
    
       // get a torch tensor from the leader track
       torch::Tensor input = BuildMultichannelTensor(leader, buffer.get(), 
-                                            samplePos, blockSize).sum(0, true, torch::kFloat); 
+                                            samplePos, blockSize);
+
+      // if we're not doing a multichannel forward pass, downmix
+      if (!mModel->GetCard()->multichannel())
+         input = input.sum(0, true, torch::kFloat);
 
       // resample!
       input = mModel->Resample(input, origRate, mModel->GetSampleRate());
 
       // forward pass!
-      torch::Tensor output = ForwardPassInThread(input);
+      torch::Tensor output = mModel->ToTensor(ForwardPassInThread(input));
 
       // resample back
       output = mModel->Resample(output, mModel->GetSampleRate(), origRate);

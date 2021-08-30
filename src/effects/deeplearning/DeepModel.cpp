@@ -141,7 +141,7 @@ torch::Tensor DeepModel::Resample(const torch::Tensor &waveform, int sampleRateI
 }
 
 // forward pass through the model!
-torch::Tensor DeepModel::Forward(const torch::Tensor &waveform) const
+torch::jit::IValue DeepModel::Forward(const torch::Tensor &waveform) const
 {
    // NoGradGuard prevets the model from storing gradients, which should
    // make computation faster and memory usage lower. 
@@ -157,10 +157,33 @@ torch::Tensor DeepModel::Forward(const torch::Tensor &waveform) const
    // forward pass!
    try
    {
-      return  mModel->forward(inputs).toTensor().contiguous();
+      return  mModel->forward(inputs);
    }
    catch (const std::exception &e)
    {
       throw ModelException(XO("A libtorch error occurred during the forward pass"), e.what());
+   }
+}
+
+torch::Tensor DeepModel::ToTensor(const torch::jit::IValue &output) const
+{
+   return output.toTensor().contiguous();
+}
+
+TensorWithTimestamps DeepModel::ToTimestamps(const torch::jit::IValue &output) const
+{
+   try
+   {
+      auto tupleOutput = output.toTuple();
+
+      torch::Tensor modelOutput = tupleOutput->elements()[0].toTensor();
+      torch::Tensor timestamps = tupleOutput->elements()[1].toTensor();
+
+      return TensorWithTimestamps(modelOutput, timestamps);
+   }
+   catch (const std::exception &e)
+   {
+      throw ModelException(XO("A libtorch error occurred while converting the model "
+                              "output to a tensor with timestamps."), e.what());
    }
 }

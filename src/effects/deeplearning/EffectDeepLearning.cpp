@@ -194,12 +194,12 @@ torch::Tensor EffectDeepLearning::BuildMultichannelTensor(WaveTrack *leader, flo
       channelStack.emplace_back(
           BuildMonoTensor(channel, buffer, start, len).clone());
 
-   return torch::stack(channelStack);
+   return torch::cat(channelStack);
 }
 
-torch::Tensor EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
+torch::jit::IValue EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
 {
-   torch::Tensor output;
+   torch::jit::IValue output;
 
    std::atomic<bool> done = {false};
    std::atomic<bool> success = {true};
@@ -212,8 +212,7 @@ torch::Tensor EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
       {
          try
          {
-            // TODO this won't work because the model 
-            torch::Tensor tempOut = model->Forward(input);
+            torch::jit::IValue tempOut = model->Forward(input);
 
             // only write to output tensor if abort was not requested
             if (success)
@@ -224,7 +223,7 @@ torch::Tensor EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
             wxLogError(e.what());
             wxLogDebug(e.what());
             success = false;
-            output = torch::zeros_like(input);
+            output = torch::jit::IValue(torch::zeros_like(input));
          }
          done = true;
       }
@@ -241,7 +240,7 @@ torch::Tensor EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
          // tensor output will be destroyed once the thread is destroyed
          thread.detach();
 
-         output = torch::zeros_like(input);
+         output = torch::jit::IValue(torch::zeros_like(input));
          return output;
       }
 
@@ -252,9 +251,9 @@ torch::Tensor EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
 
    if (!success)
    {
-      Effect::MessageBox(XO("An internal error occurred within the neural network model"
-                        "This model may be broken."),
-                        wxOK | wxICON_ERROR);
+      Effect::MessageBox(XO("An internal error occurred within the neural network model. "
+                        "This model may be broken. Please check the error log for more details"),
+                        wxICON_ERROR);
    }
 
    return output;

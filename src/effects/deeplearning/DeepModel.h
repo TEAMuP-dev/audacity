@@ -20,6 +20,8 @@
 #include "ModelCard.h"
 #include "wx/log.h"
 
+#include <tuple>
+
 #include <torch/script.h>
 #include <torch/torch.h>
 #include "AudacityException.h"
@@ -28,6 +30,7 @@ class DeepModel;
 
 using ModulePtr = std::unique_ptr<torch::jit::script::Module>;
 using DeepModelHolder = std::shared_ptr<DeepModel>;
+using TensorWithTimestamps = std::tuple<torch::Tensor, torch::Tensor>;
 
 class ModelException final : public MessageBoxException
 {
@@ -86,7 +89,10 @@ public:
    // @execsafety: strong (may throw if model is not loaded or 
    // forward pass fails)
    // waveform should be shape (channels, samples)
-   torch::Tensor Forward(const torch::Tensor &waveform) const;
+   torch::jit::IValue Forward(const torch::Tensor &waveform) const;
+
+   torch::Tensor ToTensor(const torch::jit::IValue &output) const;
+   TensorWithTimestamps ToTimestamps(const torch::jit::IValue &output) const;
 
 private:
    ModulePtr mModel;
