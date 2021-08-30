@@ -93,9 +93,7 @@ namespace validators
    int tryGetInt(const std::string &key, const Doc& doc);
    int tryGetInt(const std::string &key, const Doc& doc, int defaultValue);
 
-   std::vector<std::string> tryGetStringArray(const std::string &key, const Doc& doc);
-   std::vector<std::string> tryGetStringArray(const std::string &key, const Doc& doc, 
-                                              std::vector<std::string> &defaultValue);
+   std::vector<std::string> tryGetStringArray(const std::string &key, const Doc& doc, bool lower=false);
                                              
    uint64_t tryGetUint64(const std::string &key, const Doc& doc);
    uint64_t tryGetUint64(const std::string &key, const Doc& doc, uint64_t defaultValue);

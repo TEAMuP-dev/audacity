@@ -46,6 +46,11 @@ namespace validators
          XO("field: %s is not of type: %s").Format(wxString(key), wxString(type)), "");
    }
 
+   std::string toLowerCase(const std::string &string)
+   {
+      return audacity::ToUTF8(wxString(string).Lower());
+   }
+
    std::string tryGetString(const std::string &key, const Doc& doc)
    {
       validateExists(key, doc);
@@ -109,7 +114,7 @@ namespace validators
       }
    }
 
-   std::vector<std::string> tryGetStringArray(const std::string &key, const Doc& doc)
+   std::vector<std::string> tryGetStringArray(const std::string &key, const Doc& doc, bool lower)
    {
       validateExists(key, doc);
       if(!doc[key.c_str()].IsArray())
@@ -117,22 +122,14 @@ namespace validators
       
       std::vector<std::string> labels;
       for (auto itr = doc[key.c_str()].Begin(); itr != doc[key.c_str()].End();  ++itr)
-         labels.emplace_back(itr->GetString());
+      {
+         if (lower)
+            labels.emplace_back(toLowerCase(itr->GetString()));
+         else
+            labels.emplace_back(itr->GetString());
+      }
 
       return labels;
-   }
-
-   std::vector<std::string> tryGetStringArray(const std::string &key, const Doc& doc,
-                                             std::vector<std::string> &defaultValue)
-   {
-      try
-      {
-         return tryGetStringArray(key, doc); 
-      }
-      catch (const InvalidModelCardDocument &e)
-      {
-         return defaultValue;
-      }
    }
 
    uint64_t tryGetUint64(const std::string &key, const Doc& doc)
@@ -330,8 +327,8 @@ void ModelCard::Deserialize(const Doc& doc, const Doc& schema)
                                        "no long description available");
    m_short_description = tryGetString("short_description", doc, 
                                        "no short description available");
-   m_effect_type = tryGetString("effect_type", doc);
-   m_domain_tags = tryGetStringArray("domain_tags", doc);
+   m_effect_type = toLowerCase(tryGetString("effect_type", doc));
+   m_domain_tags = tryGetStringArray("domain_tags", doc, true);
    m_tags = tryGetStringArray("tags", doc);
    m_labels = tryGetStringArray("labels", doc);
    m_sample_rate = tryGetInt("sample_rate", doc);
