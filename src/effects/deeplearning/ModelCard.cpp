@@ -314,7 +314,8 @@ void ModelCard::Deserialize(const Doc& doc, const Doc& schema)
    }
    catch(const InvalidModelCardDocument& e)
    {
-      wxLogError(e.what());
+      wxLogError(wxString(e.what()));
+      return;
    }
 
    // these fields are not in HF mettadata but rather added later,

@@ -17,6 +17,7 @@
 #include "Shuttle.h"
 #include "ShuttleGui.h"
 
+#include <wx/display.h>
 #include <wx/scrolwin.h>
 #include <wx/range.h>
 #include <wx/gauge.h>
@@ -47,7 +48,6 @@ ModelManagerPanel::ModelManagerPanel(wxWindow *parent, DeepLearningEffectBase *e
 void ModelManagerPanel::PopulateOrExchange(ShuttleGui & S)
 {
    DeepModelManager &manager = DeepModelManager::Get();
-
    S.StartVerticalLay(true);
    {
       mTools = safenew ManagerToolsPanel(S.GetParent(), this);
@@ -296,4 +296,18 @@ void ManagerToolsPanel::OnExplore(wxCommandEvent & WXUNUSED(event))
 {
    ExploreHuggingFaceDialog dialog(mManagerPanel->GetParent(), mManagerPanel);
    dialog.ShowModal();
+}
+
+int getScreenWidth() 
+{
+   wxDisplay display((int)0);
+   wxRect screen = display.GetClientArea();
+   return screen.GetWidth();
+}
+
+int getScreenHeight()
+{
+   wxDisplay display((int)0);
+   wxRect screen = display.GetClientArea();
+   return screen.GetHeight();
 }
