@@ -96,7 +96,8 @@ bool DeepLearningEffect::ProcessOne(WaveTrack *leader,
    Floats buffer{ leader->GetMaxBlockSize() };
 
    // get each of the blocks we will process
-   for (BlockIndex block : GetBlockIndices(leader, tStart, tEnd))
+   std::vector<BlockIndex> indices = GetBlockIndices(leader, tStart, tEnd);
+   for (BlockIndex block : indices)
    {
       //Get a blockSize of samples (smaller than the size of the buffer)
       sampleCount samplePos = block.first;
@@ -132,7 +133,7 @@ bool DeepLearningEffect::ProcessOne(WaveTrack *leader,
    }
 
    // postprocess the source tracks to the user's sample rate and format
-   PostProcessSources(sourceTracks, origFmt, origRate);
+   PostProcessSources(leader, sourceTracks, origFmt, origRate);
 
    return true;
 }
@@ -153,7 +154,7 @@ std::vector<WaveTrack::Holder> DeepLearningEffect::CreateSourceTracks
 }
 
 void DeepLearningEffect::PostProcessSources
-(std::vector<WaveTrack::Holder> &sourceTracks, sampleFormat fmt, int sampleRate)
+(WaveTrack *leader, std::vector<WaveTrack::Holder> &sourceTracks, sampleFormat fmt, int sampleRate)
 {
    // flush all output track buffers
    // convert to the original rate and format
@@ -167,5 +168,11 @@ void DeepLearningEffect::PostProcessSources
       // if the parent track used to be stereo,
       // make the source mono anyway
       mOutputTracks->UnlinkChannels(*track);
+
+      // join the clips!
+      for (const auto &timestamp : GetClipTimestamps(leader, 
+                                                    track->GetStartTime(),
+                                                    track->GetEndTime()))
+         track->Join(timestamp.first, timestamp.second);
    }
 }

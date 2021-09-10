@@ -56,7 +56,7 @@ private:
 
    std::vector<WaveTrack::Holder> CreateSourceTracks(WaveTrack *track, 
                                              std::vector<std::string> &labels);
-   void PostProcessSources(std::vector<WaveTrack::Holder> &sourceTracks, 
+   void PostProcessSources(WaveTrack *leader, std::vector<WaveTrack::Holder> &sourceTracks, 
                            sampleFormat fmt, int sampleRate);
 
 };

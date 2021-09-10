@@ -167,6 +167,20 @@ std::vector<BlockIndex> DeepLearningEffectBase::GetBlockIndices(WaveTrack *track
    return blockIndices;
 }
 
+std::vector<ClipTimestamps> DeepLearningEffectBase::GetClipTimestamps(WaveTrack *track, double tStart, double tEnd) const
+{
+   std::vector<ClipTimestamps> timestamps;
+
+   for (const auto &clip : track->GetClips())
+      timestamps.emplace_back(
+         std::pair<double, double>(clip->GetStartTime(), 
+                                   clip->GetEndTime())
+      );
+
+   return timestamps;
+}
+
+
 torch::Tensor DeepLearningEffectBase::BuildMonoTensor(WaveTrack *track, float *buffer,
                                                   sampleCount start, size_t len)
 {

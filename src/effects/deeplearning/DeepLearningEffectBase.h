@@ -26,6 +26,7 @@
 // BlockIndex.first corresponds to the starting sample of a block
 // BlockIndex.second corresponds to the length of the block
 using BlockIndex = std::pair<sampleCount, size_t>;
+using ClipTimestamps = std::pair<double, double>;
 
 class DeepLearningEffectBase /* not final */ : public Effect
 {
@@ -77,6 +78,10 @@ protected:
    // to process the audio in blocks
    std::vector<BlockIndex> GetBlockIndices(WaveTrack *track, 
                                            double tStart, double tEnd);
+
+   // returns a list of start and end times for all clips in the track
+   std::vector<ClipTimestamps> GetClipTimestamps(WaveTrack *track, 
+                                                 double tStart, double tEnd) const;
 
    // use this to update the progress ba
    int mCurrentTrackNum;
