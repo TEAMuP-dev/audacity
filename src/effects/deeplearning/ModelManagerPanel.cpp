@@ -47,8 +47,10 @@ ModelManagerPanel::ModelManagerPanel(wxWindow *parent, EffectDeepLearning *effec
 
 void ModelManagerPanel::PopulateOrExchange(ShuttleGui & S)
 {
+   std::cout << "\nManagerPanel Width: " << static_cast<int>(getScreenWidth()/cardPanel_w) << std::endl;
+   std::cout << "\nManagerPanel Height: " << static_cast<int>(getScreenWidth()/cardPanel_h) << std::endl;
+
    DeepModelManager &manager = DeepModelManager::Get();
-   std::cout << "Screen height: " << getScreenHeight() << std::endl;
    S.StartVerticalLay(true);
    {
       mTools = safenew ManagerToolsPanel(S.GetParent(), this);
