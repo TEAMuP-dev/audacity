@@ -3,12 +3,12 @@
    Audacity: A Digital Audio Editor
    Audacity(R) is copyright (c) 1999-2021 Audacity Team.
 
-   EffectDeepLearning.cpp
+   DeepLearningEffectBase.cpp
    Hugo Flores Garcia
 
 ******************************************************************/
 
-#include "EffectDeepLearning.h"
+#include "DeepLearningEffectBase.h"
 #include "DeepModelManager.h"
 #include "ModelManagerPanel.h"
 
@@ -26,12 +26,12 @@
 
 // ModelCardPanel
 
-EffectDeepLearning::EffectDeepLearning()
+DeepLearningEffectBase::DeepLearningEffectBase()
 {
    EnablePreview(false);
 }
 
-bool EffectDeepLearning::Init()
+bool DeepLearningEffectBase::Init()
 {
    DeepModelManager &manager = DeepModelManager::Get();
 
@@ -46,7 +46,7 @@ bool EffectDeepLearning::Init()
    return true;
 }
 
-void EffectDeepLearning::End()
+void DeepLearningEffectBase::End()
 {
    DeepModelManager &manager = DeepModelManager::Get();
 
@@ -61,7 +61,7 @@ void EffectDeepLearning::End()
    }
 }
 
-bool EffectDeepLearning::Process()
+bool DeepLearningEffectBase::Process()
 {
    // throw an error if there isn't a model loaded
    if (!mModel->IsLoaded())
@@ -116,7 +116,7 @@ bool EffectDeepLearning::Process()
    return bGoodResult;
 }
 
-size_t EffectDeepLearning::GetNumChannels(WaveTrack *leader)
+size_t DeepLearningEffectBase::GetNumChannels(WaveTrack *leader)
 {
    return TrackList::Channels(leader).size();
 }
@@ -124,7 +124,7 @@ size_t EffectDeepLearning::GetNumChannels(WaveTrack *leader)
 // gets a list of starting samples and block lengths
 // dictated by the track, so we can process the audio
 // audio in blocks
-std::vector<BlockIndex> EffectDeepLearning::GetBlockIndices(WaveTrack *track, double tStart, double tEnd)
+std::vector<BlockIndex> DeepLearningEffectBase::GetBlockIndices(WaveTrack *track, double tStart, double tEnd)
 {
    std::vector<BlockIndex> blockIndices;
 
@@ -167,7 +167,7 @@ std::vector<BlockIndex> EffectDeepLearning::GetBlockIndices(WaveTrack *track, do
    return blockIndices;
 }
 
-torch::Tensor EffectDeepLearning::BuildMonoTensor(WaveTrack *track, float *buffer,
+torch::Tensor DeepLearningEffectBase::BuildMonoTensor(WaveTrack *track, float *buffer,
                                                   sampleCount start, size_t len)
 {
    //Get the samples from the track and put them in the buffer
@@ -182,7 +182,7 @@ torch::Tensor EffectDeepLearning::BuildMonoTensor(WaveTrack *track, float *buffe
    return audio;
 }
 
-torch::Tensor EffectDeepLearning::BuildMultichannelTensor(WaveTrack *leader, float *buffer,
+torch::Tensor DeepLearningEffectBase::BuildMultichannelTensor(WaveTrack *leader, float *buffer,
                                                           sampleCount start, size_t len)
 {
    auto channels = TrackList::Channels(leader);
@@ -197,7 +197,7 @@ torch::Tensor EffectDeepLearning::BuildMultichannelTensor(WaveTrack *leader, flo
    return torch::cat(channelStack);
 }
 
-torch::jit::IValue EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
+torch::jit::IValue DeepLearningEffectBase::ForwardPassInThread(torch::Tensor input)
 {
    torch::jit::IValue output;
 
@@ -259,7 +259,7 @@ torch::jit::IValue EffectDeepLearning::ForwardPassInThread(torch::Tensor input)
    return output;
 }
 
-void EffectDeepLearning::TensorToTrack(torch::Tensor waveform, WaveTrack::Holder track,
+void DeepLearningEffectBase::TensorToTrack(torch::Tensor waveform, WaveTrack::Holder track,
                                        double tStart, double tEnd)
 {
    if (waveform.size(0) != 1)
@@ -279,7 +279,7 @@ void EffectDeepLearning::TensorToTrack(torch::Tensor waveform, WaveTrack::Holder
 }
 
 // UI stuff
-void EffectDeepLearning::PopulateOrExchange(ShuttleGui &S)
+void DeepLearningEffectBase::PopulateOrExchange(ShuttleGui &S)
 {
    DeepModelManager &manager = DeepModelManager::Get();
 
@@ -300,7 +300,7 @@ void EffectDeepLearning::PopulateOrExchange(ShuttleGui &S)
    S.EndVerticalLay();
 }
 
-void EffectDeepLearning::SetModelDescription()
+void DeepLearningEffectBase::SetModelDescription()
 {
    TranslatableString msg;
    if (mModel->IsLoaded())
@@ -316,7 +316,7 @@ void EffectDeepLearning::SetModelDescription()
    mModelDesc->SetLabel(msg.Translation());
 }
 
-void EffectDeepLearning::SetModel(ModelCardHolder card)
+void DeepLearningEffectBase::SetModel(ModelCardHolder card)
 {
    // if card is empty, reset the model
    if (!card)

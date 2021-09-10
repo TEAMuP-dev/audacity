@@ -3,17 +3,15 @@
    Audacity: A Digital Audio Editor
    Audacity(R) is copyright (c) 1999-2021 Audacity Team.
 
-   SourceSep.h
+   DeepLearningEffect.h
    Hugo Flores Garcia
 
 ******************************************************************/
 /**
 
-\class SourceSep
+\class DeepLearningEffect
 
-\brief SourceSep SourceSep is an Audacity Effect that performs Source Separation.
-                 The goal of audio source separation is to isolate the sound sources 
-                 in a given mixture of sounds. 
+\brief DeepLearningEffect a generic, waveform-to-waveform, deep learning effect. 
 
 */
 /*******************************************************************/
@@ -21,7 +19,7 @@
 #pragma once
 
 #include "deeplearning/DeepModel.h"
-#include "deeplearning/EffectDeepLearning.h"
+#include "deeplearning/DeepLearningEffectBase.h"
 #include "Effect.h"
 
 class wxStaticText;
@@ -29,15 +27,15 @@ class ShuttleGui;
 class wxButton;
 class WaveTrack;
 
-class EffectSourceSep final: public EffectDeepLearning
+class DeepLearningEffect final: public DeepLearningEffectBase
 {
 public:
    static const ComponentInterfaceSymbol Symbol;
 
-   EffectSourceSep();
-   virtual ~EffectSourceSep();
+   DeepLearningEffect();
+   virtual ~DeepLearningEffect();
 
-   // EffectDeepLearning implementation
+   // DeepLearningEffectBase implementation
 
    std::string GetDeepEffectID() override;
 

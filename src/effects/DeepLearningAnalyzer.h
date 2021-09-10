@@ -1,16 +1,12 @@
 /**********************************************************************
    Audacity: A Digital Audio Editor
    Audacity(R) is copyright (c) 1999-2021 Audacity Team.
-   Labeler.h
+   DeepLearningAnalyzer.h
    Hugo Flores Garcia
    Aldo Aguilar
 ******************************************************************/
 /**
-\file AutoLabeler
-\brief AutoLabeler is an effect for labeling audio components in a track. 
-******************************************************************/
-/**
-\class EffectLabeler
+\class DeepLearningAnalyzer
 \breif A labeler which uses a deep learning model to output probits and
 time sereies data to add labels to an audio track.
 *******************************************************************/
@@ -18,15 +14,15 @@ time sereies data to add labels to an audio track.
 #pragma once
 
 #include "deeplearning/DeepModel.h"
-#include "deeplearning/EffectDeepLearning.h"
+#include "deeplearning/DeepLearningEffectBase.h"
 
-class EffectLabeler final: public EffectDeepLearning
+class DeepLearningAnalyzer final: public DeepLearningEffectBase
 {
 public:
    static const ComponentInterfaceSymbol Symbol;
 
-   EffectLabeler();
-   virtual ~EffectLabeler();
+   DeepLearningAnalyzer();
+   virtual ~DeepLearningAnalyzer();
 
    std::string GetDeepEffectID() override;
 

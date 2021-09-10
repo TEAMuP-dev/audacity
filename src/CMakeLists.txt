@@ -566,8 +566,8 @@ list( APPEND SOURCES
          effects/deeplearning/DeepModelManager.cpp
          effects/deeplearning/DeepModelManager.h
 
-         effects/deeplearning/EffectDeepLearning.cpp
-         effects/deeplearning/EffectDeepLearning.h
+         effects/deeplearning/DeepLearningEffectBase.cpp
+         effects/deeplearning/DeepLearningEffectBase.h
          effects/deeplearning/ModelManagerPanel.cpp
          effects/deeplearning/ModelManagerPanel.h
          effects/deeplearning/ModelCardPanel.cpp
@@ -575,10 +575,10 @@ list( APPEND SOURCES
          effects/deeplearning/ExploreHuggingFaceDialog.cpp
          effects/deeplearning/ExploreHuggingFaceDialog.h
       
-         effects/SourceSep.cpp 
-         effects/SourceSep.h
-         effects/AutoLabeler.cpp
-         effects/AutoLabeler.h
+         effects/DeepLearningEffect.cpp 
+         effects/DeepLearningEffect.h
+         effects/DeepLearningAnalyzer.cpp
+         effects/DeepLearningAnalyzer.h
       >
 
       # Export

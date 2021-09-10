@@ -20,7 +20,7 @@
 #include "DeepModelManager.h"
 #include "ModelCardPanel.h"
 
-class EffectDeepLearning;
+class DeepLearningEffectBase;
 class ShuttleGui;
 class ModelManagerPanel;
 
@@ -59,7 +59,7 @@ class ModelManagerPanel final : public wxPanelWrapper
    CardFetchedCallback GetCardFetchedCallback();
 
 public:
-   ModelManagerPanel(wxWindow *parent, EffectDeepLearning *effect);
+   ModelManagerPanel(wxWindow *parent, DeepLearningEffectBase *effect);
 
    void PopulateOrExchange(ShuttleGui & S);
    void Clear();
@@ -77,8 +77,8 @@ private:
    ManagerToolsPanel *mTools;
    std::map<std::string, std::unique_ptr<SimpleModelCardPanel>> mPanels;
    DetailedModelCardPanel *mDetailedPanel;
-   EffectDeepLearning *mEffect;
+   DeepLearningEffectBase *mEffect;
    
    friend class ManagerToolsPanel;
-   friend class EffectDeepLearning;
+   friend class DeepLearningEffectBase;
 };

@@ -8,7 +8,7 @@
 
 ******************************************************************/
 
-#include "EffectDeepLearning.h"
+#include "DeepLearningEffectBase.h"
 #include "ModelManagerPanel.h"
 #include "../EffectUI.h"
 
@@ -62,7 +62,7 @@ public:
 // ModelCardPanel
 
 ModelCardPanel::ModelCardPanel(wxWindow *parent, wxWindowID winid, ModelCardHolder card, 
-                              EffectDeepLearning *effect, ModelManagerPanel *managerPanel, const wxSize& size)
+                              DeepLearningEffectBase *effect, ModelManagerPanel *managerPanel, const wxSize& size)
     : wxPanelWrapper(parent, winid, wxDefaultPosition, size, wxBORDER_SIMPLE), 
       mModelName(nullptr),
       mModelSize(nullptr),
@@ -441,7 +441,7 @@ void ModelCardPanel::OnClick(wxMouseEvent &event)
 // SimpleModelCardPanel
 
 SimpleModelCardPanel::SimpleModelCardPanel(wxWindow *parent, wxWindowID id,
-                           ModelCardHolder card, EffectDeepLearning *effect, ModelManagerPanel *managerPanel)
+                           ModelCardHolder card, DeepLearningEffectBase *effect, ModelManagerPanel *managerPanel)
       : ModelCardPanel(parent, id, card, effect, managerPanel, wxSize(cardPanel_w, cardPanel_h))
 {
    Populate();
@@ -489,7 +489,7 @@ void SimpleModelCardPanel::PopulateOrExchange(ShuttleGui &S)
 // DetailedModelCardPanel
 
 DetailedModelCardPanel::DetailedModelCardPanel(wxWindow *parent, wxWindowID id,
-                                               ModelCardHolder card, EffectDeepLearning *effect, 
+                                               ModelCardHolder card, DeepLearningEffectBase *effect, 
                                                 ModelManagerPanel *managerPanel)
       : ModelCardPanel(parent, id, card, effect, managerPanel,
                        wxSize(detailedCardPanel_w, 

@@ -29,7 +29,7 @@
       },
       "effect_type": {
          "type": "string",
-         "enum": ["source-separation", "labeler"]
+         "enum": ["waveform-to-waveform", "waveform-to-labels"]
       },
       "multichannel": {
          "type": "boolean"

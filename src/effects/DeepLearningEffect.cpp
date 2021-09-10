@@ -3,7 +3,7 @@
    Audacity: A Digital Audio Editor
    Audacity(R) is copyright (c) 1999-2021 Audacity Team.
 
-   SourceSep.cpp
+   DeepLearningEffect.cpp
    Hugo Flores Garcia
 
 ******************************************************************/
@@ -12,7 +12,7 @@
 */
 /*******************************************************************/
 
-#include "SourceSep.h"
+#include "DeepLearningEffect.h"
 
 #include <wx/stattext.h>
 
@@ -25,47 +25,47 @@
 
 #include <torch/script.h>
 
-// EffectDeepLearning implementation
+// DeepLearningEffectBase implementation
 
-std::string EffectSourceSep::GetDeepEffectID()
-{ return "source-separation";}
+std::string DeepLearningEffect::GetDeepEffectID()
+{ return "waveform-to-waveform";}
 
-const ComponentInterfaceSymbol EffectSourceSep::Symbol
-{ XO("Source Separation") };
+const ComponentInterfaceSymbol DeepLearningEffect::Symbol
+{ XO("Deep Learning Effect") };
 
 // register source separation
-namespace{ BuiltinEffectsModule::Registration< EffectSourceSep > reg; }
+namespace{ BuiltinEffectsModule::Registration< DeepLearningEffect > reg; }
 
-EffectSourceSep::EffectSourceSep()
+DeepLearningEffect::DeepLearningEffect()
 {
    SetLinearEffectFlag(false);
 }
 
-EffectSourceSep::~EffectSourceSep()
+DeepLearningEffect::~DeepLearningEffect()
 {
 }
 
 // ComponentInterface implementation
 
-ComponentInterfaceSymbol EffectSourceSep::GetSymbol()
+ComponentInterfaceSymbol DeepLearningEffect::GetSymbol()
 {
    return Symbol;
 }
 
-TranslatableString EffectSourceSep::GetDescription()
+TranslatableString DeepLearningEffect::GetDescription()
 {
    return XO("The goal of audio source separation is to isolate "
              "the sound sources in a given mixture of sounds.");
 }
 
-ManualPageID EffectSourceSep::ManualPage()
+ManualPageID DeepLearningEffect::ManualPage()
 {
    return L"Source_Separation"; 
 }
 
 // EffectDefinitionInterface implementation
 
-EffectType EffectSourceSep::GetType()
+EffectType DeepLearningEffect::GetType()
 {
    return EffectTypeProcess;
 }
@@ -75,7 +75,7 @@ EffectType EffectSourceSep::GetType()
 // ProcessOne() takes a track, transforms it to bunch of buffer-blocks,
 // performs a forward pass through the deep model, and writes 
 // the output to new tracks. 
-bool EffectSourceSep::ProcessOne(WaveTrack *leader,
+bool DeepLearningEffect::ProcessOne(WaveTrack *leader,
                            double tStart, double tEnd)
 {
    if (leader == NULL)
@@ -137,7 +137,7 @@ bool EffectSourceSep::ProcessOne(WaveTrack *leader,
    return true;
 }
 
-std::vector<WaveTrack::Holder> EffectSourceSep::CreateSourceTracks
+std::vector<WaveTrack::Holder> DeepLearningEffect::CreateSourceTracks
 (WaveTrack *leader, std::vector<std::string> &labels)
 {
    std::vector<WaveTrack::Holder> sources;
@@ -152,7 +152,7 @@ std::vector<WaveTrack::Holder> EffectSourceSep::CreateSourceTracks
    return sources;
 }
 
-void EffectSourceSep::PostProcessSources
+void DeepLearningEffect::PostProcessSources
 (std::vector<WaveTrack::Holder> &sourceTracks, sampleFormat fmt, int sampleRate)
 {
    // flush all output track buffers

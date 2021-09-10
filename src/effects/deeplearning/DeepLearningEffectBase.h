@@ -3,14 +3,14 @@
    Audacity: A Digital Audio Editor
    Audacity(R) is copyright (c) 1999-2021 Audacity Team.
 
-   EffectDeepLearning.h
+   DeepLearningEffectBase.h
    Hugo Flores Garcia
 
 ******************************************************************/
 /**
 
-\class EffectDeepLearning
-\brief EffectDeepLearning provides methods for using deep learning
+\class DeepLearningEffectBase
+\brief DeepLearningEffectBase provides methods for using deep learning
                             models in Audacity Effects. 
 
 */
@@ -27,10 +27,10 @@
 // BlockIndex.second corresponds to the length of the block
 using BlockIndex = std::pair<sampleCount, size_t>;
 
-class EffectDeepLearning /* not final */ : public Effect
+class DeepLearningEffectBase /* not final */ : public Effect
 {
 public:
-   EffectDeepLearning();
+   DeepLearningEffectBase();
 
    // Effect implementation
 

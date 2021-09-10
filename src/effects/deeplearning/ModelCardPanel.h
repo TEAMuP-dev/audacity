@@ -22,7 +22,7 @@
 #include "ModelCard.h"
 #include "wx/colour.h"
 
-class EffectDeepLearning;
+class DeepLearningEffectBase;
 class ShuttleGui;
 class ModelManagerPanel;
 
@@ -30,7 +30,7 @@ class ModelCardPanel /* not final */: public wxPanelWrapper
 {
 public:
    ModelCardPanel(wxWindow *parent, wxWindowID winid, 
-                  ModelCardHolder card, EffectDeepLearning *effect,
+                  ModelCardHolder card, DeepLearningEffectBase *effect,
                   ModelManagerPanel *panel, const wxSize& size);
 
    virtual void PopulateOrExchange(ShuttleGui &S) = 0;
@@ -116,7 +116,7 @@ private:
 
    ModelCardHolder mCard;
 
-   EffectDeepLearning *mEffect;
+   DeepLearningEffectBase *mEffect;
    ModelManagerPanel *mManagerPanel;
 };
 
@@ -124,7 +124,7 @@ class SimpleModelCardPanel final : public ModelCardPanel
 {
 public:
    SimpleModelCardPanel(wxWindow *parent, wxWindowID id, 
-                           ModelCardHolder card, EffectDeepLearning *effect, 
+                           ModelCardHolder card, DeepLearningEffectBase *effect, 
                            ModelManagerPanel *managerPanel);
    void PopulateOrExchange(ShuttleGui &S);
 };
@@ -133,7 +133,7 @@ class DetailedModelCardPanel final : public ModelCardPanel
 {
 public:
    DetailedModelCardPanel(wxWindow *parent, wxWindowID id, 
-                        ModelCardHolder card, EffectDeepLearning *effect, 
+                        ModelCardHolder card, DeepLearningEffectBase *effect, 
                         ModelManagerPanel *managerPanel);
    void PopulateOrExchange(ShuttleGui &S);
 };

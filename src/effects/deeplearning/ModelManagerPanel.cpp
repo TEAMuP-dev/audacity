@@ -8,7 +8,7 @@
 
 ******************************************************************/
 
-#include "EffectDeepLearning.h"
+#include "DeepLearningEffectBase.h"
 #include "CodeConversions.h"
 #include "ModelManagerPanel.h"
 #include "ExploreHuggingFaceDialog.h"
@@ -31,7 +31,7 @@
 #include "Theme.h"
 
 // ModelManagerPanel
-ModelManagerPanel::ModelManagerPanel(wxWindow *parent, EffectDeepLearning *effect)
+ModelManagerPanel::ModelManagerPanel(wxWindow *parent, DeepLearningEffectBase *effect)
                                     : wxPanelWrapper(parent)
 {
    mEffect = effect;

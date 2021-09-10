@@ -2,19 +2,19 @@
    Audacity: A Digital Audio Editor
    Audacity(R) is copyright (c) 1999-2021 Audacity Team.
 
-   AutoLabeler.cpp
+   DeepLearningAnalyzer.cpp
    Aldo Aguilar
    Hugo Flores Garcia
 ******************************************************************/
 /*
-\class AutoLabeler
-\brief AutoLabeler is an effect for labeling audio components in a track
+\class DeepLearningAnalyzer
+\brief DeepLearningAnalyzer is an effect for labeling audio components in a track
       using deep learning models.
 
 */
 /*******************************************************************/
 
-#include "AutoLabeler.h"
+#include "DeepLearningAnalyzer.h"
 
 #include <cstddef>
 #include <string>
@@ -31,52 +31,52 @@
 
 #include <torch/script.h>
 
-// EffectDeepLearning implementation
+// DeepLearningEffectBase implementation
 
-std::string EffectLabeler::GetDeepEffectID()
-{ return "labeler";}
+std::string DeepLearningAnalyzer::GetDeepEffectID()
+{ return "waveform-to-labels";}
 
-const ComponentInterfaceSymbol EffectLabeler::Symbol
-{ XO("Auto Labeler") };
+const ComponentInterfaceSymbol DeepLearningAnalyzer::Symbol
+{ XO("Deep Learning Analyzer") };
 
 // register audio Labeler
-namespace { BuiltinEffectsModule::Registration<EffectLabeler> reg; }
+namespace { BuiltinEffectsModule::Registration<DeepLearningAnalyzer> reg; }
 
-EffectLabeler::EffectLabeler() 
+DeepLearningAnalyzer::DeepLearningAnalyzer() 
 { 
    SetLinearEffectFlag(false); 
 }
 
-EffectLabeler::~EffectLabeler() 
+DeepLearningAnalyzer::~DeepLearningAnalyzer() 
 {
 }
 
 
 // ComponentInterface implementation
 
-ComponentInterfaceSymbol EffectLabeler::GetSymbol() { return Symbol; }
+ComponentInterfaceSymbol DeepLearningAnalyzer::GetSymbol() { return Symbol; }
 
-TranslatableString EffectLabeler::GetDescription() 
+TranslatableString DeepLearningAnalyzer::GetDescription() 
 {
   return XO("The auto labeler uses deep learning models to "
          "annotate audio tracks based on their contents automatically."); 
 }
 
-ManualPageID EffectLabeler::ManualPage() 
+ManualPageID DeepLearningAnalyzer::ManualPage() 
 {
   return L"Audio_Labeler"; 
 }
 
 // EffectDefinitionInterface implementation
 
-EffectType EffectLabeler::GetType() { return EffectTypeAnalyze; }
+EffectType DeepLearningAnalyzer::GetType() { return EffectTypeAnalyze; }
 
 // Effect implementation
 
 // ProcessOne() takes a track, transforms it to bunch of buffer-blocks,
 // performs a forward pass through the deep model, and writes
 // the output to new tracks.
-bool EffectLabeler::ProcessOne(WaveTrack *leader, double tStart, double tEnd) 
+bool DeepLearningAnalyzer::ProcessOne(WaveTrack *leader, double tStart, double tEnd) 
 {
    // get current models labels
    std::vector<std::string> classList = mModel->GetCard()->labels();
@@ -141,7 +141,7 @@ bool EffectLabeler::ProcessOne(WaveTrack *leader, double tStart, double tEnd)
 }
 
 // TODO: coalesce labels
-void EffectLabeler::TensorToLabelTrack
+void DeepLearningAnalyzer::TensorToLabelTrack
 (torch::Tensor output, std::shared_ptr<AddedAnalysisTrack> labelTrack,
    double tStart, double tEnd, torch::Tensor timestamps) 
 {
