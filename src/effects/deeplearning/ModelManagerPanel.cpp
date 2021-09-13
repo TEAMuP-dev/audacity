@@ -196,7 +196,10 @@ void ModelManagerPanel::SetSelectedCard(ModelCardHolder card)
 // ManagerToolsPanel
 
 ManagerToolsPanel::ManagerToolsPanel(wxWindow *parent, ModelManagerPanel *panel)
-   : wxPanelWrapper((wxWindow *)parent, wxID_ANY, wxDefaultPosition, wxSize(managerPanel_w, 30))
+   : wxPanelWrapper((wxWindow *)parent, 
+                     wxID_ANY, 
+                     wxDefaultPosition, 
+                     getManagerToolsPanelSize())
 {
    mManagerPanel = panel;
    mFetchStatus = nullptr;
@@ -298,16 +301,23 @@ void ManagerToolsPanel::OnExplore(wxCommandEvent & WXUNUSED(event))
    dialog.ShowModal();
 }
 
-int getScreenWidth() 
+int getScreenWidth(float scale) 
 {
    wxDisplay display((int)0);
    wxRect screen = display.GetClientArea();
-   return screen.GetWidth();
+   return static_cast<int>(screen.GetWidth() * scale);
 }
 
-int getScreenHeight()
+int getScreenHeight(float scale)
 {
    wxDisplay display((int)0);
    wxRect screen = display.GetClientArea();
-   return screen.GetHeight();
+   return static_cast<int>(screen.GetHeight() * scale);
+}
+
+wxSize getManagerToolsPanelSize()
+{
+   int screenHeight = getScreenHeight();
+   float scale = screenHeight < 1000 ? .06 : .06 - static_cast<float>(screenHeight)/100000;
+   return wxSize(managerPanel_w, getScreenHeight(scale));
 }

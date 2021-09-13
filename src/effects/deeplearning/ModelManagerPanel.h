@@ -20,8 +20,9 @@
 #include "DeepModelManager.h"
 #include "ModelCardPanel.h"
 
-int getScreenWidth();
-int getScreenHeight();
+int getScreenWidth(float scale = 1);
+int getScreenHeight(float scale = 1);
+wxSize getManagerToolsPanelSize();
 
 class DeepLearningEffectBase;
 class ShuttleGui;
