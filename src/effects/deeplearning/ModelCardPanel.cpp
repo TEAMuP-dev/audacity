@@ -39,12 +39,12 @@ public:
       TranslatableString name = Verbatim("%s").Format(tag);
       SetLabel(name);
 
-      SetMaxSize(wxSize(90, 25));
       // SetWindowStyle(wxBORDER_SIMPLE);
       SetBackgroundColour(color);
 
       ShuttleGui S(this, eIsCreating);
       wxStaticText *txt = S.AddVariableText(name, true);
+      SetMaxSize(wxSize(90, static_cast<int>(txt->GetSize().GetHeight() * 2)));
       SetVirtualSize(txt->GetSize());
 
       txt->SetBackgroundColour(color);
