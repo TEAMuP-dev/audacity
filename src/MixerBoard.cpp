@@ -65,7 +65,7 @@
 
 #include "commands/CommandManager.h"
 
-#define AudacityMixerBoardTitle XO("Audacity Mixer Board%s")
+#define AudacityMixerBoardTitle XO("Audacity Mixer%s")
 
 // class MixerTrackSlider
 
@@ -1307,7 +1307,7 @@ void MixerBoard::LoadMusicalInstruments()
    wxMemoryDC dc;
 
    for (const auto &data : table) {
-      auto bmp = std::make_unique<wxBitmap>(data.bitmap,24);
+      auto bmp = std::make_unique<wxBitmap>(data.bitmap);
       dc.SelectObject(*bmp);
       AColor::Bevel(dc, false, bev);
       mMusicalInstruments.push_back(std::make_unique<MusicalInstrument>(
@@ -1529,32 +1529,22 @@ AttachedWindows::RegisteredFactory sMixerBoardKey{
 };
 
 // Define our extra menu item that invokes that factory
-struct Handler : CommandHandlerObject {
-   void OnMixerBoard(const CommandContext &context)
-   {
-      auto &project = context.project;
+void OnMixerBoard(const CommandContext &context)
+{
+   auto &project = context.project;
 
-      auto mixerBoardFrame = &GetAttachedWindows(project).Get(sMixerBoardKey);
-      mixerBoardFrame->Show();
-      mixerBoardFrame->Raise();
-      mixerBoardFrame->SetFocus();
-   }
-};
-
-CommandHandlerObject &findCommandHandler(AudacityProject &) {
-   // Handler is not stateful.  Doesn't need a factory registered with
-   // AudacityProject.
-   static Handler instance;
-   return instance;
+   auto mixerBoardFrame = &GetAttachedWindows(project).Get(sMixerBoardKey);
+   mixerBoardFrame->Show();
+   mixerBoardFrame->Raise();
+   mixerBoardFrame->SetFocus();
 }
 
 // Register that menu item
 
 using namespace MenuTable;
 AttachedItem sAttachment{ wxT("View/Windows"),
-   ( FinderScope{ findCommandHandler },
-      Command( wxT("MixerBoard"), XXO("&Mixer Board..."), &Handler::OnMixerBoard,
-         PlayableTracksExistFlag()) )
+   Command( wxT("MixerBoard"), XXO("&Mixer"), OnMixerBoard,
+      PlayableTracksExistFlag())
 };
 
 }

@@ -55,6 +55,11 @@ static ProjectFileIORegistry::ObjectReaderEntry readerEntry{
    LabelTrack::New
 };
 
+wxString LabelTrack::GetDefaultName()
+{
+   return _("Labels");
+}
+
 LabelTrack *LabelTrack::New( AudacityProject &project )
 {
    auto &tracks = TrackList::Get( project );
@@ -63,18 +68,29 @@ LabelTrack *LabelTrack::New( AudacityProject &project )
    return result;
 }
 
+LabelTrack* LabelTrack::Create(TrackList& trackList, const wxString& name)
+{
+   auto track = std::make_shared<LabelTrack>();
+   track->SetName(name);
+   trackList.Add(track);
+   return track.get();
+}
+
+LabelTrack* LabelTrack::Create(TrackList& trackList)
+{
+   return Create(trackList, trackList.MakeUniqueTrackName(GetDefaultName()));
+}
+
 LabelTrack::LabelTrack():
    Track(),
    mClipLen(0.0),
    miLastLabel(-1)
 {
-   SetDefaultName(_("Label Track"));
-   SetName(GetDefaultName());
 }
 
-LabelTrack::LabelTrack(const LabelTrack &orig) :
-   Track(orig),
-   mClipLen(0.0)
+LabelTrack::LabelTrack(const LabelTrack &orig, ProtectedCreationArg &&a)
+   : Track(orig, std::move(a))
+   , mClipLen(0.0)
 {
    for (auto &original: orig.mLabels) {
       LabelStruct l { original.selectedRegion, original.title };
@@ -102,6 +118,7 @@ auto LabelTrack::ClassTypeInfo() -> const TypeInfo &
 Track::Holder LabelTrack::PasteInto( AudacityProject & ) const
 {
    auto pNewTrack = std::make_shared<LabelTrack>();
+   pNewTrack->Init(*this);
    pNewTrack->Paste(0.0, this);
    return pNewTrack;
 }
@@ -352,7 +369,9 @@ double LabelTrack::GetEndTime() const
 
 Track::Holder LabelTrack::Clone() const
 {
-   return std::make_shared<LabelTrack>( *this );
+   auto result = std::make_shared<LabelTrack>(*this, ProtectedCreationArg{});
+   result->Init(*this);
+   return result;
 }
 
 // Adjust label's left or right boundary, depending which is requested.
@@ -695,6 +714,7 @@ Track::Holder LabelTrack::SplitCut(double t0, double t1)
 Track::Holder LabelTrack::Copy(double t0, double t1, bool) const
 {
    auto tmp = std::make_shared<LabelTrack>();
+   tmp->Init(*this);
    const auto lt = static_cast<LabelTrack*>(tmp.get());
 
    for (auto &labelStruct: mLabels) {

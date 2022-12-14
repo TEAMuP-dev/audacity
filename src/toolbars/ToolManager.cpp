@@ -333,21 +333,6 @@ BEGIN_EVENT_TABLE( ToolManager, wxEvtHandler )
    EVT_TIMER( wxID_ANY, ToolManager::OnTimer )
 END_EVENT_TABLE()
 
-static ToolManager::GetTopPanelHook &getTopPanelHook()
-{
-   static ToolManager::GetTopPanelHook theHook;
-   return theHook;
-}
-
-auto ToolManager::SetGetTopPanelHook( const GetTopPanelHook &hook )
-   -> GetTopPanelHook
-{
-   auto &theHook = getTopPanelHook();
-   auto result = theHook;
-   theHook = hook;
-   return result;
-}
-
 static const AudacityProject::AttachedObjects::RegisteredFactory key{
   []( AudacityProject &parent ){
      return std::make_shared< ToolManager >( &parent ); }
@@ -451,7 +436,8 @@ void ToolManager::CreateWindows()
                      &ToolManager::OnCaptureLost,
                      this );
 
-   wxWindow *topDockParent = getTopPanelHook()( window );
+   wxWindow *topDockParent = TopPanelHook::Call( window );
+   wxASSERT(topDockParent);
 
    // Create the top and bottom docks
    mTopDock = safenew ToolDock( this, topDockParent, TopDockID );
@@ -531,17 +517,15 @@ static struct DefaultConfigEntry {
    // Top dock row, may wrap
    { TransportBarID,         NoBarID,                NoBarID                },
    { ToolsBarID,             TransportBarID,         NoBarID                },
-   { RecordMeterBarID,       ToolsBarID,             NoBarID                },
-   { PlayMeterBarID,         RecordMeterBarID,       NoBarID                },
-   { MixerBarID,             PlayMeterBarID,         NoBarID                },
-   { EditBarID,              MixerBarID,             NoBarID                },
-
-// DA: Transcription Toolbar not docked, by default.
-#ifdef EXPERIMENTAL_DA
-   { TranscriptionBarID,     NoBarID,                NoBarID                },
+   { EditBarID,              ToolsBarID,             NoBarID                },
+   { AudioSetupBarID,        EditBarID,              NoBarID                },
+#ifdef HAS_AUDIOCOM_UPLOAD
+   { ShareAudioBarID,        AudioSetupBarID,        NoBarID                },
+   { RecordMeterBarID,       ShareAudioBarID,        NoBarID                },
 #else
-   { TranscriptionBarID,     EditBarID,              NoBarID                },
+   { RecordMeterBarID,       AudioSetupBarID,        NoBarID                },
 #endif
+   { PlayMeterBarID,         RecordMeterBarID,       NoBarID                },
 
    // start another top dock row
    { ScrubbingBarID,         NoBarID,                TransportBarID         },
@@ -553,6 +537,13 @@ static struct DefaultConfigEntry {
    // Bottom dock
    { SelectionBarID,         NoBarID,                NoBarID                },
    { TimeBarID,              SelectionBarID,         NoBarID                },
+
+// DA: Transcription Toolbar not docked, by default.
+#ifdef EXPERIMENTAL_DA
+   { TranscriptionBarID,     NoBarID,                NoBarID                },
+#else
+   { TranscriptionBarID,     TimeBarID,              NoBarID                },
+#endif
 
    // Hidden by default in bottom dock
    { SpectralSelectionBarID, NoBarID,                NoBarID                },
@@ -604,6 +595,7 @@ void ToolManager::Reset()
          || ndx == SpectralSelectionBarID
 #endif
          || ndx == TimeBarID
+         || ndx == TranscriptionBarID
          )
          dock = mBotDock;
       else
@@ -634,9 +626,9 @@ void ToolManager::Reset()
          || ndx == SpectralSelectionBarID
 #endif
          || ndx == ScrubbingBarID
-// DA: Hides three more toolbars.
-#ifdef EXPERIMENTAL_DA
          || ndx == DeviceBarID
+// DA: Hides two more toolbars.
+#ifdef EXPERIMENTAL_DA
          || ndx == TranscriptionBarID
          || ndx == SelectionBarID
 #endif
@@ -773,6 +765,8 @@ void ToolManager::ReadConfig()
       if( ndx == MeterBarID )
          bShownByDefault = false;
       if( ndx == ScrubbingBarID )
+         bShownByDefault = false;
+      if( ndx == DeviceBarID )
          bShownByDefault = false;
       if( ndx == TimeBarID )
          defaultDock = BotDockID;

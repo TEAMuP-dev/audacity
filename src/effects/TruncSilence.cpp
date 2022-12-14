@@ -31,7 +31,6 @@
 #include "Prefs.h"
 #include "Project.h"
 #include "../ProjectSettings.h"
-#include "../Shuttle.h"
 #include "../ShuttleGui.h"
 #include "../SyncLock.h"
 #include "../WaveTrack.h"
@@ -68,17 +67,12 @@ static inline double enumToDB( int val ) { return -( 5.0 * val + 20.0 ); }
 
 const size_t Enums::NumDbChoices = WXSIZEOF(Enums::DbChoices);
 
+using Region = WaveTrack::Region;
+
 // Declaration of RegionList
 class RegionList : public std::list < Region > {};
 
-enum kActions
-{
-   kTruncate,
-   kCompress,
-   nActions
-};
-
-static const EnumValueSymbol kActionStrings[nActions] =
+const EnumValueSymbol EffectTruncSilence::kActionStrings[nActions] =
 {
    { XO("Truncate Detected Silence") },
    { XO("Compress Excess Silence") }
@@ -92,25 +86,13 @@ static CommandParameters::ObsoleteMap kObsoleteActions[] = {
 
 static const size_t nObsoleteActions = WXSIZEOF( kObsoleteActions );
 
-// Define defaults, minimums, and maximums for each parameter
-#define DefaultAndLimits(name, def, min, max) \
-   static const double DEF_ ## name = (def); \
-   static const double MIN_ ## name = (min); \
-   static const double MAX_ ## name = (max);
-
-// Define keys, defaults, minimums, and maximums for the effect parameters
-//
-//     Name       Type     Key               Def         Min      Max                        Scale
-
-// This one is legacy and is intentionally not reported by DefineParams:
-Param( DbIndex,   int,     wxT("Db"),         0,          0,       Enums::NumDbChoices - 1,   1  );
-
-Param( Threshold, double,  wxT("Threshold"),  -20.0,      -80.0,   -20.0,                     1  );
-Param( ActIndex,  int,     wxT("Action"),     kTruncate,  0,       nActions - 1,           1  );
-Param( Minimum,   double,  wxT("Minimum"),    0.5,        0.001,   10000.0,                   1  );
-Param( Truncate,  double,  wxT("Truncate"),   0.5,        0.0,     10000.0,                   1  );
-Param( Compress,  double,  wxT("Compress"),   50.0,       0.0,     99.9,                      1  );
-Param( Independent, bool,  wxT("Independent"), false,     false,   true,                      1  );
+const EffectParameterMethods& EffectTruncSilence::Parameters() const
+{
+   static CapturedParameters<EffectTruncSilence,
+      Threshold, ActIndex, Minimum, Truncate, Compress, Independent
+   > parameters;
+   return parameters;
+}
 
 static const size_t DEF_BlendFrameCount = 100;
 
@@ -133,12 +115,7 @@ END_EVENT_TABLE()
 
 EffectTruncSilence::EffectTruncSilence()
 {
-   mInitialAllowedSilence = DEF_Minimum;
-   mTruncLongestAllowedSilence = DEF_Truncate;
-   mSilenceCompressPercent = DEF_Compress;
-   mThresholdDB = DEF_Threshold;
-   mActionIndex = DEF_ActIndex;
-   mbIndependent = DEF_Independent;
+   Parameters().Reset(*this);
 
    SetLinearEffectFlag(false);
 
@@ -159,89 +136,73 @@ EffectTruncSilence::~EffectTruncSilence()
 
 // ComponentInterface implementation
 
-ComponentInterfaceSymbol EffectTruncSilence::GetSymbol()
+ComponentInterfaceSymbol EffectTruncSilence::GetSymbol() const
 {
    return Symbol;
 }
 
-TranslatableString EffectTruncSilence::GetDescription()
+TranslatableString EffectTruncSilence::GetDescription() const
 {
    return XO("Automatically reduces the length of passages where the volume is below a specified level");
 }
 
-ManualPageID EffectTruncSilence::ManualPage()
+ManualPageID EffectTruncSilence::ManualPage() const
 {
    return L"Truncate_Silence";
 }
 
 // EffectDefinitionInterface implementation
 
-EffectType EffectTruncSilence::GetType()
+EffectType EffectTruncSilence::GetType() const
 {
    return EffectTypeProcess;
 }
 
-// EffectProcessor implementation
-
-bool EffectTruncSilence::DefineParams( ShuttleParams & S ){
-   S.SHUTTLE_PARAM( mThresholdDB, Threshold );
-   S.SHUTTLE_ENUM_PARAM( mActionIndex, ActIndex, kActionStrings, nActions );
-   S.SHUTTLE_PARAM( mInitialAllowedSilence, Minimum );
-   S.SHUTTLE_PARAM( mTruncLongestAllowedSilence, Truncate );
-   S.SHUTTLE_PARAM( mSilenceCompressPercent, Compress );
-   S.SHUTTLE_PARAM( mbIndependent, Independent );
-   return true;
-}
-
-bool EffectTruncSilence::GetAutomationParameters(CommandParameters & parms)
+bool EffectTruncSilence::LoadSettings(
+   const CommandParameters & parms, EffectSettings &settings) const
 {
-   parms.Write(KEY_Threshold, mThresholdDB);
-   parms.Write(KEY_ActIndex, kActionStrings[mActionIndex].Internal());
-   parms.Write(KEY_Minimum, mInitialAllowedSilence);
-   parms.Write(KEY_Truncate, mTruncLongestAllowedSilence);
-   parms.Write(KEY_Compress, mSilenceCompressPercent);
-   parms.Write(KEY_Independent, mbIndependent);
+   Effect::LoadSettings(parms, settings);
 
-   return true;
-}
-
-bool EffectTruncSilence::SetAutomationParameters(CommandParameters & parms)
-{
-   ReadAndVerifyDouble(Minimum);
-   ReadAndVerifyDouble(Truncate);
-   ReadAndVerifyDouble(Compress);
+   // A bit of special treatment for two parameters
 
    // This control migrated from a choice to a text box in version 2.3.0
    double myThreshold {};
    bool newParams = [&] {
-      ReadAndVerifyDouble(Threshold); // macro may return false
-      myThreshold = Threshold;
+      double temp;
+      if (!parms.ReadAndVerify(Threshold.key,
+         &temp, Threshold.def, Threshold.min, Threshold.max))
+         return false;
+      myThreshold = temp;
       return true;
    } ();
 
    if ( !newParams ) {
+      int temp;
       // Use legacy param:
-      ReadAndVerifyEnum(DbIndex, Enums::DbChoices, Enums::NumDbChoices);
-      myThreshold = enumToDB( DbIndex );
+      if (!parms.ReadAndVerify(L"Db", &temp, 0,
+         Enums::DbChoices, Enums::NumDbChoices))
+         return false;
+      myThreshold = enumToDB( temp );
    }
 
-   ReadAndVerifyEnumWithObsoletes(ActIndex, kActionStrings, nActions,
-                                  kObsoleteActions, nObsoleteActions);
-   ReadAndVerifyBool(Independent);
-
-   mInitialAllowedSilence = Minimum;
-   mTruncLongestAllowedSilence = Truncate;
-   mSilenceCompressPercent = Compress;
-   mThresholdDB = myThreshold;
-   mActionIndex = ActIndex;
-   mbIndependent = Independent;
-
+   {
+      int temp;
+      if (!parms.ReadAndVerify( ActIndex.key, &temp, ActIndex.def,
+         kActionStrings, nActions, kObsoleteActions, nObsoleteActions))
+         return false;
+   
+      // TODO:  fix this when settings are really externalized
+      const_cast<int&>(mActionIndex) = temp;
+   }
+   // TODO:  fix this when settings are really externalized
+   const_cast<double&>(mThresholdDB) = myThreshold;
    return true;
 }
 
 // Effect implementation
 
-double EffectTruncSilence::CalcPreviewInputLength(double /* previewLength */)
+double EffectTruncSilence::CalcPreviewInputLength(
+   const EffectSettings &, double /* previewLength */) const
 {
    double inputLength = mT1 - mT0;
    double minInputLength = inputLength;
@@ -268,58 +229,7 @@ double EffectTruncSilence::CalcPreviewInputLength(double /* previewLength */)
 }
 
 
-bool EffectTruncSilence::Startup()
-{
-   wxString base = wxT("/Effects/TruncateSilence/");
-
-   // Migrate settings from 2.1.0 or before
-
-   // Already migrated, so bail
-   if (gPrefs->Exists(base + wxT("Migrated")))
-   {
-      return true;
-   }
-
-   // Load the old "current" settings
-   if (gPrefs->Exists(base))
-   {
-      int truncDbChoiceIndex = gPrefs->Read(base + wxT("DbChoiceIndex"), 4L);
-      if ((truncDbChoiceIndex < 0) || (truncDbChoiceIndex >= Enums::NumDbChoices))
-      {  // corrupted Prefs?
-         truncDbChoiceIndex = 4L;
-      }
-      mThresholdDB = enumToDB( truncDbChoiceIndex );
-      mActionIndex = gPrefs->Read(base + wxT("ProcessChoice"), 0L);
-      if ((mActionIndex < 0) || (mActionIndex > 1))
-      {  // corrupted Prefs?
-         mActionIndex = 0L;
-      }
-      gPrefs->Read(base + wxT("InitialAllowedSilence"), &mInitialAllowedSilence, 0.5);
-      if ((mInitialAllowedSilence < 0.001) || (mInitialAllowedSilence > 10000.0))
-      {  // corrupted Prefs?
-         mInitialAllowedSilence = 0.5;
-      }
-      gPrefs->Read(base + wxT("LongestAllowedSilence"), &mTruncLongestAllowedSilence, 0.5);
-      if ((mTruncLongestAllowedSilence < 0.0) || (mTruncLongestAllowedSilence > 10000.0))
-      {  // corrupted Prefs?
-         mTruncLongestAllowedSilence = 0.5;
-      }
-      gPrefs->Read(base + wxT("CompressPercent"), &mSilenceCompressPercent, 50.0);
-      if ((mSilenceCompressPercent < 0.0) || (mSilenceCompressPercent > 100.0))
-      {  // corrupted Prefs?
-         mSilenceCompressPercent = 50.0;
-      }
-
-      SaveUserPreset(GetCurrentSettingsGroup());
-   }
-
-   // Do not migrate again
-   gPrefs->Write(base + wxT("Migrated"), true);
-
-   return true;
-}
-
-bool EffectTruncSilence::Process()
+bool EffectTruncSilence::Process(EffectInstance &, EffectSettings &)
 {
    const bool success =
       mbIndependent
@@ -602,7 +512,7 @@ bool EffectTruncSilence::Analyze(RegionList& silenceList,
                                  sampleCount* index,
                                  int whichTrack,
                                  double* inputLength /*= NULL*/,
-                                 double* minInputLength /*= NULL*/)
+                                 double* minInputLength /*= NULL*/) const
 {
    // Smallest silent region to detect in frames
    auto minSilenceFrames = sampleCount(std::max( mInitialAllowedSilence, DEF_MinTruncMs) * wt->GetRate());
@@ -752,7 +662,9 @@ bool EffectTruncSilence::Analyze(RegionList& silenceList,
 }
 
 
-void EffectTruncSilence::PopulateOrExchange(ShuttleGui & S)
+std::unique_ptr<EffectUIValidator> EffectTruncSilence::PopulateOrExchange(
+   ShuttleGui & S, EffectInstance &, EffectSettingsAccess &,
+   const EffectOutputs *)
 {
    wxASSERT(nActions == WXSIZEOF(kActionStrings));
 
@@ -766,8 +678,7 @@ void EffectTruncSilence::PopulateOrExchange(ShuttleGui & S)
          mThresholdText = S
             .Validator<FloatingPointValidator<double>>(
                3, &mThresholdDB, NumValidatorStyle::NO_TRAILING_ZEROES,
-               MIN_Threshold, MAX_Threshold
-            )
+               Threshold.min, Threshold.max )
             .NameSuffix(XO("db"))
             .AddTextBox(XXO("&Threshold:"), wxT(""), 0);
          S.AddUnits(XO("dB"));
@@ -776,7 +687,7 @@ void EffectTruncSilence::PopulateOrExchange(ShuttleGui & S)
          mInitialAllowedSilenceT = S.Validator<FloatingPointValidator<double>>(
                3, &mInitialAllowedSilence,
                NumValidatorStyle::NO_TRAILING_ZEROES,
-               MIN_Minimum, MAX_Minimum)
+               Minimum.min, Minimum.max)
             .NameSuffix(XO("seconds"))
             .AddTextBox(XXO("&Duration:"), wxT(""), 12);
          S.AddUnits(XO("seconds"));
@@ -804,8 +715,7 @@ void EffectTruncSilence::PopulateOrExchange(ShuttleGui & S)
          mTruncLongestAllowedSilenceT = S.Validator<FloatingPointValidator<double>>(
                3, &mTruncLongestAllowedSilence,
                NumValidatorStyle::NO_TRAILING_ZEROES,
-               MIN_Truncate, MAX_Truncate
-            )
+               Truncate.min, Truncate.max )
             .NameSuffix(XO("seconds"))
             .AddTextBox(XXO("Tr&uncate to:"), wxT(""), 12);
          S.AddUnits(XO("seconds"));
@@ -813,8 +723,7 @@ void EffectTruncSilence::PopulateOrExchange(ShuttleGui & S)
          mSilenceCompressPercentT = S.Validator<FloatingPointValidator<double>>(
                3, &mSilenceCompressPercent,
                NumValidatorStyle::NO_TRAILING_ZEROES,
-               MIN_Compress, MAX_Compress
-            )
+               Compress.min, Compress.max )
             .NameSuffix(XO("%"))
             .AddTextBox(XXO("C&ompress to:"), wxT(""), 12);
          S.AddUnits(XO("%"));
@@ -826,14 +735,15 @@ void EffectTruncSilence::PopulateOrExchange(ShuttleGui & S)
          mIndependent = S.AddCheckBox(XXO("Trunc&ate tracks independently"),
             mbIndependent);
       }
-   S.EndMultiColumn();
-}
+      S.EndMultiColumn();
+   }
    S.EndStatic();
 
    UpdateUI();
+   return nullptr;
 }
 
-bool EffectTruncSilence::TransferDataToWindow()
+bool EffectTruncSilence::TransferDataToWindow(const EffectSettings &)
 {
    if (!mUIParent->TransferDataToWindow())
    {
@@ -843,7 +753,7 @@ bool EffectTruncSilence::TransferDataToWindow()
    return true;
 }
 
-bool EffectTruncSilence::TransferDataFromWindow()
+bool EffectTruncSilence::TransferDataFromWindow(EffectSettings &)
 {
    if (!mUIParent->Validate() || !mUIParent->TransferDataFromWindow())
    {

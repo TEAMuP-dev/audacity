@@ -5,15 +5,15 @@
 
 Name: audacity
 
-Version: 3.0~test
+Version: TMPL_AUDACITY_VERSION
 Release: 0%{?dist}
 Summary: Multitrack audio editor
 License: GPLv2
 URL:     https://www.audacityteam.org/
 
-Source0: audacity-sources.tar.gz
+Source0: TMPL_AUDACITY_SOURCES
 
-%define tartopdir audacity
+%define tartopdir TMPL_AUDACITY_TAR_DIRNAME
 
 BuildRequires: cmake
 BuildRequires: gettext-devel
@@ -57,6 +57,12 @@ BuildRequires: sord-devel >= 0.16.4
 BuildRequires: sratom-devel >= 0.6.4
 BuildRequires: suil-devel  >= 0.10.6
 BuildRequires: flac-devel
+BuildRequires: harfbuzz-devel
+BuildRequires: freetype-devel
+BuildRequires: fontconfig-devel
+BuildRequires: mesa-libEGL-devel
+BuildRequires: mpg123-devel
+BuildRequires: wavpack-devel
 
 Requires:      portaudio%{?_isa} >= 19-16
 
@@ -79,11 +85,13 @@ supports PulseAudio, OSS and ALSA under Linux.
     -D CMAKE_BUILD_TYPE=Release \
     -D audacity_conan_enabled=Off \
     -D audacity_conan_allow_prebuilt_binaries=no \
+    -D audacity_conan_force_build_dependencies=yes \
     -D audacity_lib_preference=system \
     -D audacity_obey_system_dependencies=On \
     -D audacity_use_pch=no \
     -D audacity_use_portsmf=local \
     -D audacity_use_sbsms=local \
+    -D audacity_has_vst3=Off \
 
 %cmake_build
 
@@ -111,7 +119,7 @@ rm %{buildroot}%{_datadir}/doc/%{name}/LICENSE.txt
 %{_bindir}/%{name}
 %{_libdir}/%{name}
 %dir %{_datadir}/%{name}
-%{_datadir}/%{name}/EQDefaultCurves.xml
+%{_datadir}/%{name}/EffectsMenuDefaults.xml
 %{_datadir}/%{name}/nyquist/
 %{_datadir}/%{name}/plug-ins/
 %exclude %{_datadir}/%{name}/help

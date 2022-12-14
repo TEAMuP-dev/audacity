@@ -17,15 +17,18 @@
 #define __AUDACITY_EFFECT_CLICK_REMOVAL__
 
 #include "Effect.h"
+#include "../ShuttleAutomation.h"
 
 class wxSlider;
 class wxTextCtrl;
 class Envelope;
 class ShuttleGui;
 
-class EffectClickRemoval final : public Effect
+class EffectClickRemoval final : public StatefulEffect
 {
 public:
+   static inline EffectClickRemoval *
+   FetchParameters(EffectClickRemoval &e, EffectSettings &) { return &e; }
    static const ComponentInterfaceSymbol Symbol;
 
    EffectClickRemoval();
@@ -33,28 +36,23 @@ public:
 
    // ComponentInterface implementation
 
-   ComponentInterfaceSymbol GetSymbol() override;
-   TranslatableString GetDescription() override;
-   ManualPageID ManualPage() override;
+   ComponentInterfaceSymbol GetSymbol() const override;
+   TranslatableString GetDescription() const override;
+   ManualPageID ManualPage() const override;
 
    // EffectDefinitionInterface implementation
 
-   EffectType GetType() override;
-   bool GetAutomationParameters(CommandParameters & parms) override;
-   bool SetAutomationParameters(CommandParameters & parms) override;
-
-   // EffectProcessor implementation
-
-   bool DefineParams( ShuttleParams & S ) override;
+   EffectType GetType() const override;
 
    // Effect implementation
 
-   bool CheckWhetherSkipEffect() override;
-   bool Startup() override;
-   bool Process() override;
-   void PopulateOrExchange(ShuttleGui & S) override;
-   bool TransferDataToWindow() override;
-   bool TransferDataFromWindow() override;
+   bool CheckWhetherSkipEffect(const EffectSettings &settings) const override;
+   bool Process(EffectInstance &instance, EffectSettings &settings) override;
+   std::unique_ptr<EffectUIValidator> PopulateOrExchange(
+      ShuttleGui & S, EffectInstance &instance,
+      EffectSettingsAccess &access, const EffectOutputs *pOutputs) override;
+   bool TransferDataToWindow(const EffectSettings &settings) override;
+   bool TransferDataFromWindow(EffectSettings &settings) override;
 
 private:
    bool ProcessOne(int count, WaveTrack * track,
@@ -81,7 +79,13 @@ private:
    wxTextCtrl *mWidthT;
    wxTextCtrl *mThreshT;
 
+   const EffectParameterMethods& Parameters() const override;
    DECLARE_EVENT_TABLE()
+
+static constexpr EffectParameter Threshold{ &EffectClickRemoval::mThresholdLevel,
+   L"Threshold",  200,     0,       900,     1  };
+static constexpr EffectParameter Width{ &EffectClickRemoval::mClickWidth,
+   L"Width",      20,      0,       40,      1  };
 };
 
 #endif

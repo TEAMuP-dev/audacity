@@ -17,25 +17,35 @@ Paul Licameli split from AudacityProject.h
 #include "Prefs.h"
 #include "Observer.h"
 
+class CommandContext;
 class Track;
 
 class wxScrollBar;
 class wxPanel;
+class wxSplitterWindow;
+class RealtimeEffectPanel;
 
 class ProjectWindow;
 void InitProjectWindow( ProjectWindow &window );
+
+//! Message sent when the project window is closed.
+struct ProjectWindowDestroyedMessage final : Observer::Message {};
 
 ///\brief A top-level window associated with a project, and handling scrollbars
 /// and zooming
 class AUDACITY_DLL_API ProjectWindow final : public ProjectWindowBase
    , public TrackPanelListener
    , public PrefsListener
+   , public Observer::Publisher<ProjectWindowDestroyedMessage>
 {
 public:
+   using Observer::Publisher<ProjectWindowDestroyedMessage>::Publish;
    static ProjectWindow &Get( AudacityProject &project );
    static const ProjectWindow &Get( const AudacityProject &project );
    static ProjectWindow *Find( AudacityProject *pProject );
    static const ProjectWindow *Find( const AudacityProject *pProject );
+
+   static void OnResetWindow(const CommandContext& context);
 
    explicit ProjectWindow(
       wxWindow * parent, wxWindowID id,
@@ -52,9 +62,24 @@ public:
    bool IsBeingDeleted() const { return mIsDeleting; }
    void SetIsBeingDeleted() { mIsDeleting = true; }
 
-   wxWindow *GetMainPage() { return mMainPage; }
-   wxPanel *GetMainPanel() { return mMainPanel; }
-   wxPanel *GetTopPanel() { return mTopPanel; }
+   void Reset();
+
+   /**
+    * \brief Track list window is the parent container for TrackPanel
+    * \return Pointer to a track list window (not null)
+    */
+   wxWindow* GetTrackListWindow() noexcept;
+   /**
+    * \brief Container is a parent window for both effects panel and
+    * track list windows
+    * \return Pointer to a container window (not null)
+    */
+   wxSplitterWindow* GetContainerWindow() noexcept;
+   /**
+    * \brief Top panel contains project-related controls and tools.
+    * \return Pointer to a top panel window (not null)
+    */
+   wxPanel *GetTopPanel() noexcept;
 
    void UpdateStatusWidths();
 
@@ -105,7 +130,7 @@ public:
    void ZoomAfterImport(Track *pTrack);
    double GetZoomOfToFit() const;
    void DoZoomFit();
-
+   
    void ApplyUpdatedTheme();
 
    // Scrollbars
@@ -149,7 +174,7 @@ public:
 
  private:
 
-   void OnThemeChange(wxCommandEvent & evt);
+   void OnThemeChange(struct ThemeChangeMessage);
 
    // PrefsListener implementation
    void UpdatePrefs() override;
@@ -173,9 +198,9 @@ public:
    void DoScroll();
    void OnScroll(wxScrollEvent & event);
    void OnToolBarUpdate(wxCommandEvent & event);
-   void OnUndoPushedModified( wxCommandEvent & );
-   void OnUndoRedo( wxCommandEvent & );
-   void OnUndoReset( wxCommandEvent & );
+   void OnUndoPushedModified();
+   void OnUndoRedo();
+   void OnUndoReset();
 
    bool mbInitializingScrollbar{ false };
 
@@ -183,8 +208,9 @@ private:
    wxRect mNormalizedWindowState;
 
    wxPanel *mTopPanel{};
-   wxWindow * mMainPage{};
-   wxPanel * mMainPanel{};
+   wxSplitterWindow* mContainerWindow;
+   wxWindow* mTrackListWindow{};
+   
    wxScrollBar *mHsbar{};
    wxScrollBar *mVsbar{};
 
@@ -201,6 +227,8 @@ private:
 
 private:
 
+   Observer::Subscription mUndoSubscription
+      , mThemeChangeSubscription;
    std::unique_ptr<PlaybackScroller> mPlaybackScroller;
 
    DECLARE_EVENT_TABLE()
@@ -208,5 +236,16 @@ private:
 
 void GetDefaultWindowRect(wxRect *defRect);
 void GetNextWindowPlacement(wxRect *nextRect, bool *pMaximized, bool *pIconized);
+
+extern AUDACITY_DLL_API BoolSetting ProjectWindowMaximized;
+extern AUDACITY_DLL_API BoolSetting ProjectWindowIconized;
+extern AUDACITY_DLL_API IntSetting ProjectWindowX;
+extern AUDACITY_DLL_API IntSetting ProjectWindowY;
+extern AUDACITY_DLL_API IntSetting ProjectWindowWidth;
+extern AUDACITY_DLL_API IntSetting ProjectWindowHeight;
+extern AUDACITY_DLL_API IntSetting ProjectWindowNormalX;
+extern AUDACITY_DLL_API IntSetting ProjectWindowNormalY;
+extern AUDACITY_DLL_API IntSetting ProjectWindowNormalWidth;
+extern AUDACITY_DLL_API IntSetting ProjectWindowNormalHeight;
 
 #endif

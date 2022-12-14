@@ -2,13 +2,13 @@
 #include "../Menus.h"
 #include "Prefs.h"
 #include "Project.h"
-#include "../ProjectHistory.h"
+#include "ProjectHistory.h"
 #include "../ProjectSettings.h"
 #include "../ProjectWindow.h"
 #include "Track.h"
 #include "../TrackInfo.h"
 #include "../TrackPanel.h"
-#include "../UndoManager.h"
+#include "UndoManager.h"
 #include "ViewInfo.h"
 #include "../commands/CommandContext.h"
 #include "../commands/CommandManager.h"
@@ -16,9 +16,6 @@
 #include "../prefs/TracksPrefs.h"
 #include "../tracks/ui/TrackView.h"
 
-#ifdef EXPERIMENTAL_EFFECTS_RACK
-#include "../effects/EffectUI.h"
-#endif
 
 #include <wx/app.h>
 #include <wx/scrolbar.h>
@@ -352,36 +349,27 @@ void OnShowNameOverlay(const CommandContext &context)
    trackPanel.Refresh(false);
 }
 
-#if defined(EXPERIMENTAL_EFFECTS_RACK)
-void OnShowEffectsRack(const CommandContext &context )
-{
-   auto &rack = EffectRack::Get( context.project );
-   rack.Show( !rack.IsShown() );
-}
-#endif
-
 // Not a menu item, but a listener for events
-void OnUndoPushed( wxCommandEvent &evt )
+void OnUndoPushed(UndoRedoMessage message)
 {
-   evt.Skip();
-   const auto &settings = ProjectSettings::Get( mProject );
-   if (settings.GetTracksFitVerticallyZoomed())
-      DoZoomFitV( mProject );
+   if (message.type == UndoRedoMessage::Pushed) {
+      const auto &settings = ProjectSettings::Get( mProject );
+      if (settings.GetTracksFitVerticallyZoomed())
+         DoZoomFitV( mProject );
+   }
 }
 
 Handler( AudacityProject &project )
    : mProject{ project }
 {
-   mProject.Bind( EVT_UNDO_PUSHED, &Handler::OnUndoPushed, this );
+   mUndoSubscription = UndoManager::Get(mProject)
+      .Subscribe(*this, &Handler::OnUndoPushed);
 }
 
-~Handler()
-{
-   mProject.Unbind( EVT_UNDO_PUSHED, &Handler::OnUndoPushed, this );
-}
 Handler( const Handler & ) PROHIBITED;
 Handler &operator=( const Handler & ) PROHIBITED;
 
+Observer::Subscription mUndoSubscription;
 AudacityProject &mProject;
 
 }; // struct Handler
@@ -466,14 +454,6 @@ BaseItemSharedPtr ViewMenu()
          Command( wxT("ShowClipping"), XXO("&Show Clipping (on/off)"),
             FN(OnShowClipping), AlwaysEnabledFlag,
             Options{}.CheckTest( wxT("/GUI/ShowClipping"), false ) )
-   #if defined(EXPERIMENTAL_EFFECTS_RACK)
-         ,
-         Command( wxT("ShowEffectsRack"), XXO("Show Effects Rack"),
-            FN(OnShowEffectsRack), AlwaysEnabledFlag,
-            Options{}.CheckTest( [](AudacityProject &project){
-               auto &rack = EffectRack::Get( project );
-               return rack.IsShown(); } ) )
-   #endif
       )
    ) ) };
    return menu;

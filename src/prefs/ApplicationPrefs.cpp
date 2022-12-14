@@ -40,12 +40,12 @@ ApplicationPrefs::~ApplicationPrefs()
 {
 }
 
-ComponentInterfaceSymbol ApplicationPrefs::GetSymbol()
+ComponentInterfaceSymbol ApplicationPrefs::GetSymbol() const
 {
    return s_ComponentInterfaceSymbol;
 }
 
-TranslatableString ApplicationPrefs::GetDescription()
+TranslatableString ApplicationPrefs::GetDescription() const
 {
    return XO("Preferences for Application");
 }
@@ -107,6 +107,7 @@ bool ApplicationPrefs::Commit()
 {
    ShuttleGui S(this, eIsSavingToPrefs);
    PopulateOrExchange(S);
+   DefaultUpdatesCheckingFlag.Invalidate();
 
    return true;
 }

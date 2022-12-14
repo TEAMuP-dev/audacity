@@ -123,19 +123,13 @@ NoteTrack *NoteTrack::New( AudacityProject &project )
 NoteTrack::NoteTrack()
    : NoteTrackBase()
 {
-   SetDefaultName(_("Note Track"));
-   SetName(GetDefaultName());
+   SetName(_("Note Track"));
 
    mSeq = NULL;
    mSerializationLength = 0;
 
-#ifdef EXPERIMENTAL_MIDI_OUT
-   mVelocity = 0;
-#endif
    mBottomNote = MinPitch;
    mTopNote = MaxPitch;
-
-   mVisibleChannels = ALL_CHANNELS;
 }
 
 NoteTrack::~NoteTrack()
@@ -196,7 +190,7 @@ Track::Holder NoteTrack::Clone() const
    // copy some other fields here
    duplicate->SetBottomNote(mBottomNote);
    duplicate->SetTopNote(mTopNote);
-   duplicate->mVisibleChannels = mVisibleChannels;
+   duplicate->SetVisibleChannels(GetVisibleChannels());
    duplicate->SetOffset(GetOffset());
 #ifdef EXPERIMENTAL_MIDI_OUT
    duplicate->SetVelocity(GetVelocity());
@@ -638,10 +632,15 @@ void NoteTrack::InsertSilence(double t, double len)
 #ifdef EXPERIMENTAL_MIDI_OUT
 void NoteTrack::SetVelocity(float velocity)
 {
-   if (mVelocity != velocity) {
-      mVelocity = velocity;
+   if (GetVelocity() != velocity) {
+      DoSetVelocity(velocity);
       Notify();
    }
+}
+
+void NoteTrack::DoSetVelocity(float velocity)
+{
+   mVelocity.store(velocity, std::memory_order_relaxed);
 }
 #endif
 
@@ -706,6 +705,7 @@ auto NoteTrack::ClassTypeInfo() -> const TypeInfo &
 Track::Holder NoteTrack::PasteInto( AudacityProject & ) const
 {
    auto pNewTrack = std::make_shared<NoteTrack>();
+   pNewTrack->Init(*this);
    pNewTrack->Paste(0.0, this);
    return pNewTrack;
 }
@@ -930,11 +930,11 @@ bool NoteTrack::HandleXMLTag(const std::string_view& tag, const AttributesList &
              if (!value.TryGet(nValue) ||
                  !IsValidVisibleChannels(nValue))
                  return false;
-             mVisibleChannels = nValue;
+             SetVisibleChannels(nValue);
          }
 #ifdef EXPERIMENTAL_MIDI_OUT
          else if (attr == "velocity" && value.TryGet(dblValue))
-            mVelocity = (float) dblValue;
+            DoSetVelocity(static_cast<float>(dblValue));
 #endif
          else if (attr == "bottomnote" && value.TryGet(nValue))
             SetBottomNote(nValue);
@@ -973,10 +973,12 @@ void NoteTrack::WriteXML(XMLWriter &xmlFile) const
    saveme->Track::WriteCommonXMLAttributes( xmlFile );
    this->NoteTrackBase::WriteXMLAttributes(xmlFile);
    xmlFile.WriteAttr(wxT("offset"), saveme->GetOffset());
-   xmlFile.WriteAttr(wxT("visiblechannels"), saveme->mVisibleChannels);
+   xmlFile.WriteAttr(wxT("visiblechannels"),
+      static_cast<int>(saveme->GetVisibleChannels()));
 
 #ifdef EXPERIMENTAL_MIDI_OUT
-   xmlFile.WriteAttr(wxT("velocity"), (double) saveme->mVelocity);
+   xmlFile.WriteAttr(wxT("velocity"),
+      static_cast<double>(saveme->GetVelocity()));
 #endif
    xmlFile.WriteAttr(wxT("bottomnote"), saveme->mBottomNote);
    xmlFile.WriteAttr(wxT("topnote"), saveme->mTopNote);

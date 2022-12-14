@@ -3,7 +3,7 @@
 ## Prerequisites
 
 * **python3** >= 3.5
-* **conan** >= 1.32.0
+* **conan** >= 1.51.0
 * **cmake** >= 3.16
 * A working C++ 17 compiler
 * Graphviz (optional)
@@ -50,13 +50,33 @@ We build Audacity using XCode versions 12 and 13. However, it is likely possible
 
 We use GCC 9, but any C++17 compliant compiler should work.
 
-On Debian or Ubuntu, you can install everything required using the following commands:
+Here are the dependencies you need to install on various distribution families.
+
+#### Debian and Ubuntu
 
 ```
 $ sudo apt-get update
 $ sudo apt-get install -y build-essential cmake git python3-pip
 $ sudo pip3 install conan
-$ sudo apt-get install libgtk2.0-dev libasound2-dev libavformat-dev libjack-jackd2-dev uuid-dev
+$ sudo apt-get install libgtk2.0-dev libasound2-dev libjack-jackd2-dev uuid-dev
+```
+
+#### openSUSE
+
+```
+$ sudo zypper refresh
+$ sudo zypper install patterns-devel-C-C++-devel_C_C++ cmake git python3-pip \
+                      gtk2-devel libjack-devel uuid-devel libSM-devel
+$ sudo pip3 install conan
+```
+
+#### Fedora Workstation
+
+```
+$ sudo dnf update
+$ sudo dnf install gcc-c++ cmake git python3-pip perl-core \
+                   gtk2-devel gtk3-devel alsa-lib-devel jack-audio-connection-kit-devel uuid-devel libSM-devel
+$ sudo pip3 install conan
 ```
 
 ### Graphviz
@@ -104,7 +124,7 @@ Generally, steps 1-5 are only needed the first-time you configure. Then, after y
 
 ### Building with ASIO support on Windows
 
-To enable ASIO support, please select `audacity_has_asio_support=On` in CMake after the intial configuration and then run select **Configure** again as described above. ASIO is only supported on Windows and only for 64-bit builds.
+To enable ASIO support, please select `audacity_has_asio_support=On` in CMake after the initial configuration and then run select **Configure** again as described above. ASIO is only supported on Windows and only for 64-bit builds.
 
 ## macOS
 
@@ -117,7 +137,7 @@ To enable ASIO support, please select `audacity_has_asio_support=On` in CMake af
 2. Configure Audacity using CMake:
    ```
    $ mkdir build && cd build
-   $ cmake -GXcode -T buildsystem=1 ../audacity
+   $ cmake -GXcode ../audacity
    ```
 
 3. Open Audacity XCode project:
@@ -130,11 +150,14 @@ Steps 1 and 2 are only required for first-time builds.
 
 Alternatively, you can use **CLion**. If you chose to do so, open the directory where you have cloned Audacity using CLion and you are good to go.
 
-At the moment we only support **x86_64** builds. It is possible to build using AppleSilicon (AKA M1/arm64) hardware but **mad** and **id3tag** should be disabled:
+Before Audacity 3.2 only **x86_64** builds and XCode "legacy" build system were supported. In order to build older version please use:
 
 ```
-cmake -GXcode -T buildsystem=1 -Daudacity_use_mad="off" -Daudacity_use_id3tag=off ../audacity
+   $ mkdir build && cd build
+   $ cmake -GXcode -T buildsystem=1 ../audacity
 ```
+
+to configure Audacity. 
 
 ## Linux & Other OS
 
@@ -147,7 +170,7 @@ cmake -GXcode -T buildsystem=1 -Daudacity_use_mad="off" -Daudacity_use_id3tag=of
 2. Configure Audacity using CMake:
    ```
    $ mkdir build && cd build
-   $ cmake -G "Unix Makefiles" -Daudacity_use_ffmpeg=loaded ../audacity
+   $ cmake -G "Unix Makefiles" ../audacity
    ```
    By default, Debug build will be configured. To change that, pass `-DCMAKE_BUILD_TYPE=Release` to CMake.
 
@@ -220,8 +243,9 @@ This option implies `-Daudacity_obey_system_dependencies=On` and disables `local
 
 ### Disabling pre-built binaries downloads for Conan
 
-It is possible to force Conan to build all the dependencies from the source code without using the pre-built binaries. To do so, please pass `-Daudaicity_conan_allow_prebuilt_binaries=Off` to CMake during the configuration. This option will trigger rebuild every
-time CMake configuration changes.
+It is possible to force Conan to build all the dependencies from the source code without using the pre-built binaries. To do so, please pass `-Daudacity_conan_allow_prebuilt_binaries=Off` to CMake during the configuration. 
+
+Additionally, passing `-Daudacity_conan_force_build_dependencies=On` will force Conan to rebuild all the packaged during *every* configuration. This can be usefull for the offline builds against the Conan download cache.
 
 ### Troubleshooting Conan issues
 
@@ -256,3 +280,49 @@ In order to reduce the space used by Conan cache, please run:
 ```
 $ conan remove "*" --src --builds --force
 ```
+
+### Selecting target architecture on macOS
+
+Starting with version 3.2.0, Audacity target architecture on macOS can be selected by passing `MACOS_ARCHITECTURE` to the CMake during the configuration.
+
+To build for Intel:
+
+```
+$ cmake -GXcode -DMACOS_ARCHITECTURE=x86_64 ../audacity
+```
+
+To build for AppleSilicon:
+
+```
+$ cmake -GXcode -DMACOS_ARCHITECTURE=arm64 ../audacity
+```
+
+The default build architecture is selected based on `CMAKE_HOST_SYSTEM_PROCESSOR` value.
+
+When cross-compiling from Intel to AppleSilicon, or if *Rosetta 2* is not installed on the AppleSilicon Mac, 
+a native Audacity version build directory is required, as Audacity needs a working `image-compiler`. 
+
+For example, to build ARM64 version of Audacity on Intel Mac:
+
+```
+$ mkdir build.x64
+$ cmake -GXcode -DMACOS_ARCHITECTURE=x86_64 -B build.x64 -S ../audacity
+$ cmake --build build.x64 --config Release --target image-compiler
+$ mkdir build.arm64
+$ cmake -GXcode -DMACOS_ARCHITECTURE=arm64 -DIMAGE_COMPILER_EXECUTABLE=build.x64/utils/RelWithDebInfo/image-compiler -B build.arm64 -S ../audacity
+$ cmake --build build.arm64 --config Release
+```
+
+This will place ARM64 version into `build.arm64/Release/`.
+
+### Building with VST3SDK without Conan (Linux only)
+
+Set one of the following environment variables to the path to the VST3 SDK (i.e. the folder containing the `pluginterfaces` folder):
+
+* `VST3_SDK_DIR`
+* `VST3SDK_PATH`
+* `VST3SDK`
+
+or copy the VST3 SDK to `vst3sdk` directory in the Audacity source tree.
+
+Pass `-Daudacity_use_vst3sdk=system` to CMake. CMake will build the SDK during the configuration.

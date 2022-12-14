@@ -12,11 +12,13 @@ Paul Licameli split from TrackPanel.cpp
 #define __AUDACITY_WAVE_TRACK_CONTROLS__
 
 #include "../../ui/PlayableTrackControls.h" // to inherit
+#include "Observer.h"
 
 class CellularPanel;
 class LWSlider;
 class MuteButtonHandle;
 class SoloButtonHandle;
+class EffectsButtonHandle;
 class GainSliderHandle;
 class PanSliderHandle;
 class WaveTrack;
@@ -59,11 +61,12 @@ public:
    static void ReCreateSliders();
 
 private:
-   static void ReCreatePanSlider( wxEvent& );
-   static void ReCreateGainSlider( wxEvent& );
+   static void ReCreatePanSlider(struct ThemeChangeMessage);
+   static void ReCreateGainSlider(struct ThemeChangeMessage);
 
    std::weak_ptr<MuteButtonHandle> mMuteHandle;
    std::weak_ptr<SoloButtonHandle> mSoloHandle;
+   std::weak_ptr<EffectsButtonHandle> mEffectsHandle;
    std::weak_ptr<GainSliderHandle> mGainHandle;
    std::weak_ptr<PanSliderHandle> mPanHandle;
 };

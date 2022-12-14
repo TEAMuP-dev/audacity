@@ -45,12 +45,12 @@ GUIPrefs::~GUIPrefs()
 {
 }
 
-ComponentInterfaceSymbol GUIPrefs::GetSymbol()
+ComponentInterfaceSymbol GUIPrefs::GetSymbol() const
 {
    return GUI_PREFS_PLUGIN_SYMBOL;
 }
 
-TranslatableString GUIPrefs::GetDescription()
+TranslatableString GUIPrefs::GetDescription() const
 {
    return XO("Preferences for GUI");
 }
@@ -134,11 +134,19 @@ ChoiceSetting GUIManualLocation{
       { XO("Local") ,  XO("From Internet") , },
       { wxT("Local") , wxT("FromInternet") , }
    },
-   0 // "Local"
+   1 // "FromInternet"
 };
 
 void GUIPrefs::PopulateOrExchange(ShuttleGui & S)
 {
+   ChoiceSetting LanguageSetting{ wxT("/Locale/Language"),
+      { ByColumns, mLangNames, mLangCodes }
+   };
+   ChoiceSetting DBSetting{ DecibelScaleCutoff,
+      { ByColumns, mRangeChoices, mRangeCodes },
+      mDefaultRangeIndex
+   };
+
    S.SetBorder(2);
    S.StartScroller();
 
@@ -146,25 +154,10 @@ void GUIPrefs::PopulateOrExchange(ShuttleGui & S)
    {
       S.StartMultiColumn(2);
       {
-
-         S.TieChoice( XXO("&Language:"),
-            {
-               wxT("/Locale/Language"),
-               { ByColumns, mLangNames, mLangCodes }
-            }
-         );
-
-         S.TieChoice( XXO("Location of &Manual:"), GUIManualLocation);
-
+         S.TieChoice( XXO("&Language:"), LanguageSetting);
+         // S.TieChoice( XXO("Location of &Manual:"), GUIManualLocation);
          S.TieChoice( XXO("Th&eme:"), GUITheme());
-
-         S.TieChoice( XXO("Meter dB &range:"),
-            {
-               DecibelScaleCutoff.GetPath(),
-               { ByColumns, mRangeChoices, mRangeCodes },
-               mDefaultRangeIndex
-            }
-         );
+         S.TieChoice( XXO("Meter dB &range:"), DBSetting);
       }
       S.EndMultiColumn();
 
@@ -181,7 +174,7 @@ void GUIPrefs::PopulateOrExchange(ShuttleGui & S)
                     {wxT("/GUI/ShowExtraMenus"),
                      false});
 #ifdef EXPERIMENTAL_THEME_PREFS
-      // We do not want to make this option mainstream.  It's a 
+      // We do not want to make this option mainstream.  It's a
       // convenience for developers.
       S.TieCheckBox(XXO("Show alternative &styling (Mac vs PC)"),
                     {wxT("/GUI/ShowMac"),
@@ -244,8 +237,10 @@ bool GUIPrefs::Commit()
       theTheme.LoadPreferredTheme();
       theTheme.DeleteUnusedThemes();
    }
-   ThemePrefs::ApplyUpdatedImages();
+   AColor::ApplyUpdatedImages();
 
+   GUIBlendThemes.Invalidate();
+   DecibelScaleCutoff.Invalidate();
    return true;
 }
 

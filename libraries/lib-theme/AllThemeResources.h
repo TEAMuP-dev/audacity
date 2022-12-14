@@ -76,10 +76,11 @@ from there.  Audacity will look for a file called "Pause.png".
    DEFINE_IMAGE( bmpSeek, wxImage( 26, 16 ), wxT("Seek"));
    DEFINE_IMAGE( bmpSeekDisabled, wxImage( 26, 16 ), wxT("SeekDisabled"));
 
+   SET_THEME_FLAGS(  resFlagNewLine  );
+   DEFINE_IMAGE(bmpSetup, wxImage(37, 18), wxT("Setup"));
 
    SET_THEME_FLAGS(  resFlagNewLine  );
    DEFINE_IMAGE( bmpIBeam, wxImage( 27, 27 ), wxT("IBeam"));
-   DEFINE_IMAGE( bmpZoom, wxImage( 27, 27 ), wxT("Zoom"));
    DEFINE_IMAGE( bmpEnvelope, wxImage( 27, 27 ), wxT("Envelope"));
    DEFINE_IMAGE( bmpSpectralBrush, wxImage( 27, 27 ), wxT("SpectralBrush"));
    DEFINE_IMAGE( bmpDraw, wxImage( 27, 27 ), wxT("Draw"));
@@ -98,12 +99,6 @@ from there.  Audacity will look for a file called "Pause.png".
    DEFINE_IMAGE( bmpZoomSelDisabled, wxImage( 27, 27 ), wxT("ZoomSelDisabled"));
    DEFINE_IMAGE( bmpZoomToggle, wxImage( 27, 27 ), wxT("ZoomToggle"));
    DEFINE_IMAGE( bmpZoomToggleDisabled, wxImage( 27, 27 ), wxT("ZoomToggleDisabled"));
-   DEFINE_IMAGE( bmpCut, wxImage( 26, 24 ), wxT("Cut"));
-   DEFINE_IMAGE( bmpCutDisabled, wxImage( 26, 24 ), wxT("CutDisabled"));
-   DEFINE_IMAGE( bmpCopy, wxImage( 26, 24 ), wxT("Copy"));
-   DEFINE_IMAGE( bmpCopyDisabled, wxImage( 26, 24 ), wxT("CopyDisabled"));
-   DEFINE_IMAGE( bmpPaste, wxImage( 26, 24 ), wxT("Paste"));
-   DEFINE_IMAGE( bmpPasteDisabled, wxImage( 26, 24 ), wxT("PasteDisabled"));
    DEFINE_IMAGE( bmpTrim, wxImage( 26, 24 ), wxT("Trim"));
    DEFINE_IMAGE( bmpTrimDisabled, wxImage( 26, 24 ), wxT("TrimDisabled"));
    DEFINE_IMAGE( bmpSilence, wxImage( 26, 24 ), wxT("Silence"));
@@ -232,6 +227,23 @@ from there.  Audacity will look for a file called "Pause.png".
    DEFINE_IMAGE( bmpBandWidthCursor, wxImage(32, 32), wxT("BandWidthCursor"));
    DEFINE_IMAGE( bmpSubViewsCursor, wxImage(32, 32), wxT("SubViewsCursor"));
 
+   SET_THEME_FLAGS(  resFlagNewLine  );
+   DEFINE_IMAGE( bmpEffectOn, wxImage( 22, 22 ), wxT("EffectOn"));
+   DEFINE_IMAGE( bmpEffectOff, wxImage( 22, 22 ), wxT("EffectOff"));
+   DEFINE_IMAGE( bmpDragArea, wxImage( 6, 14 ), wxT("DragArea"));
+   DEFINE_IMAGE( bmpMoreDown, wxImage( 22, 22 ), wxT("MoreDown"));
+   DEFINE_IMAGE( bmpMoreNormal, wxImage( 22, 22 ), wxT("MoreNormal"));
+   DEFINE_IMAGE( bmpMoreHover, wxImage( 22, 22 ), wxT("MoreHover"));
+   DEFINE_IMAGE( bmpMoreDisabled, wxImage( 22, 22 ), wxT("MoreDisabled"))
+   DEFINE_IMAGE( bmpCloseDown, wxImage( 22, 22 ), wxT("CloseDown"));
+   DEFINE_IMAGE( bmpCloseNormal, wxImage( 22, 22 ), wxT("CloseNormal"));
+   DEFINE_IMAGE( bmpCloseHover, wxImage( 22, 22 ), wxT("CloseHover"));
+   DEFINE_IMAGE( bmpCloseDisabled, wxImage( 22, 22 ), wxT("CloseDisabled"))
+   DEFINE_IMAGE( bmpHButtonNormal, wxImage( 22, 22 ), wxT("HButtonNormal"))
+   DEFINE_IMAGE( bmpHButtonHover, wxImage( 22, 22 ), wxT("HButtonHover"))
+   DEFINE_IMAGE( bmpHButtonDown, wxImage( 22, 22 ), wxT("HButtonDown"))
+   DEFINE_IMAGE( bmpHButtonDisabled, wxImage( 22, 22 ), wxT("HButtonDisabled"))
+
    //SET_THEME_FLAGS(  resFlagNewLine  );
 
 // DA: The logo with name xpm has a different width.
@@ -245,6 +257,10 @@ from there.  Audacity will look for a file called "Pause.png".
 
    SET_THEME_FLAGS( resFlagNewLine );
    DEFINE_IMAGE( bmpAudacityLogo48x48, wxImage( 48, 48 ), wxT("AudacityLogo48x48"));
+
+   SET_THEME_FLAGS(resFlagNewLine);
+   DEFINE_IMAGE(bmpAnonymousUser, wxImage(20, 20), wxT("AnonymousUser"));
+   DEFINE_IMAGE(bmpShareAudio, wxImage(20, 20), wxT("ShareAudio"));
 
 
    DEFINE_COLOUR( clrBlank,      wxColour( 64,  64,  64), wxT("Blank"));
@@ -381,3 +397,7 @@ from there.  Audacity will look for a file called "Pause.png".
 
    DEFINE_COLOUR( clrClipNameText,          wxColour(0, 0, 0),       wxT("ClipNameText") );
    DEFINE_COLOUR( clrClipNameTextSelection, wxColour(183, 202, 226), wxT("ClipNameTextSelection") );
+
+   DEFINE_COLOUR( clrDropHintHighlight, wxColour( 71, 140, 247 ), wxT("DropHintHighlight") );
+   DEFINE_COLOUR( clrEffectListItemBackground, wxColour( 60, 60, 60 ), wxT("EffectListItemBackground"));
+   DEFINE_COLOUR( clrEffectListItemBorder, wxColour( 204, 204, 204 ), wxT("EffectListItemBorder"));

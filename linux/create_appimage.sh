@@ -40,7 +40,7 @@ function download_appimage_release()
 function download_linuxdeploy_component()
 {
     local -r component="$1" tag="$2"
-    download_appimage_release "linuxdeploy/$1" "$1" "$2"
+    download_appimage_release "audacity/$1" "$1" "$2"
 }
 
 function create_path()
@@ -69,6 +69,8 @@ if create_path "linuxdeploy"; then
 (
     cd "linuxdeploy"
     download_linuxdeploy_component linuxdeploy continuous
+    wget -q https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh
+    chmod +x linuxdeploy-plugin-gtk.sh
 )
 fi
 
@@ -79,6 +81,7 @@ linuxdeploy --list-plugins
 # Create symlinks
 #============================================================================
 
+sed -i 's|env UBUNTU_MENUPROXY=0 ||' "${appdir}/share/applications/audacity.desktop"
 ln -sf --no-dereference . "${appdir}/usr"
 ln -sf share/applications/audacity.desktop "${appdir}/audacity.desktop"
 ln -sf share/icons/hicolor/scalable/apps/audacity.svg "${appdir}/audacity.svg"
@@ -92,15 +95,41 @@ ln -sf share/icons/hicolor/scalable/apps/audacity.svg "${appdir}/.DirIcon"
 # them to LD_LIBRARY_PATH so that linuxdeploy can find them.
 export LD_LIBRARY_PATH="${appdir}/usr/lib:${appdir}/usr/lib/audacity:${LD_LIBRARY_PATH-}"
 
+# When running on GitHub actions - libararies are sometimes installed into the DEB_HOST_MULTIARCH
+# based location
+if [ -f "/etc/debian_version" ]; then
+   archDir=$(dpkg-architecture -qDEB_HOST_MULTIARCH)
+   export LD_LIBRARY_PATH="${appdir}/usr/lib/${archDir}:${appdir}/usr/lib/${archDir}/audacity:${LD_LIBRARY_PATH-}"
+fi
+
 # Prevent linuxdeploy setting RUNPATH in binaries that shouldn't have it
 mv "${appdir}/bin/findlib" "${appdir}/../findlib"
 
-linuxdeploy --appdir "${appdir}" # add all shared library dependencies
-rm -R "${appdir}/lib/audacity"
+linuxdeploy --appdir "${appdir}" --plugin gtk # add all shared library dependencies
+
+echo "###########################################"
+echo "Cleaning up package"
+echo "###########################################"
+
+find "${appdir}/lib/audacity" -maxdepth 1 ! \( -type d \) -exec rm -v {} \;
+
+if [ -f "/etc/debian_version" ]; then
+   archDir=$(dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+   if [[ -d "${appdir}/lib/${archDir}/audacity" ]]; then
+      find "${appdir}/lib/${archDir}/audacity" -maxdepth 1 ! \( -type d \) -exec rm -v {} \;
+   fi
+fi
+
+##########################################################################
+# Fix permissions
+##########################################################################
+chmod +x "${appdir}/AppRun.wrapped"
 
 # Put the non-RUNPATH binaries back
 mv "${appdir}/../findlib" "${appdir}/bin/findlib"
 
+mv "${appdir}/share/metainfo/audacity.appdata.xml" "${appdir}/share/metainfo/org.audacityteam.Audacity.appdata.xml"
 ##########################################################################
 # BUNDLE REMAINING DEPENDENCIES MANUALLY
 ##########################################################################
@@ -134,14 +163,15 @@ unwanted_files=(
 
 fallback_libraries=(
   libatk-1.0.so.0 # This will possibly prevent browser from opening
-  libatk-bridge-2.0.so.0 
+  libatk-bridge-2.0.so.0
   libcairo.so.2 # This breaks FFmpeg support
   libcairo-gobject.so.2
   libjack.so.0 # https://github.com/LMMS/lmms/pull/3958
   libportaudio.so # This is required to enable system PortAudio (so Jack is enabled!)
   libgmodule-2.0.so.0 # Otherwise - Manjaro/Arch will crash, because of libgio mismatch
   # But if gmodule is present - glib2 is too
-  # Some ot the GTK libraries are balcklisted from being included
+  # Some of the GTK libraries are balcklisted from being included
+  # by the AppImage builder itself
   # libgio-2.0.so.0
   # libglib-2.0.so.0
   # libgobject-2.0.so.0

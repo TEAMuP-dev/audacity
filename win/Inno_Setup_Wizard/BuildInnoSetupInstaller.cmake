@@ -1,7 +1,7 @@
 # This CMake script is invoked to build the InnoSetup installer for Audacity
-# Requiered parameters:
+# Required parameters:
 # BUILD_DIR - should be set to CMAKE_BINARY_DIR by the caller
-# SOURCE_DIR - should be set to CMAKE_SOURCE_DIR by teh caller
+# SOURCE_DIR - should be set to CMAKE_SOURCE_DIR by the caller
 # OUTPUT_DIR - directory, where installer will be built
 # INNO_SETUP_COMPILER - InnoSetup compiler executable
 # BUILDING_64_BIT - Flag, that indicates that we are building a 64-bit installer
@@ -55,8 +55,6 @@ configure_file("${OUTPUT_DIR}/audacity.iss.in" "${OUTPUT_DIR}/audacity.iss")
 configure_file("${OUTPUT_DIR}/audacity_InnoWizard_InfoBefore.rtf.in" "${OUTPUT_DIR}/audacity_InnoWizard_InfoBefore.rtf")
 
 # Copy additional files
-
-file(COPY "${SOURCE_DIR}/presets" DESTINATION "${OUTPUT_DIR}/Additional")
 
 file(COPY
         "${SOURCE_DIR}/LICENSE.txt"

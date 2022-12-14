@@ -354,10 +354,8 @@ void BenchmarkDialog::OnRun( wxCommandEvent & WXUNUSED(event))
       return;
    }
 
-   bool editClipCanMove = true;
-   gPrefs->Read(wxT("/GUI/EditClipCanMove"), &editClipCanMove);
-   gPrefs->Write(wxT("/GUI/EditClipCanMove"), false);
-   gPrefs->Flush();
+   SettingScope scope;
+   EditClipsCanMove.Write( false );
 
    // Remember the old blocksize, so that we can restore it later.
    auto oldBlockSize = Sequence::GetMaxDiskBlockSize();
@@ -365,8 +363,6 @@ void BenchmarkDialog::OnRun( wxCommandEvent & WXUNUSED(event))
 
    const auto cleanup = finally( [&] {
       Sequence::SetMaxDiskBlockSize(oldBlockSize);
-      gPrefs->Write(wxT("/GUI/EditClipCanMove"), editClipCanMove);
-      gPrefs->Flush();
    } );
 
    wxBusyCursor busy;
@@ -376,7 +372,7 @@ void BenchmarkDialog::OnRun( wxCommandEvent & WXUNUSED(event))
    const auto t =
       WaveTrackFactory{ mRate,
                     SampleBlockFactory::New( mProject )  }
-         .NewWaveTrack(SampleFormat);
+         .Create(SampleFormat, mRate.GetRate());
 
    t->SetRate(1);
 
@@ -432,11 +428,11 @@ void BenchmarkDialog::OnRun( wxCommandEvent & WXUNUSED(event))
    // as we're about to do).
    t->GetEndTime();
 
-   if (t->GetClipByIndex(0)->GetSequence()->GetNumSamples() != nChunks * chunkSize) {
+   if (t->GetClipByIndex(0)->GetPlaySamplesCount() != nChunks * chunkSize) {
       Printf( XO("Expected len %lld, track len %lld.\n")
          .Format(
             nChunks * chunkSize,
-            t->GetClipByIndex(0)->GetSequence()->GetNumSamples()
+            t->GetClipByIndex(0)->GetPlaySamplesCount()
                .as_long_long() ) );
       goto fail;
    }
@@ -469,7 +465,7 @@ void BenchmarkDialog::OnRun( wxCommandEvent & WXUNUSED(event))
          Printf( XO("Expected len %lld, track len %lld.\n")
             .Format(
                nChunks * chunkSize,
-               t->GetClipByIndex(0)->GetSequence()->GetNumSamples()
+               t->GetClipByIndex(0)->GetPlaySamplesCount()
                   .as_long_long() ) );
          goto fail;
       }
@@ -489,12 +485,12 @@ void BenchmarkDialog::OnRun( wxCommandEvent & WXUNUSED(event))
          goto fail;
       }
 
-      if (t->GetClipByIndex(0)->GetSequence()->GetNumSamples() != nChunks * chunkSize) {
+      if (t->GetClipByIndex(0)->GetPlaySamplesCount() != nChunks * chunkSize) {
          Printf( XO("Trial %d\n").Format( z ) );
          Printf( XO("Expected len %lld, track len %lld.\n")
             .Format(
                nChunks * chunkSize,
-               t->GetClipByIndex(0)->GetSequence()->GetNumSamples()
+               t->GetClipByIndex(0)->GetPlaySamplesCount()
                   .as_long_long() ) );
          goto fail;
       }

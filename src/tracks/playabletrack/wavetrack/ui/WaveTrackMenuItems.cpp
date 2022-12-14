@@ -23,7 +23,6 @@ Paul Licameli split from TrackMenus.cpp
 namespace {
 using namespace MenuTable;
 
-struct Handler : CommandHandlerObject {
 void OnNewWaveTrack(const CommandContext &context)
 {
    auto &project = context.project;
@@ -35,16 +34,18 @@ void OnNewWaveTrack(const CommandContext &context)
 
    auto rate = ProjectRate::Get(project).GetRate();
 
-   auto t = tracks.Add( trackFactory.NewWaveTrack( defaultFormat, rate ) );
+   auto track = trackFactory.Create(defaultFormat, rate);
+   track->SetName(tracks.MakeUniqueTrackName(WaveTrack::GetDefaultAudioTrackNamePreference()));
+   tracks.Add(track);
    SelectUtilities::SelectNone( project );
 
-   t->SetSelected(true);
+   track->SetSelected(true);
 
    ProjectHistory::Get( project )
       .PushState(XO("Created new audio track"), XO("New Track"));
 
-   TrackFocus::Get(project).Set(t);
-   t->EnsureVisible();
+   TrackFocus::Get(project).Set(track.get());
+   track->EnsureVisible();
 }
 
 void OnNewStereoTrack(const CommandContext &context)
@@ -59,10 +60,14 @@ void OnNewStereoTrack(const CommandContext &context)
 
    SelectUtilities::SelectNone( project );
 
-   auto left = tracks.Add( trackFactory.NewWaveTrack( defaultFormat, rate ) );
+   auto left = trackFactory.Create(defaultFormat, rate);
+   left->SetName(tracks.MakeUniqueTrackName(WaveTrack::GetDefaultAudioTrackNamePreference()));
+   tracks.Add(left);
    left->SetSelected(true);
 
-   auto right = tracks.Add( trackFactory.NewWaveTrack( defaultFormat, rate ) );
+   auto right = trackFactory.Create(defaultFormat, rate);
+   right->SetName(left->GetName());
+   tracks.Add(right);
    right->SetSelected(true);
 
    tracks.MakeMultiChannelTrack(*left, 2, true);
@@ -70,29 +75,17 @@ void OnNewStereoTrack(const CommandContext &context)
    ProjectHistory::Get( project )
       .PushState(XO("Created new stereo audio track"), XO("New Track"));
 
-   TrackFocus::Get(project).Set(left);
+   TrackFocus::Get(project).Set(left.get());
    left->EnsureVisible();
 }
 
-};
-
-CommandHandlerObject &findCommandHandler(AudacityProject &) {
-   // Handler is not stateful.  Doesn't need a factory registered with
-   // AudacityProject.
-   static Handler instance;
-   return instance;
-}
-
-#define FN(X) (&Handler :: X)
 AttachedItem sAttachment{ wxT("Tracks/Add/Add"),
-   ( FinderScope{ findCommandHandler },
    Items( "",
-      Command( wxT("NewMonoTrack"), XXO("&Mono Track"), FN(OnNewWaveTrack),
+      Command( wxT("NewMonoTrack"), XXO("&Mono Track"), OnNewWaveTrack,
          AudioIONotBusyFlag(), wxT("Ctrl+Shift+N") ),
       Command( wxT("NewStereoTrack"), XXO("&Stereo Track"),
-         FN(OnNewStereoTrack), AudioIONotBusyFlag() )
-   ) )
+         OnNewStereoTrack, AudioIONotBusyFlag() )
+   )
 };
-#undef FN
 
 }

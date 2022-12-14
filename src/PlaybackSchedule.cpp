@@ -38,7 +38,23 @@ PlaybackPolicy::BufferTimes
 PlaybackPolicy::SuggestedBufferTimes(PlaybackSchedule &)
 {
    using namespace std::chrono;
+#if 1
+   // Shorter times than in the default policy so that responses, to changes of
+   // loop region or speed slider or other such controls, don't lag too much
+   return { 0.05s, 0.05s, 0.25s };
+#else
+/*
+The old values, going very far back.
+
+There are old comments in the code about larger batches of work filling the
+queue with samples, to reduce CPU usage.  Maybe this doesn't matter with most
+modern machines, or maybe there will prove to be a need to choose the numbers
+more smartly than these hardcoded values.  Maybe we will need to figure out
+adaptiveness of the buffer size by detecting how long the work takes.  Maybe
+we can afford even smaller times.
+*/
    return { 4.0s, 4.0s, 10.0s };
+#endif
 }
 
 bool PlaybackPolicy::AllowSeek(PlaybackSchedule &)
@@ -88,8 +104,8 @@ PlaybackPolicy::GetPlaybackSlice(PlaybackSchedule &schedule, size_t available)
       const double extraRealTime = (TimeQueueGrainSize + 1) / mRate;
       auto extra = std::min( extraRealTime, deltat - realTimeRemaining );
       auto realTime = realTimeRemaining + extra;
-      frames = realTime * mRate;
-      toProduce = realTimeRemaining * mRate;
+      frames = realTime * mRate + 0.5;
+      toProduce = realTimeRemaining * mRate + 0.5;
       schedule.RealTimeAdvance( realTime );
    }
    else
@@ -228,7 +244,7 @@ NewDefaultPlaybackPolicy::GetPlaybackSlice(
    double deltat = (frames / mRate) * mLastPlaySpeed;
 
    if (deltat > realTimeRemaining) {
-      toProduce = frames = (realTimeRemaining * mRate) / mLastPlaySpeed;
+      toProduce = frames = 0.5 + (realTimeRemaining * mRate) / mLastPlaySpeed;
       auto realTime = realTimeRemaining;
       double extra = 0;
       if (RevertToOldDefault(schedule)) {
@@ -236,7 +252,7 @@ NewDefaultPlaybackPolicy::GetPlaybackSlice(
          // satisfy its end condition
          const double extraRealTime =
             ((TimeQueueGrainSize + 1) / mRate) * mLastPlaySpeed;
-         auto extra = std::min( extraRealTime, deltat - realTimeRemaining );
+         extra = std::min( extraRealTime, deltat - realTimeRemaining );
          frames = ((realTimeRemaining + extra) * mRate) / mLastPlaySpeed;
       }
       schedule.RealTimeAdvance( realTimeRemaining + extra );

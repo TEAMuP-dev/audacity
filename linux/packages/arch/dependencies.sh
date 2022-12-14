@@ -2,8 +2,8 @@
 
 build_deps=(
    gcc
-   git 
-   cmake 
+   git
+   cmake
    python-pip
 )
 
@@ -12,16 +12,16 @@ deps=(
    alsa-lib
    gtk2
    expat
-   libid3tag 
+   libid3tag
    libogg
    libvorbis
    flac
    lame
    twolame
    libmad
-   libsndfile 
+   libsndfile
    jack
-   lilv 
+   lilv
    lv2
    portaudio
    portsmf
@@ -36,8 +36,16 @@ deps=(
    libjpeg-turbo
    libsm
    ffmpeg
+   harfbuzz
+   freetype2
+   fontconfig
+   mesa
+   mpg123
+   wavpack
+   wxwidgets-gtk3
+   vst3sdk
 )
 
 pacman -Syu --noconfirm \
    "${build_deps[@]}" \
-   "${deps[@]}" 
+   "${deps[@]}"

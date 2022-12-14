@@ -95,7 +95,7 @@ Track::LinkType ToLinkType(int value)
 
 }
 
-static auto DefaultName = XO("Audio Track");
+static auto DefaultName = XO("Audio");
 
 wxString WaveTrack::GetDefaultAudioTrackNamePreference()
 {
@@ -115,31 +115,21 @@ static ProjectFileIORegistry::ObjectReaderEntry readerEntry{
    WaveTrack::New
 };
 
-WaveTrack::Holder WaveTrackFactory::DuplicateWaveTrack(const WaveTrack &orig)
+std::shared_ptr<WaveTrack> WaveTrackFactory::Create()
 {
-   auto waveTrack = std::static_pointer_cast<WaveTrack>( orig.Duplicate() );
-
-   return waveTrack;
+   return Create(QualitySettings::SampleFormatChoice(), mRate.GetRate());
 }
 
-
-WaveTrack::Holder WaveTrackFactory::NewWaveTrack(sampleFormat format, double rate)
+std::shared_ptr<WaveTrack> WaveTrackFactory::Create(sampleFormat format, double rate)
 {
-   if (format == (sampleFormat)0)
-      format = QualitySettings::SampleFormatChoice();
-   if (rate == 0)
-      rate = mRate.GetRate();
-
-   auto waveTrack = std::make_shared<WaveTrack> ( mpFactory, format, rate );
-
-   return waveTrack;
+   return std::make_shared<WaveTrack>(mpFactory, format, rate);
 }
 
 WaveTrack *WaveTrack::New( AudacityProject &project )
 {
    auto &trackFactory = WaveTrackFactory::Get( project );
    auto &tracks = TrackList::Get( project );
-   auto result = tracks.Add(trackFactory.NewWaveTrack());
+   auto result = tracks.Add(trackFactory.Create());
    result->AttachedTrackObjects::BuildAll();
    return result;
 }
@@ -153,13 +143,9 @@ WaveTrack::WaveTrack( const SampleBlockFactoryPtr &pFactory,
 
    mFormat = format;
    mRate = (int) rate;
-   mGain = 1.0;
-   mPan = 0.0;
    mOldGain[0] = 0.0;
    mOldGain[1] = 0.0;
    mWaveColorIndex = 0;
-   SetDefaultName(GetDefaultAudioTrackNamePreference());
-   SetName(GetDefaultName());
    mDisplayMin = -1.0;
    mDisplayMax = 1.0;
    mSpectrumMin = mSpectrumMax = -1; // so values will default to settings
@@ -167,8 +153,8 @@ WaveTrack::WaveTrack( const SampleBlockFactoryPtr &pFactory,
    mLastdBRange = -1;
 }
 
-WaveTrack::WaveTrack(const WaveTrack &orig)
-   : WritableSampleTrack(orig)
+WaveTrack::WaveTrack(const WaveTrack &orig, ProtectedCreationArg &&a)
+   : WritableSampleTrack(orig, std::move(a))
    , mpFactory( orig.mpFactory )
    , mpSpectrumSettings(orig.mpSpectrumSettings
       ? std::make_unique<SpectrogramSettings>(*orig.mpSpectrumSettings)
@@ -181,11 +167,7 @@ WaveTrack::WaveTrack(const WaveTrack &orig)
 {
    mLastScaleType = -1;
    mLastdBRange = -1;
-
    mLegacyProjectFileOffset = 0;
-
-   Init(orig);
-
    for (const auto &clip : orig.mClips)
       mClips.push_back
          ( std::make_unique<WaveClip>( *clip, mpFactory, true ) );
@@ -200,12 +182,10 @@ void WaveTrack::Init(const WaveTrack &orig)
    mFormat = orig.mFormat;
    mWaveColorIndex = orig.mWaveColorIndex;
    mRate = orig.mRate;
-   mGain = orig.mGain;
-   mPan = orig.mPan;
+   DoSetGain(orig.GetGain());
+   DoSetPan(orig.GetPan());
    mOldGain[0] = 0.0;
    mOldGain[1] = 0.0;
-   SetDefaultName(orig.GetDefaultName());
-   SetName(orig.GetName());
    mDisplayMin = orig.mDisplayMin;
    mDisplayMax = orig.mDisplayMax;
    mSpectrumMin = orig.mSpectrumMin;
@@ -238,8 +218,8 @@ void WaveTrack::Merge(const Track &orig)
 {
    orig.TypeSwitch( [&](const WaveTrack *pwt) {
       const WaveTrack &wt = *pwt;
-      mGain    = wt.mGain;
-      mPan     = wt.mPan;
+      DoSetGain(wt.GetGain());
+      DoSetPan(wt.GetPan());
       mDisplayMin = wt.mDisplayMin;
       mDisplayMax = wt.mDisplayMax;
       SetSpectrogramSettings(wt.mpSpectrumSettings
@@ -295,32 +275,34 @@ void WaveTrack::SetPanFromChannelType()
       SetPan( 1.0f );
 }
 
-bool WaveTrack::LinkConsistencyCheck()
+bool WaveTrack::LinkConsistencyFix(bool doFix, bool completeList)
 {
-   auto err = WritableSampleTrack::LinkConsistencyCheck();
-
-   auto linkType = GetLinkType();
-   if (static_cast<int>(linkType) == 1 || //Comes from old audacity version
-       linkType == LinkType::Aligned) 
-   {
-      auto next = dynamic_cast<WaveTrack*>(*std::next(GetOwner()->Find(this)));
-      if (next == nullptr)
-      {
-         //next track is not a wave track, fix and report error
-          wxLogWarning(
-             wxT("Right track %s is expected to be a WaveTrack.\n Removing link from left wave track %s."),
-             next->GetName(), GetName());
-         SetLinkType(LinkType::None);
-         SetChannel(MonoChannel);
-         err = true;
-      }
-      else
-      {
-         auto newLinkType = AreAligned(SortedClipArray(), next->SortedClipArray())
-            ? LinkType::Aligned : LinkType::Group;
-         //not an error
-         if (newLinkType != linkType)
-            SetLinkType(newLinkType);
+   auto err = !WritableSampleTrack::LinkConsistencyFix(doFix, completeList);
+   if (completeList) {
+      auto linkType = GetLinkType();
+      if (static_cast<int>(linkType) == 1 || //Comes from old audacity version
+          linkType == LinkType::Aligned) {
+         auto next =
+            dynamic_cast<WaveTrack*>(*std::next(GetOwner()->Find(this)));
+         if (next == nullptr) {
+            //next track is absent or not a wave track, fix and report error
+            if (doFix) {
+               wxLogWarning(L"Right track %s is expected to be a WaveTrack."
+                  "\n Removing link from left wave track %s.",
+                  next->GetName(), GetName());
+               SetLinkType(LinkType::None);
+               SetChannel(MonoChannel);
+            }
+            err = true;
+         }
+         else if (doFix) {
+            auto newLinkType =
+               AreAligned(SortedClipArray(), next->SortedClipArray())
+               ? LinkType::Aligned : LinkType::Group;
+            //not an error
+            if (newLinkType != linkType)
+               SetLinkType(newLinkType);
+         }
       }
    }
    return !err;
@@ -465,7 +447,9 @@ const WaveClip* WaveTrack::FindClipByName(const wxString& name) const
 
 Track::Holder WaveTrack::Clone() const
 {
-   return std::make_shared<WaveTrack>( *this );
+   auto result = std::make_shared<WaveTrack>(*this, ProtectedCreationArg{});
+   result->Init(*this);
+   return result;
 }
 
 wxString WaveTrack::MakeClipCopyName(const wxString& originalName) const
@@ -511,20 +495,30 @@ void WaveTrack::SetRate(double newRate)
 
 float WaveTrack::GetGain() const
 {
-   return mGain;
+   return mGain.load(std::memory_order_relaxed);
+}
+
+void WaveTrack::DoSetGain(float value)
+{
+   mGain.store(value, std::memory_order_relaxed);
 }
 
 void WaveTrack::SetGain(float newGain)
 {
-   if (mGain != newGain) {
-      mGain = newGain;
+   if (GetGain() != newGain) {
+      DoSetGain(newGain);
       Notify();
    }
 }
 
 float WaveTrack::GetPan() const
 {
-   return mPan;
+   return mPan.load(std::memory_order_relaxed);
+}
+
+void WaveTrack::DoSetPan(float value)
+{
+   mPan.store(value, std::memory_order_relaxed);
 }
 
 void WaveTrack::SetPan(float newPan)
@@ -534,8 +528,8 @@ void WaveTrack::SetPan(float newPan)
    else if (newPan < -1.0)
       newPan = -1.0;
 
-   if ( mPan != newPan ) {
-      mPan = newPan;
+   if ( GetPan() != newPan ) {
+      DoSetPan(newPan);
       Notify();
    }
 }
@@ -545,15 +539,17 @@ float WaveTrack::GetChannelGain(int channel) const
    float left = 1.0;
    float right = 1.0;
 
-   if (mPan < 0)
-      right = (mPan + 1.0);
-   else if (mPan > 0)
-      left = 1.0 - mPan;
+   const auto pan = GetPan();
+   if (pan < 0)
+      right = (pan + 1.0);
+   else if (pan > 0)
+      left = 1.0 - pan;
 
+   const auto gain = GetGain();
    if ((channel%2) == 0)
-      return left*mGain;
+      return left * gain;
    else
-      return right*mGain;
+      return right * gain;
 }
 
 float WaveTrack::GetOldChannelGain(int channel) const
@@ -707,11 +703,13 @@ void WaveTrack::Trim (double t0, double t1)
 
 
 WaveTrack::Holder WaveTrack::EmptyCopy(
-   const SampleBlockFactoryPtr &pFactory ) const
+   const SampleBlockFactoryPtr &pFactory, bool keepLink) const
 {
    auto result = std::make_shared<WaveTrack>( pFactory, mFormat, mRate );
    result->Init(*this);
    result->mpFactory = pFactory ? pFactory : mpFactory;
+   if (!keepLink)
+      result->SetLinkType(LinkType::None);
    return result;
 }
 
@@ -969,7 +967,12 @@ void WaveTrack::ClearAndPaste(double t0, // Start of time to clear
       if (st >= t0 && st <= t1) {
          auto it = get_split(st);
          if (clip->GetTrimLeft() != 0)
-            it->right = std::make_shared<WaveClip>(*clip, mpFactory, false, clip->GetSequenceStartTime(), st);
+         {
+            //keep only hidden left part
+            it->right = std::make_shared<WaveClip>(*clip, mpFactory, false);
+            it->right->SetTrimLeft(.0);
+            it->right->ClearRight(clip->GetPlayStartTime());
+         }
          it->rightClipName = clip->GetName();
       }
 
@@ -977,7 +980,12 @@ void WaveTrack::ClearAndPaste(double t0, // Start of time to clear
       if (st >= t0 && st <= t1) {
          auto it = get_split(st);
          if (clip->GetTrimRight() != 0)
-            it->left = std::make_shared<WaveClip>(*clip, mpFactory, false, st, clip->GetSequenceEndTime());
+         {
+            //keep only hidden right part
+            it->left = std::make_shared<WaveClip>(*clip, mpFactory, false);
+            it->left->SetTrimRight(.0);
+            it->left->ClearLeft(clip->GetPlayEndTime());
+         }
          it->leftClipName = clip->GetName();
       }
 
@@ -1074,7 +1082,7 @@ void WaveTrack::ClearAndPaste(double t0, // Start of time to clear
             auto trim = src->GetPlayEndTime() - src->GetPlayStartTime();
             target->Paste(target->GetPlayStartTime(), src);
             target->SetTrimLeft(trim);
-            //Play start time needs to be ajusted after 
+            //Play start time needs to be adjusted after 
             //prepending data to the sequence
             target->Offset(-trim);
          };
@@ -1380,11 +1388,8 @@ void WaveTrack::SyncLockAdjust(double oldT1, double newT1)
       if (IsEmpty(oldT1, oldT1))
       {
          // Check if clips can move
-         bool clipsCanMove = true;
-         gPrefs->Read(wxT("/GUI/EditClipCanMove"), &clipsCanMove);
-         if (clipsCanMove) {
+         if (EditClipsCanMove.Read()) {
             auto tmp = Cut (oldT1, GetEndTime() + 1.0/GetRate());
-
             Paste(newT1, tmp.get());
          }
          return;
@@ -1433,8 +1438,8 @@ void WaveTrack::PasteWaveTrack(double t0, const WaveTrack* other)
 
     //wxPrintf("paste: we have at least one clip\n");
 
-    bool singleClipMode = (other->GetNumClips() == 1 &&
-        other->GetStartTime() == 0.0);
+    bool singleClipMode = other->GetNumClips() == 1 &&
+        std::abs(other->GetStartTime()) < LongSamplesToTime(1) * 0.5;
 
     const double insertDuration = other->GetEndTime();
     if (insertDuration != 0 && insertDuration < 1.0 / mRate)
@@ -1883,10 +1888,10 @@ bool WaveTrack::HandleXMLTag(const std::string_view& tag, const AttributesList &
          else if (this->Track::HandleCommonXMLAttribute(attr, value))
             ;
          else if (attr == "gain" && value.TryGet(dblValue))
-            mGain = dblValue;
+            DoSetGain(dblValue);
          else if (attr == "pan" && value.TryGet(dblValue) &&
                   (dblValue >= -1.0) && (dblValue <= 1.0))
-            mPan = dblValue;
+            DoSetPan(dblValue);
          else if (attr == "channel")
          {
             if (!value.TryGet(nValue) ||
@@ -1895,7 +1900,7 @@ bool WaveTrack::HandleXMLTag(const std::string_view& tag, const AttributesList &
             mChannel = static_cast<Track::ChannelType>( nValue );
          }
          else if (attr == "linked" && value.TryGet(nValue))
-            SetLinkType(ToLinkType(nValue));
+            SetLinkType(ToLinkType(nValue), false);
          else if (attr == "colorindex" && value.TryGet(nValue))
             // Don't use SetWaveColorIndex as it sets the clips too.
             mWaveColorIndex  = nValue;
@@ -1918,6 +1923,10 @@ void WaveTrack::HandleXMLEndTag(const std::string_view&  WXUNUSED(tag))
 
 XMLTagHandler *WaveTrack::HandleXMLChild(const std::string_view& tag)
 {
+   if ( auto pChild = WaveTrackIORegistry::Get()
+          .CallObjectAccessor(tag, *this) )
+      return pChild;
+
    //
    // This is legacy code (1.2 and previous) and is not called for NEW projects!
    //
@@ -1948,8 +1957,8 @@ XMLTagHandler *WaveTrack::HandleXMLChild(const std::string_view& tag)
    //
    if (tag == "waveclip")
       return CreateClip();
-   else
-      return NULL;
+
+   return nullptr;
 }
 
 void WaveTrack::WriteXML(XMLWriter &xmlFile) const
@@ -1961,10 +1970,12 @@ void WaveTrack::WriteXML(XMLWriter &xmlFile) const
    xmlFile.WriteAttr(wxT("linked"), static_cast<int>(GetLinkType()));
    this->WritableSampleTrack::WriteXMLAttributes(xmlFile);
    xmlFile.WriteAttr(wxT("rate"), mRate);
-   xmlFile.WriteAttr(wxT("gain"), (double)mGain);
-   xmlFile.WriteAttr(wxT("pan"), (double)mPan);
+   xmlFile.WriteAttr(wxT("gain"), static_cast<double>(GetGain()));
+   xmlFile.WriteAttr(wxT("pan"), static_cast<double>(GetPan()));
    xmlFile.WriteAttr(wxT("colorindex"), mWaveColorIndex );
    xmlFile.WriteAttr(wxT("sampleformat"), static_cast<long>(mFormat) );
+
+   WaveTrackIORegistry::Get().CallWriters(*this, xmlFile);
 
    for (const auto &clip : mClips)
    {
@@ -2853,6 +2864,10 @@ bool GetEditClipsCanMove()
    if( mIsSyncLocked )
       return true;
    bool editClipsCanMove;
-   gPrefs->Read(wxT("/GUI/EditClipCanMove"), &editClipsCanMove, false);
-   return editClipsCanMove;
+   return EditClipsCanMove.Read();
 }
+
+BoolSetting EditClipsCanMove{
+   L"/GUI/EditClipCanMove",         false  };
+
+DEFINE_XML_METHOD_REGISTRY( WaveTrackIORegistry );

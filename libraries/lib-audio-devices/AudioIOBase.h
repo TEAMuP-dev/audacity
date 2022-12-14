@@ -11,6 +11,7 @@ Paul Licameli split from AudioIO.h
 #ifndef __AUDACITY_AUDIO_IO_BASE__
 #define __AUDACITY_AUDIO_IO_BASE__
 
+#include <atomic>
 #include <cfloat>
 #include <chrono>
 #include <functional>
@@ -245,11 +246,13 @@ protected:
    std::weak_ptr<AudacityProject> mOwningProject;
 
    /// True if audio playback is paused
-   bool                mPaused;
+   std::atomic<bool>   mPaused{ false };
 
-   volatile int        mStreamToken;
+   /*! Read by worker threads but unchanging during playback */
+   int                 mStreamToken{ 0 };
 
    /// Audio playback rate in samples per second
+   /*! Read by worker threads but unchanging during playback */
    double              mRate;
 
    PaStream           *mPortStreamV19;
@@ -326,6 +329,7 @@ extern AUDIO_DEVICES_API StringSetting AudioIOHost;
 extern AUDIO_DEVICES_API DoubleSetting AudioIOLatencyCorrection;
 extern AUDIO_DEVICES_API DoubleSetting AudioIOLatencyDuration;
 extern AUDIO_DEVICES_API StringSetting AudioIOPlaybackDevice;
+extern AUDIO_DEVICES_API StringSetting AudioIOPlaybackSource;
 extern AUDIO_DEVICES_API DoubleSetting AudioIOPlaybackVolume;
 extern AUDIO_DEVICES_API IntSetting    AudioIORecordChannels;
 extern AUDIO_DEVICES_API StringSetting AudioIORecordingDevice;

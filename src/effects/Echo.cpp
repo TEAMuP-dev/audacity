@@ -23,31 +23,69 @@
 #include "Echo.h"
 #include "LoadEffects.h"
 
-#include <float.h>
-
 #include <wx/intl.h>
 
 #include "../ShuttleGui.h"
-#include "../Shuttle.h"
 #include "../widgets/AudacityMessageBox.h"
 #include "../widgets/valnum.h"
 
-// Define keys, defaults, minimums, and maximums for the effect parameters
-//
-//     Name    Type     Key            Def   Min      Max      Scale
-Param( Delay,  float,   wxT("Delay"),   1.0f, 0.001f,  FLT_MAX, 1.0f );
-Param( Decay,  float,   wxT("Decay"),   0.5f, 0.0f,    FLT_MAX, 1.0f );
+const EffectParameterMethods& EffectEcho::Parameters() const
+{
+   static CapturedParameters<EffectEcho,
+      Delay, Decay
+   > parameters;
+   return parameters;
+}
 
 const ComponentInterfaceSymbol EffectEcho::Symbol
 { XO("Echo") };
 
 namespace{ BuiltinEffectsModule::Registration< EffectEcho > reg; }
 
+
+struct EffectEcho::Instance
+   : public PerTrackEffect::Instance
+   , public EffectInstanceWithBlockSize
+{
+   Instance(const PerTrackEffect& effect)
+      : PerTrackEffect::Instance{ effect }
+   {}
+
+   bool ProcessInitialize(EffectSettings& settings, double sampleRate,
+      ChannelNames chanMap) override;
+
+   size_t ProcessBlock(EffectSettings& settings,
+      const float* const* inBlock, float* const* outBlock, size_t blockLen)  override;
+
+   bool ProcessFinalize() noexcept override;
+
+   unsigned GetAudioOutCount() const override
+   {
+      return 1;
+   }
+
+   unsigned GetAudioInCount() const override
+   {
+      return 1;
+   }
+
+   Floats history;
+   size_t histPos;
+   size_t histLen;
+};
+
+
+
+std::shared_ptr<EffectInstance> EffectEcho::MakeInstance() const
+{
+   return std::make_shared<Instance>(*this);
+}
+
+
+
+
 EffectEcho::EffectEcho()
 {
-   delay = DEF_Delay;
-   decay = DEF_Decay;
-
    SetLinearEffectFlag(true);
 }
 
@@ -57,49 +95,37 @@ EffectEcho::~EffectEcho()
 
 // ComponentInterface implementation
 
-ComponentInterfaceSymbol EffectEcho::GetSymbol()
+ComponentInterfaceSymbol EffectEcho::GetSymbol() const
 {
    return Symbol;
 }
 
-TranslatableString EffectEcho::GetDescription()
+TranslatableString EffectEcho::GetDescription() const
 {
    return XO("Repeats the selected audio again and again");
 }
 
-ManualPageID EffectEcho::ManualPage()
+ManualPageID EffectEcho::ManualPage() const
 {
    return L"Echo";
 }
 
 // EffectDefinitionInterface implementation
 
-EffectType EffectEcho::GetType()
+EffectType EffectEcho::GetType() const
 {
    return EffectTypeProcess;
 }
 
-// EffectProcessor implementation
-
-unsigned EffectEcho::GetAudioInCount()
+bool EffectEcho::Instance::ProcessInitialize(
+   EffectSettings& settings, double sampleRate, ChannelNames)
 {
-   return 1;
-}
-
-unsigned EffectEcho::GetAudioOutCount()
-{
-   return 1;
-}
-
-bool EffectEcho::ProcessInitialize(sampleCount WXUNUSED(totalLen), ChannelNames WXUNUSED(chanMap))
-{
-   if (delay == 0.0)
-   {
+   auto& echoSettings = GetSettings(settings);  
+   if (echoSettings.delay == 0.0)
       return false;
-   }
 
    histPos = 0;
-   auto requestedHistLen = (sampleCount) (mSampleRate * delay);
+   auto requestedHistLen = (sampleCount) (sampleRate * echoSettings.delay);
 
    // Guard against extreme delay values input by the user
    try {
@@ -111,22 +137,24 @@ bool EffectEcho::ProcessInitialize(sampleCount WXUNUSED(totalLen), ChannelNames 
       history.reinit(histLen, true);
    }
    catch ( const std::bad_alloc& ) {
-      Effect::MessageBox( XO("Requested value exceeds memory capacity.") );
+      mProcessor.MessageBox( XO("Requested value exceeds memory capacity.") );
       return false;
    }
 
    return history != NULL;
 }
 
-bool EffectEcho::ProcessFinalize()
+bool EffectEcho::Instance::ProcessFinalize() noexcept
 {
-   history.reset();
    return true;
 }
 
-size_t EffectEcho::ProcessBlock(float **inBlock, float **outBlock, size_t blockLen)
+size_t EffectEcho::Instance::ProcessBlock(EffectSettings& settings,
+   const float *const *inBlock, float *const *outBlock, size_t blockLen)
 {
-   float *ibuf = inBlock[0];
+   auto& echoSettings = GetSettings(settings);
+   
+   const float *ibuf = inBlock[0];
    float *obuf = outBlock[0];
 
    for (decltype(blockLen) i = 0; i < blockLen; i++, histPos++)
@@ -135,74 +163,93 @@ size_t EffectEcho::ProcessBlock(float **inBlock, float **outBlock, size_t blockL
       {
          histPos = 0;
       }
-      history[histPos] = obuf[i] = ibuf[i] + history[histPos] * decay;
+      history[histPos] = obuf[i] = ibuf[i] + history[histPos] * echoSettings.decay;
    }
 
    return blockLen;
 }
 
-bool EffectEcho::DefineParams( ShuttleParams & S ){
-   S.SHUTTLE_PARAM( delay, Delay );
-   S.SHUTTLE_PARAM( decay, Decay );
-   return true;
+
+
+struct EffectEcho::Validator
+   : EffectUIValidator
+{
+   Validator(EffectUIClientInterface& effect,
+      EffectSettingsAccess& access, const EffectEchoSettings& settings)
+      : EffectUIValidator{ effect, access }
+      , mSettings{ settings }
+   {}
+   virtual ~Validator() = default;
+
+   Effect& GetEffect() const { return static_cast<Effect&>(mEffect); }
+
+   bool ValidateUI() override;
+   bool UpdateUI() override;
+
+   void PopulateOrExchange(ShuttleGui& S);
+
+   EffectEchoSettings mSettings;
+};
+
+
+
+std::unique_ptr<EffectUIValidator> EffectEcho::PopulateOrExchange(
+   ShuttleGui & S, EffectInstance &, EffectSettingsAccess &access,
+   const EffectOutputs *)
+{
+   auto& settings = access.Get();
+   auto& myEffSettings = GetSettings(settings);
+   auto result = std::make_unique<Validator>(*this, access, myEffSettings);
+   result->PopulateOrExchange(S);
+   return result;
 }
 
 
-bool EffectEcho::GetAutomationParameters(CommandParameters & parms)
+void EffectEcho::Validator::PopulateOrExchange(ShuttleGui & S)
 {
-   parms.WriteFloat(KEY_Delay, delay);
-   parms.WriteFloat(KEY_Decay, decay);
+   auto& echoSettings = mSettings;
 
-   return true;
-}
-
-bool EffectEcho::SetAutomationParameters(CommandParameters & parms)
-{
-   ReadAndVerifyFloat(Delay);
-   ReadAndVerifyFloat(Decay);
-
-   delay = Delay;
-   decay = Decay;
-
-   return true;
-}
-
-void EffectEcho::PopulateOrExchange(ShuttleGui & S)
-{
    S.AddSpace(0, 5);
 
    S.StartMultiColumn(2, wxALIGN_CENTER);
    {
       S.Validator<FloatingPointValidator<double>>(
-            3, &delay, NumValidatorStyle::NO_TRAILING_ZEROES,
-            MIN_Delay, MAX_Delay
-         )
-         .AddTextBox(XXO("&Delay time (seconds):"), wxT(""), 10);
+            3, &echoSettings.delay, NumValidatorStyle::NO_TRAILING_ZEROES,
+            Delay.min, Delay.max )
+         .AddTextBox(XXO("&Delay time (seconds):"), L"", 10);
 
       S.Validator<FloatingPointValidator<double>>(
-            3, &decay, NumValidatorStyle::NO_TRAILING_ZEROES,
-            MIN_Decay, MAX_Decay)
-         .AddTextBox(XXO("D&ecay factor:"), wxT(""), 10);
+            3, &echoSettings.decay, NumValidatorStyle::NO_TRAILING_ZEROES,
+            Decay.min, Decay.max)
+         .AddTextBox(XXO("D&ecay factor:"), L"", 10);
    }
-   S.EndMultiColumn();
+   S.EndMultiColumn();   
 }
 
-bool EffectEcho::TransferDataToWindow()
+
+bool EffectEcho::Validator::ValidateUI()
 {
-   if (!mUIParent->TransferDataToWindow())
+   mAccess.ModifySettings
+   (
+      [this](EffectSettings& settings)
    {
-      return false;
+      // pass back the modified settings to the MessageBuffer
+
+      EffectEcho::GetSettings(settings) = mSettings;
+      return nullptr;
    }
+   );
 
    return true;
 }
 
-bool EffectEcho::TransferDataFromWindow()
+
+bool EffectEcho::Validator::UpdateUI()
 {
-   if (!mUIParent->Validate() || !mUIParent->TransferDataFromWindow())
-   {
-      return false;
-   }
+   // get the settings from the MessageBuffer and write them to our local copy
+   const auto& settings = mAccess.Get();
+
+   mSettings = GetSettings(settings);
 
    return true;
 }

@@ -14,13 +14,14 @@
 #include "../ProjectWindow.h"
 #include "../ProjectWindows.h"
 #include "../ProjectSelectionManager.h"
+#include "RealtimeEffectPanel.h"
 #include "../toolbars/ToolManager.h"
 #include "../Screenshot.h"
+#include "../TrackPanelAx.h"
 #include "TempDirectory.h"
-#include "../UndoManager.h"
+#include "UndoManager.h"
 #include "../commands/CommandContext.h"
 #include "../commands/CommandManager.h"
-#include "../commands/ScreenshotCommand.h"
 #include "../effects/EffectManager.h"
 #include "../effects/EffectUI.h"
 #include "../effects/RealtimeEffectManager.h"
@@ -29,9 +30,381 @@
 #include "../widgets/AudacityMessageBox.h"
 
 #include <wx/log.h>
+#include <wx/stdpaths.h>
+
+#include "XMLFileReader.h"
 
 // private helper classes and functions
 namespace {
+
+
+using EffectsMenuGroups = std::vector<std::pair<TranslatableString, std::vector<TranslatableString>>>;
+
+struct EffectsMenuGroupsHandler : XMLTagHandler
+{
+   struct EffectsHandler : XMLTagHandler
+   {
+      std::optional<std::string> textContent;
+      std::vector<TranslatableString>& effects;
+
+      EffectsHandler(std::vector<TranslatableString>& effects) : effects(effects) { }
+
+      bool HandleXMLTag(const std::string_view& tag, const AttributesList& attrs) override { return true; }
+      void HandleXMLContent(const std::string_view& text) override { textContent = text; }
+      void HandleXMLEndTag(const std::string_view& tag) override
+      {
+         if(textContent.has_value() && tag == "Effect")
+            effects.emplace_back(TranslatableString { *textContent, {} });
+         textContent.reset();
+      }
+      XMLTagHandler* HandleXMLChild(const std::string_view& tag) override
+      {
+         if(tag == "Effect")
+            return this;
+         return nullptr;
+      }
+
+   };
+
+   struct GroupHandler : XMLTagHandler
+   {
+      std::optional<std::string> textContent;
+      std::unique_ptr<EffectsHandler> effectsHandler;
+      std::pair<TranslatableString, std::vector<TranslatableString>>& group;
+
+      GroupHandler(std::pair<TranslatableString, std::vector<TranslatableString>>& group) : group(group) { }
+
+      bool HandleXMLTag(const std::string_view& tag, const AttributesList& attrs) override { return true; }
+      void HandleXMLContent(const std::string_view& text) override { textContent = text; }
+      void HandleXMLEndTag(const std::string_view& tag) override
+      {
+         if(textContent.has_value() && tag == "Name")
+            group.first = TranslatableString { *textContent, { } };
+         textContent.reset();
+      }
+      XMLTagHandler* HandleXMLChild(const std::string_view& tag) override
+      {
+         if(tag == "Effects")
+         {
+            effectsHandler = std::make_unique<EffectsHandler>(group.second);
+            return &*effectsHandler;
+         }
+         if(tag == "Name")
+            return this;
+
+         return nullptr;
+      }
+   };
+
+   EffectsMenuGroups& groups;
+   std::unique_ptr<GroupHandler> groupHandler;
+
+   EffectsMenuGroupsHandler(EffectsMenuGroups& groups) : groups(groups) { }
+
+   bool HandleXMLTag(const std::string_view& tag, const AttributesList& attrs) override { return true; }
+
+   XMLTagHandler* HandleXMLChild(const std::string_view& tag) override
+   {
+      if(tag == "Group")
+      {
+         groups.resize(groups.size() + 1);
+         groupHandler = std::make_unique<GroupHandler>(groups.back());
+         return &*groupHandler;
+      }
+      return nullptr;
+   }
+};
+
+EffectsMenuGroups LoadEffectsMenuGroups(const wxString& path)
+{
+   EffectsMenuGroups result;
+   EffectsMenuGroupsHandler handler(result);
+
+   XMLFileReader reader;
+   reader.Parse(&handler, path);
+   return result;
+}
+
+enum class GroupBy
+{
+   Publisher,
+   Type
+};
+
+enum class SortBy
+{
+   Name,
+   PublisherName,
+   TypeName
+};
+   
+// Some weird special case stuff just for Noise Reduction so that there is
+// more informative help
+CommandFlag FixBatchFlags(CommandFlag batchflags, const PluginDescriptor* plug)
+{
+   if ( plug->GetSymbol().Msgid() == XO( "Noise Reduction" ) )
+      return ( batchflags | NoiseReductionTimeSelectedFlag() ) & ~TimeSelectedFlag();
+   return batchflags;
+}
+
+   
+bool IsEnabledPlugin(const PluginDescriptor* plug)
+{
+   if( PluginManager::Get().IsPluginLoaded(plug->GetID()) && EffectManager::Get().IsHidden(plug->GetID()) )
+         return false;
+   if ( !plug->IsEnabled() ){
+      return false;// don't add to menus!
+   }
+   return true;
+}
+
+bool IsDefaultPlugin(const PluginDescriptor* plug)
+{
+   if (plug->IsEffectDefault()
+#ifdef EXPERIMENTAL_DA
+      // Move Nyquist prompt into nyquist group.
+      && (plug->GetSymbol() !=
+            ComponentInterfaceSymbol("Nyquist Effects Prompt"))
+      && (plug->GetSymbol() != ComponentInterfaceSymbol("Nyquist Tools Prompt"))
+      && (plug->GetSymbol() != ComponentInterfaceSymbol(NYQUIST_PROMPT_ID))
+#endif
+      )
+      return true;
+   return false;
+}
+
+bool IsBundledPlugin(const PluginDescriptor* plug)
+{
+   if(IsDefaultPlugin(plug))
+      return true;
+   auto applicationResourcePath = wxFileName(FileNames::ResourcesDir());
+   auto pluginPath = wxFileName(plug->GetPath());
+   pluginPath.MakeAbsolute();
+   return pluginPath.GetPath().StartsWith(applicationResourcePath.GetPath());
+}
+
+auto MakeGroupsFilter(const EffectsMenuGroups& list) -> auto
+{
+   return [=](const PluginDescriptor* plug)
+   {
+      if(!IsEnabledPlugin(plug))
+         return false;
+
+      for(auto& p : list)
+      {
+         for(auto& name : p.second)
+         {
+            if(name == plug->GetSymbol().Msgid())
+               return true;
+         }
+      }
+      return false;
+   };
+}
+
+// Forward-declared function has its definition below with OnEffect in view
+void AddEffectMenuItemGroup(
+   MenuTable::BaseItemPtrs &table,
+   const TranslatableStrings & names,
+   const PluginIDs & plugs,
+   const std::vector<CommandFlag> & flags,
+   bool useSubgroups);
+
+   
+void AddGroupedEffectMenuItems(
+   MenuTable::BaseItemPtrs &table,
+   std::vector<const PluginDescriptor*> & plugs,
+   CommandFlag batchflags,
+   CommandFlag realflags,
+   GroupBy groupBy,
+   bool useSubgroups)
+{
+   TranslatableString last;
+   TranslatableString current;
+
+   size_t pluginCnt = plugs.size();
+
+   TranslatableStrings groupNames;
+   PluginIDs groupPlugs;
+   std::vector<CommandFlag> groupFlags;
+
+   for (size_t i = 0; i < pluginCnt; i++)
+   {
+      const PluginDescriptor *plug = plugs[i];
+
+      auto name = plug->GetSymbol().Msgid();
+
+      if (plug->IsEffectInteractive())
+         name += XO("...");
+      
+      if (groupBy == GroupBy::Publisher/*wxT("groupby:publisher")*/)
+      {
+         current = EffectManager::Get().GetVendorName(plug->GetID());
+         if (current.empty())
+         {
+            current = XO("Unknown");
+         }
+      }
+      else if (groupBy == GroupBy::Type /*wxT("groupby:type")*/)
+      {
+         current = EffectManager::Get().GetEffectFamilyName(plug->GetID());
+         if (current.empty())
+         {
+            current = XO("Unknown");
+         }
+      }
+
+      if (current != last)
+      {
+         using namespace MenuTable;
+         BaseItemPtrs temp;
+         bool bInSubmenu = !last.empty() && (groupNames.size() > 1);
+
+         AddEffectMenuItemGroup(temp,
+            groupNames,
+            groupPlugs, groupFlags, useSubgroups);
+
+         table.push_back( MenuOrItems( wxEmptyString,
+            ( bInSubmenu ? last : TranslatableString{} ), std::move( temp )
+         ) );
+
+         groupNames.clear();
+         groupPlugs.clear();
+         groupFlags.clear();
+         last = current;
+      }
+
+      groupNames.push_back( name );
+      groupPlugs.push_back(plug->GetID());
+      groupFlags.push_back(FixBatchFlags( batchflags, plug ) );
+   }
+
+   if (groupNames.size() > 0)
+   {
+      using namespace MenuTable;
+      BaseItemPtrs temp;
+      bool bInSubmenu = groupNames.size() > 1;
+
+      AddEffectMenuItemGroup(temp,
+         groupNames, groupPlugs, groupFlags, useSubgroups);
+
+      table.push_back( MenuOrItems( wxEmptyString,
+         ( bInSubmenu ? current : TranslatableString{} ), std::move( temp )
+      ) );
+   }
+}
+
+void AddSortedEffectMenuItems(
+   MenuTable::BaseItemPtrs &table,
+   std::vector<const PluginDescriptor*> & plugs,
+   CommandFlag batchflags,
+   CommandFlag realflags,
+   SortBy sortBy,
+   bool useSubgroups)
+{
+   size_t pluginCnt = plugs.size();
+
+   TranslatableStrings groupNames;
+   PluginIDs groupPlugs;
+   std::vector<CommandFlag> groupFlags;
+
+   for (size_t i = 0; i < pluginCnt; i++)
+   {
+      const PluginDescriptor *plug = plugs[i];
+
+      auto name = plug->GetSymbol().Msgid();
+
+      if (plug->IsEffectInteractive())
+         name += XO("...");
+
+      TranslatableString group;
+      if (sortBy == SortBy::PublisherName/* wxT("sortby:publisher:name")*/)
+      {
+         group = EffectManager::Get().GetVendorName(plug->GetID());
+      }
+      else if (sortBy == SortBy::TypeName /*wxT("sortby:type:name")*/)
+      {
+         group = EffectManager::Get().GetEffectFamilyName(plug->GetID());
+      }
+
+      if (plug->IsEffectDefault())
+      {
+         group = {};
+      }
+
+      groupNames.push_back(
+         group.empty()
+            ? name
+            : XO("%s: %s").Format( group, name )
+      );
+
+      groupPlugs.push_back(plug->GetID());
+      groupFlags.push_back(FixBatchFlags( batchflags, plug ) );
+   }
+
+   if (groupNames.size() > 0)
+   {
+      AddEffectMenuItemGroup(
+         table, groupNames, groupPlugs, groupFlags, useSubgroups);
+   }
+}
+
+auto MakeAddGroupItems(const EffectsMenuGroups& list, CommandFlag batchflags, CommandFlag realflags) -> auto
+{
+   return [=](MenuTable::BaseItemPtrs& items, std::vector<const PluginDescriptor*>& plugs)
+   {
+      for(auto& p : list)
+      {
+         TranslatableStrings groupNames;
+         PluginIDs groupPlugs;
+         std::vector<CommandFlag> groupFlags;
+         
+         auto srcNames = p.second;
+         std::sort(srcNames.begin(), srcNames.end(), TranslationLess);
+
+         for(auto& name : srcNames)
+         {
+            auto it = std::find_if(plugs.begin(), plugs.end(), [&name](const PluginDescriptor* other)
+            {
+               return name == other->GetSymbol().Msgid();
+            });
+            if(it == plugs.end())
+               continue;
+
+            auto plug = *it;
+            if(plug->IsEffectInteractive())
+               groupNames.push_back(name + XO("..."));
+            else
+               groupNames.push_back( name );
+
+            groupPlugs.push_back(plug->GetID());
+            groupFlags.push_back(FixBatchFlags( batchflags, plug ) );
+         }
+
+         if (!groupNames.empty())
+         {
+            using namespace MenuTable;
+            BaseItemPtrs temp;
+
+            AddEffectMenuItemGroup(temp,
+               groupNames, groupPlugs, groupFlags, false);
+
+            items.push_back( MenuOrItems( wxEmptyString,
+               p.first, std::move( temp )
+            ) );
+         }
+      }
+   };
+}
+
+struct MenuSectionBuilder
+{
+   std::vector<const PluginDescriptor*> plugins;
+
+   std::function<bool(const PluginDescriptor*)> filter;
+   std::function<bool(const PluginDescriptor*, const PluginDescriptor*)> compare;
+   std::function<void(MenuTable::BaseItemPtrs&, std::vector<const PluginDescriptor*>&)> add;
+};
 
 AttachedWindows::RegisteredFactory sMacrosWindowKey{
    []( AudacityProject &parent ) -> wxWeakRef< wxWindow > {
@@ -43,20 +416,28 @@ AttachedWindows::RegisteredFactory sMacrosWindowKey{
 };
 
 bool ShowManager(
-   PluginManager &pm, wxWindow *parent, EffectType type)
+   PluginManager &pm, wxWindow *parent)
 {
-   pm.CheckForUpdates();
-
-   PluginRegistrationDialog dlg(parent, type);
+   PluginRegistrationDialog dlg(parent);
    return dlg.ShowModal() == wxID_OK;
 }
 
-void DoManagePluginsMenu(AudacityProject &project, EffectType type)
+void DoManagePluginsMenu(AudacityProject &project)
 {
    auto &window = GetProjectFrame( project );
    auto &pm = PluginManager::Get();
-   if (ShowManager(pm, &window, type))
+   if (ShowManager(pm, &window))
       MenuCreator::RebuildAllMenuBars();
+}
+
+void DoManageRealtimeEffectsSidePanel(AudacityProject &project)
+{
+   auto &trackFocus = TrackFocus::Get(project);
+   auto &panel = RealtimeEffectPanel::Get(project);
+   if (panel.IsShown())
+      panel.HidePanel();
+   else
+      panel.ShowPanel(trackFocus.Get(), true);
 }
 
 bool CompareEffectsByName(const PluginDescriptor *a, const PluginDescriptor *b)
@@ -147,162 +528,6 @@ bool CompareEffectsByType(const PluginDescriptor *a, const PluginDescriptor *b)
          bkey.Translation(), b->GetSymbol().Translation(), b->GetPath() );
 }
 
-// Forward-declared function has its definition below with OnEffect in view
-void AddEffectMenuItemGroup(
-   MenuTable::BaseItemPtrs &table,
-   const TranslatableStrings & names,
-   const PluginIDs & plugs,
-   const std::vector<CommandFlag> & flags,
-   bool isDefault);
-
-void AddEffectMenuItems(
-   MenuTable::BaseItemPtrs &table,
-   std::vector<const PluginDescriptor*> & plugs,
-   CommandFlag batchflags,
-   CommandFlag realflags,
-   bool isDefault)
-{
-   size_t pluginCnt = plugs.size();
-
-   auto groupBy = EffectsGroupBy.Read();
-
-   bool grouped = false;
-   if (groupBy.StartsWith(wxT("groupby")))
-   {
-      grouped = true;
-   }
-
-   // Some weird special case stuff just for Noise Reduction so that there is
-   // more informative help
-   const auto getBatchFlags = [&]( const PluginDescriptor *plug ){
-      if ( plug->GetSymbol().Msgid() == XO( "Noise Reduction" ) )
-         return
-            ( batchflags | NoiseReductionTimeSelectedFlag() ) & ~TimeSelectedFlag();
-      return batchflags;
-   };
-
-   TranslatableStrings groupNames;
-   PluginIDs groupPlugs;
-   std::vector<CommandFlag> groupFlags;
-   if (grouped)
-   {
-      TranslatableString last;
-      TranslatableString current;
-
-      for (size_t i = 0; i < pluginCnt; i++)
-      {
-         const PluginDescriptor *plug = plugs[i];
-
-         auto name = plug->GetSymbol().Msgid();
-
-         if (plug->IsEffectInteractive())
-            name += XO("...");
-
-         if (groupBy == wxT("groupby:publisher"))
-         {
-            current = EffectManager::Get().GetVendorName(plug->GetID());
-            if (current.empty())
-            {
-               current = XO("Unknown");
-            }
-         }
-         else if (groupBy == wxT("groupby:type"))
-         {
-            current = EffectManager::Get().GetEffectFamilyName(plug->GetID());
-            if (current.empty())
-            {
-               current = XO("Unknown");
-            }
-         }
-
-         if (current != last)
-         {
-            using namespace MenuTable;
-            BaseItemPtrs temp;
-            bool bInSubmenu = !last.empty() && (groupNames.size() > 1);
-
-            AddEffectMenuItemGroup(temp,
-               groupNames,
-               groupPlugs, groupFlags, isDefault);
-
-            table.push_back( MenuOrItems( wxEmptyString,
-               ( bInSubmenu ? last : TranslatableString{} ), std::move( temp )
-            ) );
-
-            groupNames.clear();
-            groupPlugs.clear();
-            groupFlags.clear();
-            last = current;
-         }
-
-         groupNames.push_back( name );
-         groupPlugs.push_back(plug->GetID());
-         groupFlags.push_back(
-            plug->IsEffectRealtime() ? realflags : getBatchFlags( plug ) );
-      }
-
-      if (groupNames.size() > 0)
-      {
-         using namespace MenuTable;
-         BaseItemPtrs temp;
-         bool bInSubmenu = groupNames.size() > 1;
-
-         AddEffectMenuItemGroup(temp,
-            groupNames, groupPlugs, groupFlags, isDefault);
-
-         table.push_back( MenuOrItems( wxEmptyString,
-            ( bInSubmenu ? current : TranslatableString{} ), std::move( temp )
-         ) );
-      }
-   }
-   else
-   {
-      for (size_t i = 0; i < pluginCnt; i++)
-      {
-         const PluginDescriptor *plug = plugs[i];
-
-         auto name = plug->GetSymbol().Msgid();
-
-         if (plug->IsEffectInteractive())
-            name += XO("...");
-
-         TranslatableString group;
-         if (groupBy == wxT("sortby:publisher:name"))
-         {
-            group = EffectManager::Get().GetVendorName(plug->GetID());
-         }
-         else if (groupBy == wxT("sortby:type:name"))
-         {
-            group = EffectManager::Get().GetEffectFamilyName(plug->GetID());
-         }
-
-         if (plug->IsEffectDefault())
-         {
-            group = {};
-         }
-
-         groupNames.push_back(
-            group.empty()
-               ? name
-               : XO("%s: %s").Format( group, name )
-         );
-
-         groupPlugs.push_back(plug->GetID());
-         groupFlags.push_back(
-            plug->IsEffectRealtime() ? realflags : getBatchFlags( plug ) );
-      }
-
-      if (groupNames.size() > 0)
-      {
-         AddEffectMenuItemGroup(
-            table, groupNames, groupPlugs, groupFlags, isDefault);
-      }
-
-   }
-
-   return;
-}
-
 /// The effects come from a plug in list
 /// This code iterates through the list, adding effects into
 /// the menu.
@@ -313,65 +538,185 @@ MenuTable::BaseItemPtrs PopulateEffectsMenu(
 {
    MenuTable::BaseItemPtrs result;
    PluginManager & pm = PluginManager::Get();
+   
+   const auto groupby = EffectsGroupBy.Read();
 
-   std::vector<const PluginDescriptor*> defplugs;
-   std::vector<const PluginDescriptor*> optplugs;
+   std::vector<MenuSectionBuilder> sections;
+   
+   auto MakeAddSortedItems = [=](SortBy sortby, bool useSubgroups)
+   {
+      return [=](MenuTable::BaseItemPtrs& items, std::vector<const PluginDescriptor*>& plugins)
+      {
+         return AddSortedEffectMenuItems(items, plugins, batchflags, realflags, sortby, useSubgroups);
+      };
+   };
 
-   EffectManager & em = EffectManager::Get();
-   for (auto &plugin : pm.EffectsOfType(type)) {
-      auto plug = &plugin;
-      if( plug->IsInstantiated() && em.IsHidden(plug->GetID()) )
-         continue;
-      if ( !plug->IsEnabled() ){
-         ;// don't add to menus!
+   auto MakeAddGroupedItems = [=](GroupBy groupBy, bool useSubgroups)
+   {
+      return [=](MenuTable::BaseItemPtrs& items, std::vector<const PluginDescriptor*>& plugins)
+      {
+         return AddGroupedEffectMenuItems(items, plugins, batchflags, realflags, groupBy, useSubgroups);
+      };
+   };
+
+   auto DefaultFilter = [](auto plug) { return IsEnabledPlugin(plug) && IsDefaultPlugin(plug); };
+   if(groupby == "default")
+   {
+      if(type == EffectTypeProcess)
+      {
+         static auto effectMenuDefaults = [] {
+            wxFileName path = wxFileName(FileNames::ResourcesDir(), wxT("EffectsMenuDefaults.xml"));
+            return LoadEffectsMenuGroups(path.GetFullPath());
+         }();
+         static auto groupsFilter = MakeGroupsFilter(effectMenuDefaults);
+
+         sections.emplace_back(
+            MenuSectionBuilder {
+               {},
+               [=](auto plug) { return IsEnabledPlugin(plug) && groupsFilter(plug); },
+               nullptr,
+               MakeAddGroupItems(effectMenuDefaults, batchflags, realflags)
+            });
+         sections.emplace_back(
+            MenuSectionBuilder {
+               {},
+               IsEnabledPlugin,
+               CompareEffectsByPublisher,
+               MakeAddGroupedItems(GroupBy::Publisher, false )
+            });
       }
-      else if (plug->IsEffectDefault()
-#ifdef EXPERIMENTAL_DA
-         // Move Nyquist prompt into nyquist group.
-         && (plug->GetSymbol() !=
-               ComponentInterfaceSymbol("Nyquist Effects Prompt"))
-         && (plug->GetSymbol() != ComponentInterfaceSymbol("Nyquist Tools Prompt"))
-         && (plug->GetSymbol() != ComponentInterfaceSymbol(NYQUIST_PROMPT_ID))
-#endif
-         )
-         defplugs.push_back(plug);
-      else
-         optplugs.push_back(plug);
+      else//Generators/Analyzers
+      {
+         sections.emplace_back(
+            MenuSectionBuilder {
+               {},
+               [](auto plug){ return IsEnabledPlugin(plug) && IsBundledPlugin(plug); } ,
+               CompareEffectsByName,
+               MakeAddSortedItems(SortBy::Name, false )
+            });
+         sections.emplace_back(
+            MenuSectionBuilder {
+               {},
+               IsEnabledPlugin,
+               CompareEffectsByPublisher,
+               MakeAddGroupedItems(GroupBy::Publisher, true )
+            });
+      }
+   }
+   else if(groupby == "sortby:publisher:name")
+   {
+      sections.emplace_back(
+         MenuSectionBuilder {
+            {},
+            DefaultFilter,
+            CompareEffectsByName,
+            MakeAddSortedItems(SortBy::PublisherName, false)
+         });
+      sections.emplace_back(
+         MenuSectionBuilder {
+            {},
+            IsEnabledPlugin,
+            CompareEffectsByPublisherAndName,
+            MakeAddSortedItems(SortBy::PublisherName, true )
+         });
+   }
+   else if(groupby == "sortby:type:name")
+   {
+      sections.emplace_back(
+         MenuSectionBuilder {
+            {},
+            DefaultFilter,
+            CompareEffectsByName,
+            MakeAddSortedItems(SortBy::TypeName, false)
+         });
+      sections.emplace_back(
+         MenuSectionBuilder {
+            {},
+            IsEnabledPlugin,
+            CompareEffectsByPublisherAndName,
+            MakeAddSortedItems(SortBy::TypeName, true )
+         });
+   }
+   else if(groupby == "groupby:publisher")
+   {
+      sections.emplace_back(
+         MenuSectionBuilder {
+            {},
+            DefaultFilter,
+            CompareEffectsByPublisher,
+            MakeAddGroupedItems(GroupBy::Publisher, false)
+         });
+      sections.emplace_back(
+         MenuSectionBuilder {
+            {},
+            IsEnabledPlugin,
+            CompareEffectsByPublisher,
+            MakeAddGroupedItems(GroupBy::Publisher, true )
+         });
+   }
+   else if(groupby == "groupby:type")
+   {
+      sections.emplace_back(
+         MenuSectionBuilder {
+            {},
+            DefaultFilter,
+            CompareEffectsByType,
+            MakeAddGroupedItems(GroupBy::Type, false)
+         });
+      sections.emplace_back(
+         MenuSectionBuilder {
+            {},
+            IsEnabledPlugin,
+            CompareEffectsByType,
+            MakeAddGroupedItems(GroupBy::Type, true )
+         });
+   }
+   else //if(groupby == "sortby:name")
+   {
+      sections.emplace_back(
+         MenuSectionBuilder {
+            {},
+            DefaultFilter,
+            CompareEffectsByName,
+            MakeAddSortedItems(SortBy::Name, false)
+         });
+      sections.emplace_back(
+         MenuSectionBuilder {
+            {},
+            IsEnabledPlugin,
+            CompareEffectsByName,
+            MakeAddSortedItems(SortBy::Name, true)
+         });
+   }
+   for(auto& plugin : pm.EffectsOfType(type))
+   {
+      for(auto& section : sections)
+      {
+         if(section.filter(&plugin))
+         {
+            section.plugins.push_back(&plugin);
+            break;
+         }
+      }
    }
 
-   wxString groupby = EffectsGroupBy.Read();
+   for(auto& section : sections)
+   {
+      if(section.compare != nullptr)
+         std::sort(section.plugins.begin(), section.plugins.end(), section.compare);
 
-   using Comparator = bool(*)(const PluginDescriptor*, const PluginDescriptor*);
-   Comparator comp1, comp2;
-   if (groupby == wxT("sortby:name"))
-      comp1 = comp2 = CompareEffectsByName;
-   else if (groupby == wxT("sortby:publisher:name"))
-      comp1 = CompareEffectsByName, comp2 = CompareEffectsByPublisherAndName;
-   else if (groupby == wxT("sortby:type:name"))
-      comp1 = CompareEffectsByName, comp2 = CompareEffectsByTypeAndName;
-   else if (groupby == wxT("groupby:publisher"))
-      comp1 = comp2 = CompareEffectsByPublisher;
-   else if (groupby == wxT("groupby:type"))
-      comp1 = comp2 = CompareEffectsByType;
-   else // name
-      comp1 = comp2 = CompareEffectsByName;
+      MenuTable::BaseItemPtrs items;
+      section.add(items, section.plugins);
 
-   std::sort( defplugs.begin(), defplugs.end(), comp1 );
-   std::sort( optplugs.begin(), optplugs.end(), comp2 );
+      if(items.empty())
+         continue;
 
-   MenuTable::BaseItemPtrs section1;
-   AddEffectMenuItems( section1, defplugs, batchflags, realflags, true );
-
-   MenuTable::BaseItemPtrs section2;
-   AddEffectMenuItems( section2, optplugs, batchflags, realflags, false );
-
-   bool section = !section1.empty() && !section2.empty();
-   result.push_back( MenuTable::Items( "", std::move( section1 ) ) );
-   if ( section )
-      result.push_back( MenuTable::Section( "", std::move( section2 ) ) );
-   else
-      result.push_back( MenuTable::Items( "", std::move( section2 ) ) );
-
+      if(result.empty())
+         result.push_back(MenuTable::Items( "", std::move( items ) ));
+      else
+         result.push_back(MenuTable::Section( "", std::move( items ) ));
+   }
+   
    return result;
 }
 
@@ -381,11 +726,9 @@ MenuTable::BaseItemPtrs PopulateMacrosMenu( CommandFlag flags  );
 
 }
 
-namespace PluginActions {
+namespace {
 
 // Menu handler functions
-
-struct Handler : CommandHandlerObject {
 
 void OnResetConfig(const CommandContext &context)
 {
@@ -417,6 +760,8 @@ void OnResetConfig(const CommandContext &context)
    gPrefs->Write("/SelectionToolbarMode", 0);
    gPrefs->Flush();
    DoReloadPreferences(project);
+
+   ProjectWindow::OnResetWindow(context);
    ToolManager::OnResetToolBars(context);
 
    // These are necessary to preserve the newly correctly laid out toolbars.
@@ -440,7 +785,7 @@ void OnResetConfig(const CommandContext &context)
 void OnManageGenerators(const CommandContext &context)
 {
    auto &project = context.project;
-   DoManagePluginsMenu(project, EffectTypeGenerate);
+   DoManagePluginsMenu(project);
 }
 
 void OnEffect(const CommandContext &context)
@@ -452,7 +797,13 @@ void OnEffect(const CommandContext &context)
 void OnManageEffects(const CommandContext &context)
 {
    auto &project = context.project;
-   DoManagePluginsMenu(project, EffectTypeProcess);
+   DoManagePluginsMenu(project);
+}
+
+void OnAddRealtimeEffects(const CommandContext& context)
+{
+   auto& project = context.project;
+   DoManageRealtimeEffectsSidePanel(project);
 }
 
 void OnAnalyzer2(wxCommandEvent& evt) { return; }
@@ -500,6 +851,9 @@ void OnRepeatLastAnalyzer(const CommandContext& context)
    }
 }
 
+void OnApplyMacroDirectlyByName(const CommandContext& context,
+   const MacroID& Name);
+
 void OnRepeatLastTool(const CommandContext& context)
 {
    auto& menuManager = MenuManager::Get(context.project);
@@ -528,13 +882,13 @@ void OnRepeatLastTool(const CommandContext& context)
 void OnManageAnalyzers(const CommandContext &context)
 {
    auto &project = context.project;
-   DoManagePluginsMenu(project, EffectTypeAnalyze);
+   DoManagePluginsMenu(project);
 }
 
 void OnManageTools(const CommandContext &context )
 {
    auto &project = context.project;
-   DoManagePluginsMenu(project, EffectTypeTool);
+   DoManagePluginsMenu(project);
 }
 
 void OnManageMacros(const CommandContext &context )
@@ -594,9 +948,10 @@ void OnDetectUpstreamDropouts(const CommandContext &context)
    auto &commandManager = CommandManager::Get( project );
 
    auto gAudioIO = AudioIO::Get();
-   bool &setting = gAudioIO->mDetectUpstreamDropouts;
-   commandManager.Check(wxT("DetectUpstreamDropouts"), !setting);
-   setting = !setting;
+   auto &setting = gAudioIO->mDetectUpstreamDropouts;
+   auto oldValue = setting.load(std::memory_order_relaxed);
+   commandManager.Check(wxT("DetectUpstreamDropouts"), !oldValue);
+   setting.store(!oldValue, std::memory_order_relaxed);
 }
 
 void OnWriteJournal(const CommandContext &)
@@ -625,6 +980,7 @@ void OnApplyMacroDirectly(const CommandContext &context )
    const MacroID& Name = context.parameter.GET();
    OnApplyMacroDirectlyByName(context, Name);
 }
+
 void OnApplyMacroDirectlyByName(const CommandContext& context, const MacroID& Name)
 {
    auto &project = context.project;
@@ -674,30 +1030,16 @@ void OnAudacityCommand(const CommandContext & ctx)
       ctx, EffectManager::kNone);
 }
 
-}; // struct Handler
-
-} // namespace
-
-static CommandHandlerObject &findCommandHandler(AudacityProject &) {
-   // Handler is not stateful.  Doesn't need a factory registered with
-   // AudacityProject.
-   static PluginActions::Handler instance;
-   return instance;
-};
-
 // Menu definitions? ...
 
-#define FN(X) (& PluginActions::Handler :: X)
-
-// ... buf first some more helper definitions, which use FN
-namespace {
+// ... buf first some more helper definitions
 
 void AddEffectMenuItemGroup(
    MenuTable::BaseItemPtrs &table,
    const TranslatableStrings & names,
    const PluginIDs & plugs,
    const std::vector<CommandFlag> & flags,
-   bool isDefault)
+   bool useSubgroups)
 {
    const int namesCnt = (int) names.size();
    int perGroup;
@@ -718,9 +1060,8 @@ void AddEffectMenuItemGroup(
          groupCnt--;
       }
    }
-
-   // The "default" effects shouldn't be broken into subgroups
-   if (namesCnt > 0 && isDefault)
+   
+   if (namesCnt > 0 && !useSubgroups)
    {
       perGroup = 0;
    }
@@ -735,7 +1076,6 @@ void AddEffectMenuItemGroup(
 
    using namespace MenuTable;
    // This finder scope may be redundant, but harmless
-   auto scope = FinderScope( findCommandHandler );
    auto pTable = &table;
    BaseItemPtrs temp1;
 
@@ -760,11 +1100,10 @@ void AddEffectMenuItemGroup(
          {
             const PluginDescriptor *plug =
                PluginManager::Get().GetPlugin(plugs[i]);
-            wxString item = plug->GetPath();
             if( plug->GetPluginType() == PluginTypeEffect )
-               temp2.push_back( Command( item,
-                  Verbatim( item ),
-                  FN(OnEffect),
+               temp2.push_back( Command( plug->GetID(),
+                  Verbatim( plug->GetPath() ),
+                  OnEffect,
                   flags[i],
                   CommandManager::Options{}
                      .IsEffect()
@@ -783,13 +1122,9 @@ void AddEffectMenuItemGroup(
             PluginManager::Get().GetPlugin(plugs[i]);
          if( plug->GetPluginType() == PluginTypeEffect )
             pTable->push_back( Command(
-               // Call Debug() not MSGID() so that any concatenated "..." is
-               // included in the identifier, preserving old behavior, and
-               // avoiding the collision of the "Silence" command and the
-               // "Silence..." generator
-               names[i].Debug(), // names[i].MSGID(),
+               plug->GetID(),
                names[i],
-               FN(OnEffect),
+               OnEffect,
                flags[i],
                CommandManager::Options{}
                   .IsEffect()
@@ -809,7 +1144,7 @@ void AddEffectMenuItemGroup(
             }
             // Done collecting
             table.push_back( Menu( wxEmptyString,
-               XXO("Plug-in %d to %d").Format( groupNdx + 1, end ),
+               XXO("Plugin %d to %d").Format( groupNdx + 1, end ),
                std::move( temp1 )
             ) );
             items = max;
@@ -818,8 +1153,6 @@ void AddEffectMenuItemGroup(
          }
       }
    }
-
-   return;
 }
 
 MenuTable::BaseItemPtrs PopulateMacrosMenu( CommandFlag flags  )
@@ -829,12 +1162,11 @@ MenuTable::BaseItemPtrs PopulateMacrosMenu( CommandFlag flags  )
    int i;
 
    // This finder scope may be redundant, but harmless
-   auto scope = MenuTable::FinderScope( findCommandHandler );
    for (i = 0; i < (int)names.size(); i++) {
       auto MacroID = ApplyMacroDialog::MacroIdOfName( names[i] );
       result.push_back( MenuTable::Command( MacroID,
          Verbatim( names[i] ), // file name verbatim
-         FN(OnApplyMacroDirectly),
+         OnApplyMacroDirectly,
          flags,
          CommandManager::Options{}.AllowInMacros()
       ) );
@@ -843,12 +1175,9 @@ MenuTable::BaseItemPtrs PopulateMacrosMenu( CommandFlag flags  )
    return result;
 }
 
-}
-
 // Menu definitions
 
 // Under /MenuBar
-namespace {
 using namespace MenuTable;
 
 const ReservedCommandFlag&
@@ -866,14 +1195,11 @@ BaseItemSharedPtr GenerateMenu()
    using Options = CommandManager::Options;
 
    static BaseItemSharedPtr menu{
-   ( FinderScope{ findCommandHandler },
    Menu( wxT("Generate"), XXO("&Generate"),
-#ifdef EXPERIMENTAL_EFFECT_MANAGEMENT
       Section( "Manage",
-         Command( wxT("ManageGenerators"), XXO("Add / Remove Plug-ins..."),
-            FN(OnManageGenerators), AudioIONotBusyFlag() )
+         Command( wxT("ManageGenerators"), XXO("Plugin Manager"),
+            OnManageGenerators, AudioIONotBusyFlag() )
       ),
-#endif
 
       Section("RepeatLast",
          // Delayed evaluation:
@@ -888,10 +1214,10 @@ BaseItemSharedPtr GenerateMenu()
                buildMenuLabel = XO("Repeat Last Generator");
 
             return Command(wxT("RepeatLastGenerator"), buildMenuLabel,
-               FN(OnRepeatLastGenerator),
+               OnRepeatLastGenerator,
                AudioIONotBusyFlag() |
                    HasLastGeneratorFlag(),
-               Options{}.IsGlobal(), findCommandHandler);
+               Options{}.IsGlobal());
          }
       ),
 
@@ -904,14 +1230,14 @@ BaseItemSharedPtr GenerateMenu()
             AudioIONotBusyFlag())
          ); }
       )
-   ) ) };
+   ) };
    return menu;
 }
 
 static const ReservedCommandFlag
 &IsRealtimeNotActiveFlag() { static ReservedCommandFlag flag{
-   [](const AudacityProject &){
-      return !RealtimeEffectManager::Get().RealtimeIsActive();
+   [](const AudacityProject &project){
+      return !RealtimeEffectManager::Get(project).IsActive();
    }
 }; return flag; }  //lll
 
@@ -928,20 +1254,32 @@ const ReservedCommandFlag&
    }; return flag;
 }
 
+static const ReservedCommandFlag&
+   HasTrackFocusFlag() { static ReservedCommandFlag flag{
+      [](const AudacityProject &project) {
+         auto& trackFocus = TrackFocus::Get(const_cast<AudacityProject&>(project));
+         return (trackFocus.Get() != nullptr);
+      }
+   };
+   return flag;
+}
+
 BaseItemSharedPtr EffectMenu()
 {
    // All of this is a bit hacky until we can get more things connected into
    // the plugin manager...sorry! :-(
 
    static BaseItemSharedPtr menu{
-   ( FinderScope{ findCommandHandler },
    Menu( wxT("Effect"), XXO("Effe&ct"),
-#ifdef EXPERIMENTAL_EFFECT_MANAGEMENT
       Section( "Manage",
-         Command( wxT("ManageEffects"), XXO("Add / Remove Plug-ins..."),
-            FN(OnManageEffects), AudioIONotBusyFlag() )
+         Command( wxT("ManageEffects"), XXO("Plugin Manager"),
+            OnManageEffects, AudioIONotBusyFlag() )
       ),
-#endif
+
+      Section( "RealtimeEffects",
+         Command ( wxT("AddRealtimeEffects"), XXO("Add Realtime Effects"),
+            OnAddRealtimeEffects,  HasTrackFocusFlag(), wxT("E") )
+      ),
 
       Section( "RepeatLast",
          // Delayed evaluation:
@@ -956,10 +1294,10 @@ BaseItemSharedPtr EffectMenu()
                buildMenuLabel = XO("Repeat Last Effect");
 
             return Command( wxT("RepeatLastEffect"), buildMenuLabel,
-               FN(OnRepeatLastEffect),
+               OnRepeatLastEffect,
                AudioIONotBusyFlag() | TimeSelectedFlag() |
                   WaveTracksSelectedFlag() | HasLastEffectFlag(),
-               wxT("Ctrl+R"), findCommandHandler );
+               wxT("Ctrl+R") );
          }
       ),
 
@@ -972,7 +1310,7 @@ BaseItemSharedPtr EffectMenu()
             IsRealtimeNotActiveFlag() )
          ); }
       )
-   ) ) };
+   ) };
    return menu;
 }
 
@@ -998,14 +1336,11 @@ BaseItemSharedPtr AnalyzeMenu()
    using Options = CommandManager::Options;
 
    static BaseItemSharedPtr menu{
-   ( FinderScope{ findCommandHandler },
    Menu( wxT("Analyze"), XXO("&Analyze"),
-#ifdef EXPERIMENTAL_EFFECT_MANAGEMENT
       Section( "Manage",
-         Command( wxT("ManageAnalyzers"), XXO("Add / Remove Plug-ins..."),
-            FN(OnManageAnalyzers), AudioIONotBusyFlag() )
+         Command( wxT("ManageAnalyzers"), XXO("Plugin Manager"),
+            OnManageAnalyzers, AudioIONotBusyFlag() )
       ),
-#endif
 
       Section("RepeatLast",
          // Delayed evaluation:
@@ -1020,10 +1355,10 @@ BaseItemSharedPtr AnalyzeMenu()
                buildMenuLabel = XO("Repeat Last Analyzer");
 
             return Command(wxT("RepeatLastAnalyzer"), buildMenuLabel,
-               FN(OnRepeatLastAnalyzer),
+               OnRepeatLastAnalyzer,
                AudioIONotBusyFlag() | TimeSelectedFlag() |
                   WaveTracksSelectedFlag() | HasLastAnalyzerFlag(),
-               Options{}.IsGlobal(), findCommandHandler);
+               Options{}.IsGlobal());
          }
       ),
 
@@ -1038,7 +1373,7 @@ BaseItemSharedPtr AnalyzeMenu()
             IsRealtimeNotActiveFlag() )
          ); }
       )
-   ) ) };
+   ) };
    return menu;
 }
 
@@ -1062,16 +1397,12 @@ BaseItemSharedPtr ToolsMenu()
    using Options = CommandManager::Options;
 
    static BaseItemSharedPtr menu{
-   ( FinderScope{ findCommandHandler },
    Menu( wxT("Tools"), XXO("T&ools"),
       Section( "Manage",
-   #ifdef EXPERIMENTAL_EFFECT_MANAGEMENT
-         Command( wxT("ManageTools"), XXO("Add / Remove Plug-ins..."),
-            FN(OnManageTools), AudioIONotBusyFlag() ),
+         Command( wxT("ManageTools"), XXO("Plugin Manager"),
+            OnManageTools, AudioIONotBusyFlag() ),
 
          //Separator(),
-
-   #endif
 
          Section( "RepeatLast",
          // Delayed evaluation:
@@ -1086,22 +1417,22 @@ BaseItemSharedPtr ToolsMenu()
                buildMenuLabel = XO("Repeat Last Tool");
 
             return Command( wxT("RepeatLastTool"), buildMenuLabel,
-               FN(OnRepeatLastTool),
+               OnRepeatLastTool,
                AudioIONotBusyFlag() |
                   HasLastToolFlag(),
-               Options{}.IsGlobal(), findCommandHandler );
+               Options{}.IsGlobal() );
          }
       ),
 
-      Command( wxT("ManageMacros"), XXO("&Macros..."),
-            FN(OnManageMacros), AudioIONotBusyFlag() ),
+      Command( wxT("ManageMacros"), XXO("&Macro Manager"),
+            OnManageMacros, AudioIONotBusyFlag() ),
 
          Menu( wxT("Macros"), XXO("&Apply Macro"),
             // Palette has no access key to ensure first letter navigation of
             // sub menu
             Section( "",
                Command( wxT("ApplyMacrosPalette"), XXO("Palette..."),
-                  FN(OnApplyMacrosPalette), AudioIONotBusyFlag() )
+                  OnApplyMacrosPalette, AudioIONotBusyFlag() )
             ),
 
             Section( "",
@@ -1114,11 +1445,11 @@ BaseItemSharedPtr ToolsMenu()
 
       Section( "Other",
          Command( wxT("ConfigReset"), XXO("Reset &Configuration"),
-            FN(OnResetConfig),
+            OnResetConfig,
             AudioIONotBusyFlag() ),
 
          Command( wxT("FancyScreenshot"), XXO("&Screenshot..."),
-            FN(OnScreenshot), AudioIONotBusyFlag() ),
+            OnScreenshot, AudioIONotBusyFlag() ),
 
    // PRL: team consensus for 2.2.0 was, we let end users have this diagnostic,
    // as they used to in 1.3.x
@@ -1126,7 +1457,7 @@ BaseItemSharedPtr ToolsMenu()
          // TODO: What should we do here?  Make benchmark a plug-in?
          // Easy enough to do.  We'd call it mod-self-test.
          Command( wxT("Benchmark"), XXO("&Run Benchmark..."),
-            FN(OnBenchmark), AudioIONotBusyFlag() )
+            OnBenchmark, AudioIONotBusyFlag() )
    //#endif
       ),
 
@@ -1145,18 +1476,19 @@ BaseItemSharedPtr ToolsMenu()
       Section( "",
          Command( wxT("SimulateRecordingErrors"),
             XXO("Simulate Recording Errors"),
-            FN(OnSimulateRecordingErrors),
+            OnSimulateRecordingErrors,
             AudioIONotBusyFlag(),
             Options{}.CheckTest(
                [](AudacityProject&){
                   return AudioIO::Get()->mSimulateRecordingErrors; } ) ),
          Command( wxT("DetectUpstreamDropouts"),
             XXO("Detect Upstream Dropouts"),
-            FN(OnDetectUpstreamDropouts),
+            OnDetectUpstreamDropouts,
             AudioIONotBusyFlag(),
             Options{}.CheckTest(
                [](AudacityProject&){
-                  return AudioIO::Get()->mDetectUpstreamDropouts; } ) )
+                  return AudioIO::Get()->mDetectUpstreamDropouts
+                     .load(std::memory_order_relaxed); } ) )
       )
 #endif
 
@@ -1167,14 +1499,14 @@ BaseItemSharedPtr ToolsMenu()
             /* i18n-hint a "journal" is a text file that records
              the user's interactions with the application */
             XXO("Write Journal"),
-            FN(OnWriteJournal),
+            OnWriteJournal,
             AlwaysEnabledFlag,
             Options{}.CheckTest( [](AudacityProject&){
                return Journal::RecordEnabled(); } ) )
       )
 #endif
 
-   ) ) };
+   ) };
    return menu;
 }
 
@@ -1187,46 +1519,45 @@ BaseItemSharedPtr ExtraScriptablesIMenu()
 {
    // These are the more useful to VI user Scriptables.
    static BaseItemSharedPtr menu{
-   ( FinderScope{ findCommandHandler },
    // i18n-hint: Scriptables are commands normally used from Python, Perl etc.
    Menu( wxT("Scriptables1"), XXO("Script&ables I"),
       // Note that the PLUGIN_SYMBOL must have a space between words,
       // whereas the short-form used here must not.
       // (So if you did write "CompareAudio" for the PLUGIN_SYMBOL name, then
       // you would have to use "Compareaudio" here.)
-      Command( wxT("SelectTime"), XXO("Select Time..."), FN(OnAudacityCommand),
+      Command( wxT("SelectTime"), XXO("Select Time..."), OnAudacityCommand,
          AudioIONotBusyFlag() ),
       Command( wxT("SelectFrequencies"), XXO("Select Frequencies..."),
-         FN(OnAudacityCommand),
+         OnAudacityCommand,
          AudioIONotBusyFlag() ),
       Command( wxT("SelectTracks"), XXO("Select Tracks..."),
-         FN(OnAudacityCommand),
+         OnAudacityCommand,
          AudioIONotBusyFlag() ),
       Command( wxT("SetTrackStatus"), XXO("Set Track Status..."),
-         FN(OnAudacityCommand),
+         OnAudacityCommand,
          AudioIONotBusyFlag() ),
       Command( wxT("SetTrackAudio"), XXO("Set Track Audio..."),
-         FN(OnAudacityCommand),
+         OnAudacityCommand,
          AudioIONotBusyFlag() ),
       Command( wxT("SetTrackVisuals"), XXO("Set Track Visuals..."),
-         FN(OnAudacityCommand),
+         OnAudacityCommand,
          AudioIONotBusyFlag() ),
       Command( wxT("GetPreference"), XXO("Get Preference..."),
-         FN(OnAudacityCommand),
+         OnAudacityCommand,
          AudioIONotBusyFlag() ),
       Command( wxT("SetPreference"), XXO("Set Preference..."),
-         FN(OnAudacityCommand),
+         OnAudacityCommand,
          AudioIONotBusyFlag() ),
-      Command( wxT("SetClip"), XXO("Set Clip..."), FN(OnAudacityCommand),
+      Command( wxT("SetClip"), XXO("Set Clip..."), OnAudacityCommand,
          AudioIONotBusyFlag() ),
       Command( wxT("SetEnvelope"), XXO("Set Envelope..."),
-         FN(OnAudacityCommand),
+         OnAudacityCommand,
          AudioIONotBusyFlag() ),
-      Command( wxT("SetLabel"), XXO("Set Label..."), FN(OnAudacityCommand),
+      Command( wxT("SetLabel"), XXO("Set Label..."), OnAudacityCommand,
          AudioIONotBusyFlag() ),
-      Command( wxT("SetProject"), XXO("Set Project..."), FN(OnAudacityCommand),
+      Command( wxT("SetProject"), XXO("Set Project..."), OnAudacityCommand,
          AudioIONotBusyFlag() )
-   ) ) };
+   ) };
    return menu;
 }
 
@@ -1239,39 +1570,38 @@ BaseItemSharedPtr ExtraScriptablesIIMenu()
 {
    // Less useful to VI users.
    static BaseItemSharedPtr menu{
-   ( FinderScope{ findCommandHandler },
    // i18n-hint: Scriptables are commands normally used from Python, Perl etc.
    Menu( wxT("Scriptables2"), XXO("Scripta&bles II"),
-      Command( wxT("Select"), XXO("Select..."), FN(OnAudacityCommand),
+      Command( wxT("Select"), XXO("Select..."), OnAudacityCommand,
          AudioIONotBusyFlag() ),
-      Command( wxT("SetTrack"), XXO("Set Track..."), FN(OnAudacityCommand),
+      Command( wxT("SetTrack"), XXO("Set Track..."), OnAudacityCommand,
          AudioIONotBusyFlag() ),
-      Command( wxT("GetInfo"), XXO("Get Info..."), FN(OnAudacityCommand),
+      Command( wxT("GetInfo"), XXO("Get Info..."), OnAudacityCommand,
          AudioIONotBusyFlag() ),
-      Command( wxT("Message"), XXO("Message..."), FN(OnAudacityCommand),
+      Command( wxT("Message"), XXO("Message..."), OnAudacityCommand,
          AudioIONotBusyFlag() ),
-      Command( wxT("Help"), XXO("Help..."), FN(OnAudacityCommand),
+      Command( wxT("Help"), XXO("Help..."), OnAudacityCommand,
          AudioIONotBusyFlag() ),
-      Command( wxT("Import2"), XXO("Import..."), FN(OnAudacityCommand),
+      Command( wxT("Import2"), XXO("Import..."), OnAudacityCommand,
          AudioIONotBusyFlag() ),
-      Command( wxT("Export2"), XXO("Export..."), FN(OnAudacityCommand),
+      Command( wxT("Export2"), XXO("Export..."), OnAudacityCommand,
          AudioIONotBusyFlag() ),
       Command( wxT("OpenProject2"), XXO("Open Project..."),
-         FN(OnAudacityCommand),
+         OnAudacityCommand,
          AudioIONotBusyFlag() ),
       Command( wxT("SaveProject2"), XXO("Save Project..."),
-         FN(OnAudacityCommand),
+         OnAudacityCommand,
          AudioIONotBusyFlag() ),
-      Command( wxT("Drag"), XXO("Move Mouse..."), FN(OnAudacityCommand),
+      Command( wxT("Drag"), XXO("Move Mouse..."), OnAudacityCommand,
          AudioIONotBusyFlag() ),
       Command( wxT("CompareAudio"), XXO("Compare Audio..."),
-         FN(OnAudacityCommand),
+         OnAudacityCommand,
          AudioIONotBusyFlag() ),
       // i18n-hint: Screenshot in the help menu has a much bigger dialog.
       Command( wxT("Screenshot"), XXO("Screenshot (short format)..."),
-         FN(OnAudacityCommand),
+         OnAudacityCommand,
          AudioIONotBusyFlag() )
-   ) ) };
+   ) };
    return menu;
 }
 
@@ -1281,5 +1611,3 @@ AttachedItem sAttachment6{
 };
 
 }
-
-#undef FN

@@ -6,7 +6,7 @@
 #include "Prefs.h"
 #include "Project.h"
 #include "../ProjectAudioIO.h"
-#include "../ProjectHistory.h"
+#include "ProjectHistory.h"
 #include "../ProjectSettings.h"
 #include "../ProjectWindow.h"
 #include "../SelectUtilities.h"
@@ -18,6 +18,9 @@
 #include "../commands/CommandContext.h"
 #include "../commands/CommandManager.h"
 #include "../tracks/labeltrack/ui/LabelTrackView.h"
+
+using Region = WaveTrack::Region;
+using Regions = WaveTrack::Regions;
 
 // private helper classes and functions
 namespace {
@@ -76,7 +79,7 @@ int DoAddLabel(
 
    // If none found, start a NEW label track and use it
    if (!lt)
-      lt = tracks.Add( std::make_shared<LabelTrack>() );
+      lt = LabelTrack::Create(tracks);
 
 // LLL: Commented as it seemed a little forceful to remove users
 //      selection when adding the label.  This does not happen if
@@ -277,14 +280,9 @@ void EditClipboardByLabel( AudacityProject &project,
 }
 
 /// Namespace for functions for Edit Label submenu
-namespace LabelEditActions {
-
-// exported helper functions
-// none
+namespace {
 
 // Menu handler functions
-
-struct Handler : CommandHandlerObject {
 
 void OnEditLabels(const CommandContext &context)
 {
@@ -336,7 +334,7 @@ void OnPasteNewLabel(const CommandContext &context)
 
          // If no match found, add one
          if (!t)
-            t = tracks.Add( std::make_shared<LabelTrack>() );
+            t = LabelTrack::Create(tracks);
 
          // Select this track so the loop picks it up
          t->SetSelected(true);
@@ -678,37 +676,22 @@ void OnNewLabelTrack(const CommandContext &context)
 {
    auto &project = context.project;
    auto &tracks = TrackList::Get( project );
-   auto &window = ProjectWindow::Get( project );
 
-   auto t = tracks.Add( std::make_shared<LabelTrack>() );
+   auto track = LabelTrack::Create(tracks);
 
    SelectUtilities::SelectNone( project );
 
-   t->SetSelected(true);
+   track->SetSelected(true);
 
    ProjectHistory::Get( project )
       .PushState(XO("Created new label track"), XO("New Track"));
 
-   TrackFocus::Get(project).Set(t);
-   t->EnsureVisible();
+   TrackFocus::Get(project).Set(track);
+   track->EnsureVisible();
 }
-
-}; // struct Handler
-
-} // namespace
-
-static CommandHandlerObject &findCommandHandler(AudacityProject &) {
-   // Handler is not stateful.  Doesn't need a factory registered with
-   // AudacityProject.
-   static LabelEditActions::Handler instance;
-   return instance;
-};
 
 // Menu definitions
 
-#define FN(X) (& LabelEditActions::Handler :: X)
-
-namespace {
 using namespace MenuTable;
 BaseItemSharedPtr LabelEditMenus()
 {
@@ -722,21 +705,20 @@ BaseItemSharedPtr LabelEditMenus()
    // Returns TWO menus.
    
    static BaseItemSharedPtr menus{
-   ( FinderScope{ findCommandHandler },
    Items( wxT("LabelEditMenus"),
    
    Menu( wxT("Labels"), XXO("&Labels"),
       Section( "",
-         Command( wxT("EditLabels"), XXO("&Edit Labels..."), FN(OnEditLabels),
+         Command( wxT("EditLabels"), XXO("&Edit Labels..."), OnEditLabels,
                     AudioIONotBusyFlag() )
       ),
 
       Section( "",
          Command( wxT("AddLabel"), XXO("Add Label at &Selection"),
-            FN(OnAddLabel), AlwaysEnabledFlag, wxT("Ctrl+B") ),
+            OnAddLabel, AlwaysEnabledFlag, wxT("Ctrl+B") ),
          Command( wxT("AddLabelPlaying"),
             XXO("Add Label at &Playback Position"),
-            FN(OnAddLabelPlaying), AudioIOBusyFlag(),
+            OnAddLabelPlaying, AudioIOBusyFlag(),
    #ifdef __WXMAC__
             wxT("Ctrl+.")
    #else
@@ -744,14 +726,14 @@ BaseItemSharedPtr LabelEditMenus()
    #endif
          ),
          Command( wxT("PasteNewLabel"), XXO("Paste Te&xt to New Label"),
-            FN(OnPasteNewLabel),
+            OnPasteNewLabel,
             AudioIONotBusyFlag(), wxT("Ctrl+Alt+V") )
       ),
 
       Section( "",
          Command( wxT("TypeToCreateLabel"),
             XXO("&Type to Create a Label (on/off)"),
-            FN(OnToggleTypeToCreateLabel), AlwaysEnabledFlag,
+            OnToggleTypeToCreateLabel, AlwaysEnabledFlag,
             Options{}.CheckTest(wxT("/GUI/TypeToCreateLabel"), false) )
       )
    ), // first menu
@@ -761,11 +743,11 @@ BaseItemSharedPtr LabelEditMenus()
    Menu( wxT("Labeled"), XXO("La&beled Audio"),
       Section( "",
          /* i18n-hint: (verb)*/
-         Command( wxT("CutLabels"), XXO("&Cut"), FN(OnCutLabels),
+         Command( wxT("CutLabels"), XXO("&Cut"), OnCutLabels,
             AudioIONotBusyFlag() | LabelsSelectedFlag() | WaveTracksExistFlag() |
                TimeSelectedFlag(),
                Options{ wxT("Alt+X"), XO("Label Cut") } ),
-         Command( wxT("DeleteLabels"), XXO("&Delete"), FN(OnDeleteLabels),
+         Command( wxT("DeleteLabels"), XXO("&Delete"), OnDeleteLabels,
             AudioIONotBusyFlag() | LabelsSelectedFlag() | WaveTracksExistFlag() |
                TimeSelectedFlag(),
             Options{ wxT("Alt+K"), XO("Label Delete") } )
@@ -774,39 +756,39 @@ BaseItemSharedPtr LabelEditMenus()
       Section( "",
          /* i18n-hint: (verb) A special way to cut out a piece of audio*/
          Command( wxT("SplitCutLabels"), XXO("&Split Cut"),
-            FN(OnSplitCutLabels), NotBusyLabelsAndWaveFlags,
+            OnSplitCutLabels, NotBusyLabelsAndWaveFlags,
             Options{ wxT("Alt+Shift+X"), XO("Label Split Cut") } ),
          Command( wxT("SplitDeleteLabels"), XXO("Sp&lit Delete"),
-            FN(OnSplitDeleteLabels), NotBusyLabelsAndWaveFlags,
+            OnSplitDeleteLabels, NotBusyLabelsAndWaveFlags,
             Options{ wxT("Alt+Shift+K"), XO("Label Split Delete") } )
       ),
 
       Section( "",
          Command( wxT("SilenceLabels"), XXO("Silence &Audio"),
-            FN(OnSilenceLabels), NotBusyLabelsAndWaveFlags,
+            OnSilenceLabels, NotBusyLabelsAndWaveFlags,
             Options{ wxT("Alt+L"), XO("Label Silence") } ),
          /* i18n-hint: (verb)*/
-         Command( wxT("CopyLabels"), XXO("Co&py"), FN(OnCopyLabels),
+         Command( wxT("CopyLabels"), XXO("Co&py"), OnCopyLabels,
             NotBusyLabelsAndWaveFlags,
             Options{ wxT("Alt+Shift+C"), XO("Label Copy") } )
       ),
 
       Section( "",
          /* i18n-hint: (verb)*/
-         Command( wxT("SplitLabels"), XXO("Spli&t"), FN(OnSplitLabels),
+         Command( wxT("SplitLabels"), XXO("Spli&t"), OnSplitLabels,
             AudioIONotBusyFlag() | LabelsSelectedFlag() | WaveTracksExistFlag(),
             Options{ wxT("Alt+I"), XO("Label Split") } ),
          /* i18n-hint: (verb)*/
-         Command( wxT("JoinLabels"), XXO("&Join"), FN(OnJoinLabels),
+         Command( wxT("JoinLabels"), XXO("&Join"), OnJoinLabels,
             NotBusyLabelsAndWaveFlags,
             Options{ wxT("Alt+J"), XO("Label Join") } ),
          Command( wxT("DisjoinLabels"), XXO("Detac&h at Silences"),
-            FN(OnDisjoinLabels), NotBusyLabelsAndWaveFlags,
+            OnDisjoinLabels, NotBusyLabelsAndWaveFlags,
             wxT("Alt+Shift+J") )
       )
    ) // second menu
 
-   ) ) }; // two menus
+   ) }; // two menus
    return menus;
 }
 
@@ -817,11 +799,8 @@ AttachedItem sAttachment1{
 };
 
 AttachedItem sAttachment2{ wxT("Tracks/Add/Add"),
-   ( FinderScope{ findCommandHandler },
    Command( wxT("NewLabelTrack"), XXO("&Label Track"),
-      FN(OnNewLabelTrack), AudioIONotBusyFlag() )
-   )
+      OnNewLabelTrack, AudioIONotBusyFlag() )
 };
 
 }
-#undef FN

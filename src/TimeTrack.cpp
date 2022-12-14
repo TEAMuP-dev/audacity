@@ -38,6 +38,11 @@ static ProjectFileIORegistry::ObjectReaderEntry readerEntry{
    TimeTrack::New
 };
 
+wxString TimeTrack::GetDefaultName()
+{
+   return _("Time Track");
+}
+
 TimeTrack *TimeTrack::New( AudacityProject &project )
 {
    auto &tracks = TrackList::Get( project );
@@ -65,7 +70,7 @@ void TimeTrack::CleanState()
    mEnvelope->SetTrackLen(DBL_MAX);
    mEnvelope->SetOffset(0);
 
-   SetDefaultName(_("Time Track"));
+   //Time track is always unique
    SetName(GetDefaultName());
 
    mRuler = std::make_unique<Ruler>();
@@ -74,8 +79,9 @@ void TimeTrack::CleanState()
    mRuler->SetFormat(Ruler::TimeFormat);
 }
 
-TimeTrack::TimeTrack(const TimeTrack &orig, double *pT0, double *pT1)
-   : Track(orig)
+TimeTrack::TimeTrack(const TimeTrack &orig, ProtectedCreationArg &&a,
+   double *pT0, double *pT1
+)  : Track(orig, std::move(a))
    , mZoomInfo(orig.mZoomInfo)
 {
    Init(orig);	// this copies the TimeTrack metadata (name, range, etc)
@@ -105,7 +111,6 @@ TimeTrack::TimeTrack(const TimeTrack &orig, double *pT0, double *pT1)
 void TimeTrack::Init(const TimeTrack &orig)
 {
    Track::Init(orig);
-   SetDefaultName(orig.GetDefaultName());
    SetName(orig.GetName());
    SetDisplayLog(orig.GetDisplayLog());
 }
@@ -185,7 +190,9 @@ Track::Holder TimeTrack::Cut( double t0, double t1 )
 
 Track::Holder TimeTrack::Copy( double t0, double t1, bool ) const
 {
-   return std::make_shared<TimeTrack>( *this, &t0, &t1 );
+   auto result = std::make_shared<TimeTrack>(*this, ProtectedCreationArg{}, &t0, &t1);
+   result->Init(*this);
+   return result;
 }
 
 namespace {
@@ -228,7 +235,9 @@ void TimeTrack::InsertSilence(double t, double len)
 
 Track::Holder TimeTrack::Clone() const
 {
-   return std::make_shared<TimeTrack>(*this);
+   auto result = std::make_shared<TimeTrack>(*this, ProtectedCreationArg{});
+   result->Init(*this);
+   return result;
 }
 
 bool TimeTrack::GetInterpolateLog() const
@@ -354,23 +363,11 @@ void TimeTrack::testMe()
 }
 
 //! Installer of the time warper
-static struct WarpFunctionInstaller {
-   Mixer::WarpOptions::DefaultWarpFunction prevFunction;
-
-   static const BoundedEnvelope *Warp(const TrackList &list)
-   {
-      if (auto pTimeTrack = *list.Any<const TimeTrack>().begin())
-         return pTimeTrack->GetEnvelope();
-      else
-         return nullptr;
-   }
-
-   WarpFunctionInstaller()
-      : prevFunction{ Mixer::WarpOptions::SetDefaultWarpFunction(Warp) }
-   {}
-
-   ~WarpFunctionInstaller()
-   {
-      Mixer::WarpOptions::SetDefaultWarpFunction(prevFunction);
-   }
-} installer;
+static Mixer::WarpOptions::DefaultWarp::Scope installer{
+[](const TrackList &list) -> const BoundedEnvelope*
+{
+   if (auto pTimeTrack = *list.Any<const TimeTrack>().begin())
+      return pTimeTrack->GetEnvelope();
+   else
+      return nullptr;
+} };

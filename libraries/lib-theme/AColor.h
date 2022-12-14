@@ -50,6 +50,15 @@ class THEME_API AColor {
    static void Bevel(wxDC & dc, bool up, const wxRect & r);
    static void Bevel2
       (wxDC & dc, bool up, const wxRect & r, bool bSel=false, bool bHighlight = false);
+   // Draw image filling the rect.
+   // In horizontal direction only center pixels are stretched.
+   // In vertical direction image stretched proportionally.
+   static void DrawHStretch(wxDC& dc, const wxRect& rect, wxBitmap& bitmap);
+   static void DrawFrame(wxDC& dc, const wxRect& r, wxBitmap& bitmap);
+   /**
+    * \brief Draw a button that fills a given rect
+    */
+   static void ButtonStretch(wxDC& dc, bool up, const wxRect& r, bool selected = false, bool highlight = false);
    static void BevelTrackInfo(wxDC & dc, bool up, const wxRect & r, bool highlight = false);
    static wxColour Blend(const wxColour & c1, const wxColour & c2);
 
@@ -80,6 +89,8 @@ class THEME_API AColor {
    static void SnapGuidePen(wxDC * dc);
 
    static void PreComputeGradient();
+
+   static void ApplyUpdatedImages();
 
    // Member variables
 

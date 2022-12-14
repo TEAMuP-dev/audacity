@@ -40,7 +40,7 @@ Paul Licameli split from AudacityProject.cpp
 #include "import/Import.h"
 #include "import/ImportMIDI.h"
 #include "QualitySettings.h"
-#include "toolbars/MixerToolBar.h"
+#include "toolbars/MeterToolBar.h"
 #include "toolbars/SelectionBar.h"
 #include "toolbars/SpectralSelectionBar.h"
 #include "toolbars/TimeToolBar.h"
@@ -52,10 +52,27 @@ Paul Licameli split from AudacityProject.cpp
 #include <wx/app.h>
 #include <wx/scrolbar.h>
 #include <wx/sizer.h>
+#include <wx/splitter.h>
 
 #ifdef __WXGTK__
 #include "../images/AudacityLogoAlpha.xpm"
 #endif
+
+namespace {
+   void SaveWindowPreferences(const wxRect& windowRect, const wxRect& normalRect,
+                              bool isMaximized, bool isIconized) {
+      ProjectWindowX.Write(windowRect.GetX());
+      ProjectWindowY.Write(windowRect.GetY());
+      ProjectWindowWidth.Write(windowRect.GetWidth());
+      ProjectWindowHeight.Write(windowRect.GetHeight());
+      ProjectWindowMaximized.Write(isMaximized);
+      ProjectWindowNormalX.Write(normalRect.GetX());
+      ProjectWindowNormalY.Write(normalRect.GetY());
+      ProjectWindowNormalWidth.Write(normalRect.GetWidth());
+      ProjectWindowNormalHeight.Write(normalRect.GetHeight());
+      ProjectWindowIconized.Write(isIconized);
+   }
+}
 
 const int AudacityProjectTimerID = 5200;
 
@@ -124,23 +141,15 @@ void ProjectManager::SaveWindowSize()
       }
       else
          foundIconizedProject =  TRUE;
-
    }
+
    if (validWindowForSaveWindowSize)
    {
       wxRect windowRect = validProject->GetRect();
       wxRect normalRect = validProject->GetNormalizedWindowState();
       bool wndMaximized = validProject->IsMaximized();
-      gPrefs->Write(wxT("/Window/X"), windowRect.GetX());
-      gPrefs->Write(wxT("/Window/Y"), windowRect.GetY());
-      gPrefs->Write(wxT("/Window/Width"), windowRect.GetWidth());
-      gPrefs->Write(wxT("/Window/Height"), windowRect.GetHeight());
-      gPrefs->Write(wxT("/Window/Maximized"), wndMaximized);
-      gPrefs->Write(wxT("/Window/Normal_X"), normalRect.GetX());
-      gPrefs->Write(wxT("/Window/Normal_Y"), normalRect.GetY());
-      gPrefs->Write(wxT("/Window/Normal_Width"), normalRect.GetWidth());
-      gPrefs->Write(wxT("/Window/Normal_Height"), normalRect.GetHeight());
-      gPrefs->Write(wxT("/Window/Iconized"), FALSE);
+
+      SaveWindowPreferences(windowRect, normalRect, wndMaximized, false);
    }
    else
    {
@@ -148,18 +157,10 @@ void ProjectManager::SaveWindowSize()
          validProject = &ProjectWindow::Get( **AllProjects{}.begin() );
          bool wndMaximized = validProject->IsMaximized();
          wxRect normalRect = validProject->GetNormalizedWindowState();
+
          // store only the normal rectangle because the itemized rectangle
          // makes no sense for an opening project window
-         gPrefs->Write(wxT("/Window/X"), normalRect.GetX());
-         gPrefs->Write(wxT("/Window/Y"), normalRect.GetY());
-         gPrefs->Write(wxT("/Window/Width"), normalRect.GetWidth());
-         gPrefs->Write(wxT("/Window/Height"), normalRect.GetHeight());
-         gPrefs->Write(wxT("/Window/Maximized"), wndMaximized);
-         gPrefs->Write(wxT("/Window/Normal_X"), normalRect.GetX());
-         gPrefs->Write(wxT("/Window/Normal_Y"), normalRect.GetY());
-         gPrefs->Write(wxT("/Window/Normal_Width"), normalRect.GetWidth());
-         gPrefs->Write(wxT("/Window/Normal_Height"), normalRect.GetHeight());
-         gPrefs->Write(wxT("/Window/Iconized"), TRUE);
+         SaveWindowPreferences(normalRect, normalRect, wndMaximized, true);
       }
       else {
          // this would be a very strange case that might possibly occur on the Mac
@@ -167,29 +168,18 @@ void ProjectManager::SaveWindowSize()
          // in this case we are going to write only the default values
          wxRect defWndRect;
          GetDefaultWindowRect(&defWndRect);
-         gPrefs->Write(wxT("/Window/X"), defWndRect.GetX());
-         gPrefs->Write(wxT("/Window/Y"), defWndRect.GetY());
-         gPrefs->Write(wxT("/Window/Width"), defWndRect.GetWidth());
-         gPrefs->Write(wxT("/Window/Height"), defWndRect.GetHeight());
-         gPrefs->Write(wxT("/Window/Maximized"), FALSE);
-         gPrefs->Write(wxT("/Window/Normal_X"), defWndRect.GetX());
-         gPrefs->Write(wxT("/Window/Normal_Y"), defWndRect.GetY());
-         gPrefs->Write(wxT("/Window/Normal_Width"), defWndRect.GetWidth());
-         gPrefs->Write(wxT("/Window/Normal_Height"), defWndRect.GetHeight());
-         gPrefs->Write(wxT("/Window/Iconized"), FALSE);
+         SaveWindowPreferences(defWndRect, defWndRect, false, false);
       }
    }
-   gPrefs->Flush();
    sbWindowRectAlreadySaved = true;
 }
 
-#ifdef EXPERIMENTAL_NOTEBOOK
-   extern void AddPages(   AudacityProject * pProj, GuiFactory & Factory,  wxNotebook  * pNotebook );
-#endif
-
 void InitProjectWindow( ProjectWindow &window )
 {
-   auto &project = window.GetProject();
+   auto pProject = window.FindProject();
+   if (!pProject)
+      return;
+   auto &project = *pProject;
 
 #ifdef EXPERIMENTAL_DA2
    SetBackgroundColour(theTheme.Colour( clrMedium ));
@@ -220,17 +210,11 @@ void InitProjectWindow( ProjectWindow &window )
    // Near as I can tell, this is only a problem under Windows.
    //
 
-
    //
    // Create the ToolDock
    //
    ToolManager::Get( project ).CreateWindows();
    ToolManager::Get( project ).LayoutToolBars();
-
-   //
-   // Create the horizontal ruler
-   //
-   auto &ruler = AdornedRulerPanel::Get( project );
 
    //
    // Create the TrackPanel and the scrollbars
@@ -241,22 +225,15 @@ void InitProjectWindow( ProjectWindow &window )
    {
       auto ubs = std::make_unique<wxBoxSizer>(wxVERTICAL);
       ubs->Add( ToolManager::Get( project ).GetTopDock(), 0, wxEXPAND | wxALIGN_TOP );
-      ubs->Add(&ruler, 0, wxEXPAND);
       topPanel->SetSizer(ubs.release());
    }
-
-   // Ensure that the topdock comes before the ruler in the tab order,
-   // irrespective of the order in which they were created.
-   ToolManager::Get(project).GetTopDock()->MoveBeforeInTabOrder(&ruler);
-
-   const auto pPage = window.GetMainPage();
 
    wxBoxSizer *bs;
    {
       auto ubs = std::make_unique<wxBoxSizer>(wxVERTICAL);
       bs = ubs.get();
       bs->Add(topPanel, 0, wxEXPAND | wxALIGN_TOP);
-      bs->Add(pPage, 1, wxEXPAND);
+      bs->Add(window.GetContainerWindow(), 1, wxEXPAND);
       bs->Add( ToolManager::Get( project ).GetBotDock(), 0, wxEXPAND );
       window.SetAutoLayout(true);
       window.SetSizer(ubs.release());
@@ -270,9 +247,16 @@ void InitProjectWindow( ProjectWindow &window )
    //      will be given the focus even if we try to SetFocus().  By
    //      making the TrackPanel that first window, we resolve several
    //      keyboard focus problems.
-   pPage->MoveBeforeInTabOrder(topPanel);
+   window.GetContainerWindow()->MoveAfterInTabOrder(topPanel);
 
-   bs = (wxBoxSizer *)pPage->GetSizer();
+   const auto trackListWindow = window.GetTrackListWindow();
+
+   //
+   // Create the horizontal ruler
+   //
+   auto &ruler = AdornedRulerPanel::Get( project );
+
+   bs = static_cast<wxBoxSizer*>(trackListWindow->GetSizer());
 
    auto vsBar = &window.GetVerticalScrollBar();
    auto hsBar = &window.GetHorizontalScrollBar();
@@ -293,6 +277,7 @@ void InitProjectWindow( ProjectWindow &window )
          hs->Add(vs.release(), 0, wxEXPAND | wxALIGN_TOP);
       }
 
+      bs->Add(&ruler, 0, wxEXPAND | wxALIGN_TOP);
       bs->Add(hs.release(), 1, wxEXPAND | wxALIGN_LEFT | wxALIGN_TOP);
    }
 
@@ -308,16 +293,8 @@ void InitProjectWindow( ProjectWindow &window )
    }
 
    // Lay it out
-   pPage->SetAutoLayout(true);
-   pPage->Layout();
-
-#ifdef EXPERIMENTAL_NOTEBOOK
-   AddPages(this, Factory, pNotebook);
-#endif
-
-   auto mainPanel = window.GetMainPanel();
-
-   mainPanel->Layout();
+   trackListWindow->SetAutoLayout(true);
+   trackListWindow->Layout();
 
    wxASSERT( trackPanel.GetProject() == &project );
 
@@ -365,13 +342,20 @@ AudacityProject *ProjectManager::New()
    
    // Create and show a NEW project
    // Use a non-default deleter in the smart pointer!
-   auto sp = std::make_shared< AudacityProject >();
+   auto sp = AudacityProject::Create();
    AllProjects{}.Add( sp );
    auto p = sp.get();
    auto &project = *p;
    auto &projectHistory = ProjectHistory::Get( project );
    auto &projectManager = Get( project );
    auto &window = ProjectWindow::Get( *p );
+
+   // Issue #2569
+   // There is a dependency on the order of initialisation.
+   // The menus must be created, and registered, before
+   // InitProjectWindows can UpdateMenus.
+   MenuManager::Get(project).CreateMenusAndCommands(project);
+
    InitProjectWindow( window );
 
    // wxGTK3 seems to need to require creating the window using default position
@@ -383,8 +367,6 @@ AudacityProject *ProjectManager::New()
    // This may report an error.
    projectFileManager.OpenNewProject();
 
-   MenuManager::Get( project ).CreateMenusAndCommands( project );
-   
    projectHistory.InitialState();
    projectManager.RestartTimer();
    
@@ -528,6 +510,9 @@ void ProjectManager::OnCloseWindow(wxCloseEvent & event)
    window.ShowFullScreen(false);
 #endif
 
+   // This achieves auto save on close of project before other important
+   // project state is destroyed
+   window.Publish(ProjectWindowDestroyedMessage {});
    ModuleManager::Get().Dispatch(ProjectClosing);
 
    // Stop the timer since there's no need to update anything anymore
@@ -822,8 +807,10 @@ void ProjectManager::OnTimer(wxTimerEvent& WXUNUSED(event))
 {
    auto &project = mProject;
    auto &projectAudioIO = ProjectAudioIO::Get( project );
-   auto mixerToolBar = &MixerToolBar::Get( project );
-   mixerToolBar->UpdateControls();
+   auto meterToolBars = MeterToolBar::GetToolBars( project );
+
+   for (auto& meterToolBar : meterToolBars)
+      meterToolBar.get().UpdateControls();
    
    auto gAudioIO = AudioIO::Get();
    // gAudioIO->GetNumCaptureChannels() should only be positive

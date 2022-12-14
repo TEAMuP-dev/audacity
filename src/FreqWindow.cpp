@@ -187,8 +187,8 @@ FrequencyPlotDialog::FrequencyPlotDialog(wxWindow * parent, wxWindowID id,
                            const wxPoint & pos)
 :  wxDialogWrapper(parent, id, title, pos, wxDefaultSize,
             wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxMAXIMIZE_BOX),
-   mAnalyst(std::make_unique<SpectrumAnalyst>())
-,  mProject{ &project }
+   mProject{ &project }
+,  mAnalyst(std::make_unique<SpectrumAnalyst>())
 {
    SetName();
 
@@ -470,7 +470,7 @@ void FrequencyPlotDialog::Populate()
       S.AddSpace(5);
 
       // ----------------------------------------------------------------
-      // ROW 7: Function, Axix, Grids, Close
+      // ROW 7: Function, Axis, Grids, Close
       // ----------------------------------------------------------------
 
       S.AddSpace(5);
@@ -917,7 +917,7 @@ void FrequencyPlotDialog::PlotPaint(wxPaintEvent & event)
    float xPos = xMin;
 
    // Find the peak nearest the cursor and plot it
-   if ( r.Contains(mMouseX, mMouseY) & (mMouseX!=0) & (mMouseX!=r.width-1) ) {
+   if ( r.Contains(mMouseX, mMouseY) && (mMouseX!=0) && (mMouseX!=r.width-1) ) {
       if (mLogAxis)
          xPos = xMin * pow(xStep, mMouseX - (r.x + 1));
       else
@@ -1212,37 +1212,27 @@ AttachedWindows::RegisteredFactory sFrequencyWindowKey{
 };
 
 // Define our extra menu item that invokes that factory
-struct Handler : CommandHandlerObject {
-   void OnPlotSpectrum(const CommandContext &context)
-   {
-      auto &project = context.project;
-      CommandManager::Get(project).RegisterLastAnalyzer(context);  //Register Plot Spectrum as Last Analyzer
-      auto freqWindow = &GetAttachedWindows(project)
-         .Get< FrequencyPlotDialog >( sFrequencyWindowKey );
+void OnPlotSpectrum(const CommandContext &context)
+{
+   auto &project = context.project;
+   CommandManager::Get(project).RegisterLastAnalyzer(context);  //Register Plot Spectrum as Last Analyzer
+   auto freqWindow = &GetAttachedWindows(project)
+      .Get< FrequencyPlotDialog >( sFrequencyWindowKey );
 
-      if( ::CallVetoDialogHook( freqWindow ) )
-         return;
-      freqWindow->Show(true);
-      freqWindow->Raise();
-      freqWindow->SetFocus();
-   }
-};
-
-CommandHandlerObject &findCommandHandler(AudacityProject &) {
-   // Handler is not stateful.  Doesn't need a factory registered with
-   // AudacityProject.
-   static Handler instance;
-   return instance;
+   if( VetoDialogHook::Call( freqWindow ) )
+      return;
+   freqWindow->Show(true);
+   freqWindow->Raise();
+   freqWindow->SetFocus();
 }
 
 // Register that menu item
 
 using namespace MenuTable;
 AttachedItem sAttachment{ wxT("Analyze/Analyzers/Windows"),
-   ( FinderScope{ findCommandHandler },
-      Command( wxT("PlotSpectrum"), XXO("Plot Spectrum..."),
-         &Handler::OnPlotSpectrum,
-         AudioIONotBusyFlag() | WaveTracksSelectedFlag() | TimeSelectedFlag() ) )
+   Command( wxT("PlotSpectrum"), XXO("Plot Spectrum..."),
+      OnPlotSpectrum,
+      AudioIONotBusyFlag() | WaveTracksSelectedFlag() | TimeSelectedFlag() )
 };
 
 }

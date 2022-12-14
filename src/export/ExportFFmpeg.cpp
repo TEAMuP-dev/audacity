@@ -143,7 +143,7 @@ public:
    ///\param subformat index of export type
    ///\return true if export succeeded
    ProgressResult Export(AudacityProject *project,
-      std::unique_ptr<ProgressDialog> &pDialog,
+      std::unique_ptr<BasicUI::ProgressDialog>& pDialog,
       unsigned channels,
       const wxFileNameWrapper &fName,
       bool selectedOnly,
@@ -156,6 +156,10 @@ public:
 private:
    /// Codec initialization
    bool InitCodecs(AudacityProject* project);
+
+   bool WritePacket(AVPacketWrapper& packet);
+
+   int EncodeAudio(AVPacketWrapper& pkt, int16_t* audio_samples, int nb_samples);
 
    std::shared_ptr<FFmpegFunctions> mFFmpeg;
 
@@ -199,7 +203,7 @@ ExportFFmpeg::ExportFFmpeg()
    for (newfmt = 0; newfmt < FMT_LAST; newfmt++)
    {
       wxString shortname(ExportFFmpegOptions::fmts[newfmt].shortname);
-      //Don't hide export types when there's no av-libs, and don't hide FMT_OTHER
+      // Don't hide export types when there's no av-libs, and don't hide FMT_OTHER
       if (newfmt < FMT_OTHER && mFFmpeg)
       {
          // Format/Codec support is compiled in?
@@ -358,6 +362,9 @@ bool ExportFFmpeg::Init(const char *shortname, AudacityProject *project, const T
    if (!InitCodecs(project))
       return false;
 
+   if (mEncAudioStream->SetParametersFromContext(*mEncAudioCodecCtx) < 0)
+      return false;
+
    if (metadata == NULL)
       metadata = &Tags::Get( *project );
 
@@ -442,7 +449,6 @@ bool ExportFFmpeg::InitCodecs(AudacityProject *project)
    case FMT_M4A:
    {
       int q = gPrefs->Read(wxT("/FileFormats/AACQuality"),-99999);
-      mEncAudioCodecCtx->SetGlobalQuality(q);
 
       q = wxClip( q, 98 * mChannels, 160 * mChannels );
       // Set bit rate to between 98 kbps and 320 kbps (if two channels)
@@ -750,8 +756,37 @@ bool ExportFFmpeg::InitCodecs(AudacityProject *project)
    return true;
 }
 
+bool ExportFFmpeg::WritePacket(AVPacketWrapper& pkt)
+{
+   // Set presentation time of frame (currently in the codec's timebase) in the
+   // stream timebase.
+   if (pkt.GetPresentationTimestamp() != AUDACITY_AV_NOPTS_VALUE)
+      pkt.RescalePresentationTimestamp(
+         mEncAudioCodecCtx->GetTimeBase(), mEncAudioStream->GetTimeBase());
+
+   if (pkt.GetDecompressionTimestamp() != AUDACITY_AV_NOPTS_VALUE)
+      pkt.RescaleDecompressionTimestamp(
+         mEncAudioCodecCtx->GetTimeBase(), mEncAudioStream->GetTimeBase());
+
+   if (pkt.GetDuration() > 0)
+      pkt.RescaleDuration(
+         mEncAudioCodecCtx->GetTimeBase(), mEncAudioStream->GetTimeBase());
+
+   if (
+      mFFmpeg->av_interleaved_write_frame(
+         mEncFormatCtx->GetWrappedValue(), pkt.GetWrappedValue()) != 0)
+   {
+      AudacityMessageBox(
+         XO("FFmpeg : ERROR - Couldn't write audio frame to output file."),
+         XO("FFmpeg Error"), wxOK | wxCENTER | wxICON_EXCLAMATION);
+      return false;
+   }
+
+   return true;
+}
+
 // Returns 0 if no more output, 1 if more output, negative if error
-static int encode_audio(const FFmpegFunctions& ffmpeg, AVCodecContextWrapper*avctx, AVPacketWrapper *pkt, int16_t *audio_samples, int nb_samples)
+int ExportFFmpeg::EncodeAudio(AVPacketWrapper& pkt, int16_t* audio_samples, int nb_samples)
 {
    // Assume *pkt is already initialized.
 
@@ -761,17 +796,18 @@ static int encode_audio(const FFmpegFunctions& ffmpeg, AVCodecContextWrapper*avc
    std::unique_ptr<AVFrameWrapper> frame;
 
    if (audio_samples) {
-      frame = ffmpeg.CreateAVFrameWrapper();
+      frame = mFFmpeg->CreateAVFrameWrapper();
 
       if (!frame)
          return AUDACITY_AVERROR(ENOMEM);
 
       frame->SetSamplesCount(nb_samples);
-      frame->SetFormat(avctx->GetSampleFmt());
-      frame->SetChannelLayout(avctx->GetChannelLayout());
+      frame->SetFormat(mEncAudioCodecCtx->GetSampleFmt());
+      frame->SetChannelLayout(mEncAudioCodecCtx->GetChannelLayout());
 
-      buffer_size = ffmpeg.av_samples_get_buffer_size(
-         NULL, avctx->GetChannels(), nb_samples, avctx->GetSampleFmt(), 0);
+      buffer_size = mFFmpeg->av_samples_get_buffer_size(
+         NULL, mEncAudioCodecCtx->GetChannels(), nb_samples,
+         mEncAudioCodecCtx->GetSampleFmt(), 0);
 
       if (buffer_size < 0) {
          AudacityMessageBox(
@@ -782,7 +818,7 @@ static int encode_audio(const FFmpegFunctions& ffmpeg, AVCodecContextWrapper*avc
          return buffer_size;
       }
 
-      samples = ffmpeg.CreateMemoryBuffer<uint8_t>(buffer_size);
+      samples = mFFmpeg->CreateMemoryBuffer<uint8_t>(buffer_size);
 
       if (samples.empty()) {
          AudacityMessageBox(
@@ -794,9 +830,9 @@ static int encode_audio(const FFmpegFunctions& ffmpeg, AVCodecContextWrapper*avc
          return AUDACITY_AVERROR(ENOMEM);
       }
       /* setup the data pointers in the AVFrame */
-      ret = ffmpeg.avcodec_fill_audio_frame(
-         frame->GetWrappedValue(), avctx->GetChannels(), avctx->GetSampleFmt(),
-         samples.data(), buffer_size, 0);
+      ret = mFFmpeg->avcodec_fill_audio_frame(
+         frame->GetWrappedValue(), mEncAudioCodecCtx->GetChannels(),
+         mEncAudioCodecCtx->GetSampleFmt(), samples.data(), buffer_size, 0);
 
       if (ret < 0) {
          AudacityMessageBox(
@@ -807,11 +843,14 @@ static int encode_audio(const FFmpegFunctions& ffmpeg, AVCodecContextWrapper*avc
          return ret;
       }
 
-      const int channelsCount = avctx->GetChannels();
+      const int channelsCount = mEncAudioCodecCtx->GetChannels();
 
-      for (ch = 0; ch < avctx->GetChannels(); ch++) {
+      for (ch = 0; ch < mEncAudioCodecCtx->GetChannels(); ch++)
+      {
          for (i = 0; i < nb_samples; i++) {
-            switch(static_cast<AudacityAVSampleFormat>(avctx->GetSampleFmt())) {
+            switch (static_cast<AudacityAVSampleFormat>(
+               mEncAudioCodecCtx->GetSampleFmt()))
+            {
             case AUDACITY_AV_SAMPLE_FMT_U8:
                ((uint8_t*)(frame->GetData(0)))[ch + i*channelsCount] = audio_samples[ch + i*channelsCount]/258 + 128;
                break;
@@ -844,13 +883,49 @@ static int encode_audio(const FFmpegFunctions& ffmpeg, AVCodecContextWrapper*avc
       }
    }
 
-   pkt->ResetData();
+   pkt.ResetData();
 
-   ret = ffmpeg.avcodec_encode_audio2(
-      avctx->GetWrappedValue(), pkt->GetWrappedValue(),
-      frame ? frame->GetWrappedValue() : nullptr, &got_output);
+   pkt.SetStreamIndex(mEncAudioStream->GetIndex());
 
-   if (ret < 0) {
+   if (mFFmpeg->avcodec_send_frame != nullptr)
+   {
+      ret = mFFmpeg->avcodec_send_frame(
+         mEncAudioCodecCtx->GetWrappedValue(),
+         frame ? frame->GetWrappedValue() : nullptr);
+
+      while (ret >= 0)
+      {
+         ret = mFFmpeg->avcodec_receive_packet(
+            mEncAudioCodecCtx->GetWrappedValue(), pkt.GetWrappedValue());
+
+         if (ret == AUDACITY_AVERROR(EAGAIN) || ret == AUDACITY_AVERROR_EOF)
+         {
+            ret = 0;
+            break;
+         }
+         else if (ret < 0)
+            break;
+
+         if (!WritePacket(pkt))
+            return -1;
+
+         got_output = true;
+      }
+   }
+   else
+   {
+      ret = mFFmpeg->avcodec_encode_audio2(
+         mEncAudioCodecCtx->GetWrappedValue(), pkt.GetWrappedValue(),
+         frame ? frame->GetWrappedValue() : nullptr, &got_output);
+
+      if (ret == 0)
+      {
+         if (!WritePacket(pkt))
+            return -1;
+      }
+   }
+
+   if (ret < 0 && ret != AUDACITY_AVERROR_EOF) {
       AudacityMessageBox(
          XO("FFmpeg : ERROR - encoding frame failed"),
          XO("FFmpeg Error"),
@@ -858,13 +933,13 @@ static int encode_audio(const FFmpegFunctions& ffmpeg, AVCodecContextWrapper*avc
       );
 
       char buf[64];
-      ffmpeg.av_strerror(ret, buf, sizeof(buf));
+      mFFmpeg->av_strerror(ret, buf, sizeof(buf));
       wxLogDebug(buf);
 
       return ret;
    }
 
-   pkt->ResetTimestamps(); // we dont set frame timestamps thus dont trust the AVPacket timestamps
+   pkt.ResetTimestamps(); // We don't set frame timestamps thus don't trust the AVPacket timestamps
 
    return got_output;
 }
@@ -920,9 +995,9 @@ bool ExportFFmpeg::Finalize()
          //const AVCodec *codec = mEncAudioCodecCtx->codec;
 
          // Pull the bytes out from the FIFO and feed them to the encoder.
-         if (mFFmpeg->av_fifo_generic_read(mEncAudioFifo->GetWrappedValue(), mEncAudioFifoOutBuf.data(), nFifoBytes, NULL) == 0)
+         if (mFFmpeg->av_fifo_generic_read(mEncAudioFifo->GetWrappedValue(), mEncAudioFifoOutBuf.data(), nFifoBytes, nullptr) == 0)
          {
-            encodeResult = encode_audio(*mFFmpeg, mEncAudioCodecCtx.get(), pkt.get(), mEncAudioFifoOutBuf.data(), frame_size);
+            encodeResult = EncodeAudio(*pkt, mEncAudioFifoOutBuf.data(), frame_size);
          }
          else
          {
@@ -936,7 +1011,7 @@ bool ExportFFmpeg::Finalize()
       {
          // Fifo is empty, flush encoder. May be called multiple times.
          encodeResult =
-            encode_audio(*mFFmpeg, mEncAudioCodecCtx.get(), pkt.get(), NULL, 0);
+            EncodeAudio(*pkt.get(), nullptr, 0);
       }
 
       if (encodeResult < 0) {
@@ -945,30 +1020,7 @@ bool ExportFFmpeg::Finalize()
          return false;
       }
       else if (encodeResult == 0)
-         break;
-
-      // We have a packet, send to the muxer
-      pkt->SetStreamIndex(mEncAudioStream->GetIndex());
-
-      // Set presentation time of frame (currently in the codec's timebase) in the stream timebase.
-      if (pkt->GetPresentationTimestamp() != AUDACITY_AV_NOPTS_VALUE)
-         pkt->RescalePresentationTimestamp(mEncAudioCodecCtx->GetTimeBase(), mEncAudioStream->GetTimeBase());
-
-      if (pkt->GetDecompressionTimestamp() != AUDACITY_AV_NOPTS_VALUE)
-         pkt->RescaleDecompressionTimestamp(mEncAudioCodecCtx->GetTimeBase(), mEncAudioStream->GetTimeBase());
-
-      if (pkt->GetDuration() > 0)
-         pkt->RescaleDuration(mEncAudioCodecCtx->GetTimeBase(), mEncAudioStream->GetTimeBase());
-
-      if (mFFmpeg->av_interleaved_write_frame(mEncFormatCtx->GetWrappedValue(), pkt->GetWrappedValue()) != 0)
-      {
-         AudacityMessageBox(
-            XO("FFmpeg : ERROR - Couldn't write last audio frame to output file."),
-            XO("FFmpeg Error"),
-            wxOK | wxCENTER | wxICON_EXCLAMATION
-         );
-         return false;
-      }
+         break;      
    }
 
    // Write any file trailers.
@@ -1029,9 +1081,8 @@ bool ExportFFmpeg::EncodeAudioFrame(int16_t *pFrame, size_t frameSize)
 
       std::unique_ptr<AVPacketWrapper> pkt = mFFmpeg->CreateAVPacketWrapper();
 
-      ret = encode_audio(
-         *mFFmpeg, mEncAudioCodecCtx.get(),
-         pkt.get(),                  // out
+      ret = EncodeAudio(
+         *pkt,                       // out
          mEncAudioFifoOutBuf.data(), // in
          mDefaultFrameSize);
 
@@ -1044,33 +1095,14 @@ bool ExportFFmpeg::EncodeAudioFrame(int16_t *pFrame, size_t frameSize)
          );
          return false;
       }
-      if (ret == 0)
-         continue;
-
-      // Rescale from the codec time_base to the AVStream time_base.
-      if (pkt->GetPresentationTimestamp() != AUDACITY_AV_NOPTS_VALUE)
-         pkt->RescalePresentationTimestamp(mEncAudioCodecCtx->GetTimeBase(), mEncAudioStream->GetTimeBase());
-
-      if (pkt->GetDecompressionTimestamp() != AUDACITY_AV_NOPTS_VALUE)
-         pkt->RescaleDecompressionTimestamp(mEncAudioCodecCtx->GetTimeBase(), mEncAudioStream->GetTimeBase());
-      //wxLogDebug(wxT("FFmpeg : (%d) Writing audio frame with PTS: %lld."), mEncAudioCodecCtx->frame_number, (long long) pkt.pts);
-
-      pkt->SetStreamIndex(mEncAudioStream->GetIndex());
-
-      // Write the encoded audio frame to the output file.
-      if ((ret = mFFmpeg->av_interleaved_write_frame(mEncFormatCtx->GetWrappedValue(), pkt->GetWrappedValue())) < 0)
-      {
-         ShowDiskFullExportErrorDialog(mName);
-         return false;
-      }
    }
    return true;
 }
 
 
-ProgressResult ExportFFmpeg::Export(AudacityProject *project,
-   std::unique_ptr<ProgressDialog> &pDialog,
-   unsigned channels, const wxFileNameWrapper &fName,
+ProgressResult ExportFFmpeg::Export(
+   AudacityProject* project, std::unique_ptr<BasicUI::ProgressDialog>& pDialog,
+   unsigned channels, const wxFileNameWrapper& fName,
    bool selectionOnly, double t0, double t1,
    MixerSpec *mixerSpec, const Tags *metadata, int subformat)
 {
@@ -1130,8 +1162,7 @@ ProgressResult ExportFFmpeg::Export(AudacityProject *project,
       auto &progress = *pDialog;
 
       while (updateResult == ProgressResult::Success) {
-         auto pcmNumSamples = mixer->Process(pcmBufferSize);
-
+         auto pcmNumSamples = mixer->Process();
          if (pcmNumSamples == 0)
             break;
 
@@ -1145,7 +1176,7 @@ ProgressResult ExportFFmpeg::Export(AudacityProject *project,
             break;
          }
 
-         updateResult = progress.Update(mixer->MixGetCurrentTime() - t0, t1 - t0);
+         updateResult = progress.Poll(mixer->MixGetCurrentTime() - t0, t1 - t0);
       }
    }
 

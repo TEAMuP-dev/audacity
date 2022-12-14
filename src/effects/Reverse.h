@@ -15,7 +15,7 @@
 
 #include "Effect.h"
 
-class EffectReverse final : public Effect
+class EffectReverse final : public StatefulEffect
 {
 public:
    static const ComponentInterfaceSymbol Symbol;
@@ -25,17 +25,17 @@ public:
 
    // ComponentInterface implementation
 
-   ComponentInterfaceSymbol GetSymbol() override;
-   TranslatableString GetDescription() override;
+   ComponentInterfaceSymbol GetSymbol() const override;
+   TranslatableString GetDescription() const override;
 
    // EffectDefinitionInterface implementation
 
-   EffectType GetType() override;
-   bool IsInteractive() override;
+   EffectType GetType() const override;
+   bool IsInteractive() const override;
 
    // Effect implementation
 
-   bool Process() override;
+   bool Process(EffectInstance &instance, EffectSettings &settings) override;
 
 private:
    // EffectReverse implementation

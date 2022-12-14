@@ -233,12 +233,12 @@ PlaybackSlice CutPreviewPlaybackPolicy::GetPlaybackSlice(
 {
    size_t frames = available;
    size_t toProduce = frames;
-   sampleCount samples1(mDuration1 * mRate);
+   sampleCount samples1(mDuration1 * mRate + 0.5);
    if (samples1 > 0 && samples1 < frames)
       // Shorter slice than requested, up to the discontinuity
       toProduce = frames = samples1.as_size_t();
    else if (samples1 == 0) {
-      sampleCount samples2(mDuration2 * mRate);
+      sampleCount samples2(mDuration2 * mRate + 0.5);
       if (samples2 < frames) {
          toProduce = samples2.as_size_t();
          // Produce some extra silence so that the time queue consumer can
@@ -535,7 +535,7 @@ void ProjectAudioManager::Stop(bool stopStream /* = true*/)
       gAudioIO->AILADisable();
    #endif
 
-   projectAudioManager.SetPaused( false );
+   projectAudioManager.SetPausedOff();
    //Make sure you tell gAudioIO to unpause
    gAudioIO->SetPaused( false );
 
@@ -559,19 +559,6 @@ void ProjectAudioManager::Stop(bool stopStream /* = true*/)
       toolbar->EnableDisableButtons();
 }
 
-void ProjectAudioManager::Pause()
-{
-   auto &projectAudioManager = *this;
-   bool canStop = projectAudioManager.CanStopAudioStream();
-
-   if ( !canStop ) {
-      auto gAudioIO = AudioIO::Get();
-      gAudioIO->SetPaused(!gAudioIO->IsPaused());
-   }
-   else {
-      OnPause();
-   }
-}
 
 WaveTrackArray ProjectAudioManager::ChooseExistingRecordingTracks(
    AudacityProject &proj, bool selectedOnly, double targetRate)
@@ -874,14 +861,14 @@ bool ProjectAudioManager::DoRecord(AudacityProject &project,
          gPrefs->Read(wxT("/GUI/TrackNames/TrackNumber"), &useTrackNumber, false);
          gPrefs->Read(wxT("/GUI/TrackNames/DateStamp"), &useDateStamp, false);
          gPrefs->Read(wxT("/GUI/TrackNames/TimeStamp"), &useTimeStamp, false);
-         defaultTrackName = WaveTrack::GetDefaultAudioTrackNamePreference();
+         defaultTrackName = trackList.MakeUniqueTrackName(WaveTrack::GetDefaultAudioTrackNamePreference());
          gPrefs->Read(wxT("/GUI/TrackNames/RecodingTrackName"), &defaultRecordingTrackName, defaultTrackName);
 
          wxString baseTrackName = recordingNameCustom? defaultRecordingTrackName : defaultTrackName;
 
          Track *first {};
          for (int c = 0; c < recordingChannels; c++) {
-            auto newTrack = WaveTrackFactory::Get( *p ).NewWaveTrack();
+            auto newTrack = WaveTrackFactory::Get( *p ).Create();
             if (!first)
                first = newTrack.get();
 
@@ -983,7 +970,7 @@ void ProjectAudioManager::OnPause()
    }
 
    bool paused = !projectAudioManager.Paused();
-   projectAudioManager.SetPaused( paused );
+   TogglePaused();
 
    auto gAudioIO = AudioIO::Get();
 
@@ -1012,6 +999,23 @@ void ProjectAudioManager::OnPause()
       gAudioIO->SetPaused(paused);
    }
 }
+
+
+void ProjectAudioManager::TogglePaused()
+{
+   mPaused.fetch_xor(1, std::memory_order::memory_order_relaxed);
+}
+
+void ProjectAudioManager::SetPausedOff()
+{
+   mPaused.store(0, std::memory_order::memory_order_relaxed);
+}
+
+bool ProjectAudioManager::Paused() const
+{
+   return mPaused.load(std::memory_order_relaxed) == 1;
+}
+
 
 void ProjectAudioManager::CancelRecording()
 {
@@ -1078,7 +1082,8 @@ void ProjectAudioManager::OnAudioIONewBlocks(const WaveTrackArray *tracks)
 {
    auto &project = mProject;
    auto &projectFileIO = ProjectFileIO::Get( project );
-   projectFileIO.AutoSave(true);
+
+   wxTheApp->CallAfter( [&]{ projectFileIO.AutoSave(true); });
 }
 
 void ProjectAudioManager::OnCommitRecording()
@@ -1089,10 +1094,20 @@ void ProjectAudioManager::OnCommitRecording()
 
 void ProjectAudioManager::OnSoundActivationThreshold()
 {
-   auto &project = mProject;
+   auto& project = mProject;
    auto gAudioIO = AudioIO::Get();
-   if ( gAudioIO && &project == gAudioIO->GetOwningProject().get() ) {
-      wxTheApp->CallAfter( [this]{ Pause(); } );
+   if (gAudioIO && &project == gAudioIO->GetOwningProject().get())
+   {
+      bool canStop =  CanStopAudioStream();
+
+      gAudioIO->SetPaused(!gAudioIO->IsPaused());
+
+      if (canStop)
+      {
+         // Instead of calling ::OnPause here, we can simply do the only thing it does (i.e. toggling the pause state),
+         // because scrubbing can not happen while recording
+         TogglePaused();
+      }
    }
 }
 
@@ -1148,7 +1163,7 @@ DefaultPlayOptions( AudacityProject &project, bool newDefault )
       ProjectRate::Get( project ).GetRate() };
    options.captureMeter = projectAudioIO.GetCaptureMeter();
    options.playbackMeter = projectAudioIO.GetPlaybackMeter();
-   options.envelope = Mixer::WarpOptions::DefaultWarp(TrackList::Get(project));
+   options.envelope = Mixer::WarpOptions::DefaultWarp::Call(TrackList::Get(project));
    options.listener = ProjectAudioManager::Get( project ).shared_from_this();
    
    bool loopEnabled = ViewInfo::Get(project).playRegion.Active();

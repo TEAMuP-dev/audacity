@@ -51,29 +51,29 @@ using WaveClipConstPointers = std::vector < const WaveClip* >;
 //
 #define WAVETRACK_MERGE_POINT_TOLERANCE 0.01
 
-/// \brief Structure to hold region of a wavetrack and a comparison function
-/// for sortability.
-struct Region
-{
-   Region() : start(0), end(0) {}
-   Region(double start_, double end_) : start(start_), end(end_) {}
-
-   double start, end;
-
-   //used for sorting
-   bool operator < (const Region &b) const
-   {
-      return this->start < b.start;
-   }
-};
-
-using Regions = std::vector < Region >;
-
 class Envelope;
 
 class AUDACITY_DLL_API WaveTrack final : public WritableSampleTrack
 {
 public:
+   /// \brief Structure to hold region of a wavetrack and a comparison function
+   /// for sortability.
+   struct Region
+   {
+      Region() : start(0), end(0) {}
+      Region(double start_, double end_) : start(start_), end(end_) {}
+
+      double start, end;
+
+      //used for sorting
+      bool operator < (const Region &b) const
+      {
+         return this->start < b.start;
+      }
+   };
+
+   using Regions = std::vector < Region >;
+
    static wxString GetDefaultAudioTrackNamePreference();
 
    //
@@ -85,7 +85,8 @@ public:
 
    WaveTrack(
       const SampleBlockFactoryPtr &pFactory, sampleFormat format, double rate);
-   WaveTrack(const WaveTrack &orig);
+   //! Copied only in WaveTrack::Clone() !
+   WaveTrack(const WaveTrack &orig, ProtectedCreationArg&&);
 
    // overwrite data excluding the sample sequence but including display
    // settings
@@ -105,14 +106,14 @@ private:
    using Holder = std::shared_ptr<WaveTrack>;
 
    virtual ~WaveTrack();
-
+   
    double GetOffset() const override;
    void SetOffset(double o) override;
    ChannelType GetChannelIgnoringPan() const override;
    ChannelType GetChannel() const override;
    virtual void SetPanFromChannelType() override;
 
-   bool LinkConsistencyCheck() override;
+   bool LinkConsistencyFix(bool doFix, bool completeList) override;
 
    /** @brief Get the time at which the first clip in the track starts
     *
@@ -177,13 +178,19 @@ private:
 
    Track::Holder Cut(double t0, double t1) override;
 
-   // Make another track copying format, rate, color, etc. but containing no
-   // clips
-   // It is important to pass the correct factory (that for the project
-   // which will own the copy) in the unusual case that a track is copied from
-   // another project or the clipboard.  For copies within one project, the
-   // default will do.
-   Holder EmptyCopy(const SampleBlockFactoryPtr &pFactory = {} ) const;
+   //! Make another track copying format, rate, color, etc. but containing no
+   //! clips
+   /*!
+    It is important to pass the correct factory (that for the project
+    which will own the copy) in the unusual case that a track is copied from
+    another project or the clipboard.  For copies within one project, the
+    default will do.
+
+    @param keepLink if false, make the new track mono.  But always preserve
+    any other track group data.
+    */
+   Holder EmptyCopy(const SampleBlockFactoryPtr &pFactory = {},
+      bool keepLink = true) const;
 
    // If forClipboard is true,
    // and there is no clip at the end time of the selection, then the result
@@ -540,9 +547,12 @@ private:
 
    sampleFormat  mFormat;
    int           mRate;
-   float         mGain;
-   float         mPan;
+   //! Atomic because it may be read by worker threads in playback
+   std::atomic<float> mGain{ 1.0f };
+   //! Atomic because it may be read by worker threads in playback
+   std::atomic<float> mPan{ 0.0f };
    int           mWaveColorIndex;
+   //! A memo used by PortAudio thread, doesn't need atomics:
    float         mOldGain[2];
 
 
@@ -559,17 +569,11 @@ private:
    mutable int           mLastdBRange;
    mutable std::vector <Location> mDisplayLocationsCache;
 
-   //
-   // Protected methods
-   //
-
 private:
+   void DoSetPan(float value);
+   void DoSetGain(float value);
 
    void PasteWaveTrack(double t0, const WaveTrack* other);
-
-   //
-   // Private variables
-   //
 
    SampleBlockFactoryPtr mpFactory;
 
@@ -599,8 +603,8 @@ void VisitBlocks(TrackList &tracks, BlockVisitor visitor,
    SampleBlockIDSet *pIDs = nullptr);
 
 // Non-mutating version of the above
-void InspectBlocks(const TrackList &tracks, BlockInspector inspector,
-   SampleBlockIDSet *pIDs = nullptr);
+void InspectBlocks(const TrackList &tracks,
+   BlockInspector inspector, SampleBlockIDSet *pIDs = nullptr);
 
 class ProjectRate;
 
@@ -626,18 +630,36 @@ class AUDACITY_DLL_API WaveTrackFactory final
    const SampleBlockFactoryPtr &GetSampleBlockFactory() const
    { return mpFactory; }
 
+   /**
+    * \brief Creates an unnamed empty WaveTrack with default sample format and default rate
+    * \return Orphaned WaveTrack
+    */
+   std::shared_ptr<WaveTrack> Create();
+
+   /**
+    * \brief Creates an unnamed empty WaveTrack with custom sample format and custom rate
+    * \param format Desired sample format
+    * \param rate Desired sample rate
+    * \return Orphaned WaveTrack
+    */
+   std::shared_ptr<WaveTrack> Create(sampleFormat format, double rate);
+
  private:
    const ProjectRate &mRate;
    SampleBlockFactoryPtr mpFactory;
- public:
-   std::shared_ptr<WaveTrack> DuplicateWaveTrack(const WaveTrack &orig);
-   std::shared_ptr<WaveTrack> NewWaveTrack(
-      sampleFormat format = (sampleFormat)0,
-      double rate = 0);
 };
+
+extern AUDACITY_DLL_API BoolSetting
+     EditClipsCanMove
+;
 
 extern AUDACITY_DLL_API StringSetting AudioTrackNameSetting;
 
 AUDACITY_DLL_API bool GetEditClipsCanMove();
+
+// Generate a registry for serialized data
+#include "XMLMethodRegistry.h"
+using WaveTrackIORegistry = XMLMethodRegistry<WaveTrack>;
+DECLARE_XML_METHOD_REGISTRY( AUDACITY_DLL_API, WaveTrackIORegistry );
 
 #endif // __AUDACITY_WAVETRACK__

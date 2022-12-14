@@ -25,6 +25,8 @@ class AUDACITY_DLL_API TimeTrack final : public Track {
 
  public:
 
+   static wxString GetDefaultName();
+
    // Construct and also build all attachments
    static TimeTrack *New(AudacityProject &project);
 
@@ -38,10 +40,10 @@ class AUDACITY_DLL_API TimeTrack final : public Track {
     * @param pT0 if not null, then the start of the sub-range to copy
     * @param pT1 if not null, then the end of the sub-range to copy
     */
-   TimeTrack(const TimeTrack &orig, double *pT0 = nullptr, double *pT1 = nullptr);
+   TimeTrack(const TimeTrack &orig, ProtectedCreationArg&&,
+      double *pT0 = nullptr, double *pT1 = nullptr);
 
    virtual ~TimeTrack();
-
 
    const TypeInfo &GetTypeInfo() const override;
    static const TypeInfo &ClassTypeInfo();

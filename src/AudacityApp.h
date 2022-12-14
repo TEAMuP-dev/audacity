@@ -16,6 +16,7 @@
 
 
 #include "Identifier.h"
+#include "Observer.h"
 #include "Theme.h"
 
 #include <wx/app.h> // to inherit
@@ -37,7 +38,13 @@ class AudacityApp final : public wxApp {
  public:
    AudacityApp();
    ~AudacityApp();
-   bool OnInit(void) override;
+   
+   bool Initialize(int& argc, wxChar** argv) override;
+#ifdef __WXMAC__
+   bool OSXIsGUIApplication() override;
+#endif
+   
+   bool OnInit() override;
    bool InitPart2();
    int OnRun() override;
    int OnExit(void) override;
@@ -81,13 +88,16 @@ class AudacityApp final : public wxApp {
     void MacOpenFile(const wxString &fileName)  override;
     void MacPrintFile(const wxString &fileName)  override;
     void MacNewFile()  override;
+   #ifdef HAS_CUSTOM_URL_HANDLING
+    void MacOpenURL(const wxString &url) override;
+   #endif
    #endif
 
    #if defined(__WXMSW__) && !defined(__WXUNIVERSAL__) && !defined(__CYGWIN__)
     void AssociateFileTypes();
    #endif
 
-   void SetPreferredSystemAppearance(PreferredSystemAppearance appearance);
+   static void OnThemeChange(struct ThemeChangeMessage);
 
 #ifdef __WXMAC__
    void MacActivateApp();
@@ -96,6 +106,9 @@ class AudacityApp final : public wxApp {
 
 
  private:
+   void OnInit0();
+   Observer::Subscription mThemeChangeSubscription;
+
    std::unique_ptr<CommandHandler> mCmdHandler;
 
    std::unique_ptr<wxSingleInstanceChecker> mChecker;

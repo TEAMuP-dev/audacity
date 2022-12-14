@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: audacity 3.0.3\n"
 "Report-Msgid-Bugs-To: audacity-translation@lists.sourceforge.net\n"
 "POT-Creation-Date: 2021-10-14 10:06-0400\n"
-"PO-Revision-Date: 2022-01-08 09:53+0100\n"
+"PO-Revision-Date: 2022-09-20 22:36+0200\n"
 "Last-Translator: Jozef Matta <jozef.m923@gmail.com>\n"
 "Language-Team: jozefM\n"
 "Language: sk\n"
@@ -14,7 +14,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
-"X-Generator: Poedit 3.0.1\n"
+"X-Generator: Poedit 3.1.1\n"
 "X-Poedit-Bookmarks: -1,3893,-1,-1,-1,-1,-1,-1,-1,-1\n"
 
 #. i18n-hint C++ programming assertion
@@ -43,7 +43,7 @@ msgstr "Poskytuje podporu efektov Vamp pre Audacity"
 msgid ""
 "Click \"Send\" to submit the report to Audacity. This information is "
 "collected anonymously."
-msgstr "Klikni na odoslať správu o chybe do Audacity. Odošle sa to anonimne."
+msgstr "Klikni na odoslať správu o chybe do Audacity. Odošle sa to anonymne."
 
 #: crashreports/crashreporter/CrashReportApp.cpp
 #: src/widgets/ErrorReportDialog.cpp
@@ -1063,7 +1063,7 @@ msgstr "Prejde na ďalší S-expr"
 #: modules/mod-nyq-bench/NyqBench.cpp src/effects/Contrast.cpp
 #: src/effects/ToneGen.cpp src/toolbars/SelectionBar.cpp
 msgid "Start"
-msgstr "Štart"
+msgstr "Začiatok"
 
 #: modules/mod-nyq-bench/NyqBench.cpp
 msgid "Start script"
@@ -1475,7 +1475,7 @@ msgstr "Podpora zmeny extrémnych výšok a tempa"
 #: src/AboutDialog.cpp
 msgctxt "about dialog"
 msgid "Legal"
-msgstr ""
+msgstr "Pravidlá"
 
 #: src/AboutDialog.cpp
 msgid "GPL License"
@@ -1485,13 +1485,15 @@ msgstr "Licencia GPL"
 #: src/AboutDialog.cpp
 msgctxt "about dialog"
 msgid "PRIVACY POLICY"
-msgstr ""
+msgstr "Ochrana osobných údajov"
 
 #: src/AboutDialog.cpp
 msgid ""
 "App update checking and error reporting require network access. These "
 "features are optional."
 msgstr ""
+"Kontrolovanie aktualizácie a nahlásenie chyby vyžaduje pripojenie na "
+"internet. Tieto funkcie sú voliteľné."
 
 #: src/AdornedRulerPanel.cpp
 msgid "Click and drag to define a looping region."
@@ -1529,7 +1531,7 @@ msgstr "Kliknite alebo ťahajte pre začatie vyhľadávania"
 #.
 #: src/AdornedRulerPanel.cpp
 msgid "Click or drag to begin Scrub"
-msgstr "Kliknite alebo ťahajte pre začatie snímania"
+msgstr "Kliknite alebo ťahajte pre začatie pretáčania"
 
 #. i18n-hint: These commands assist the user in finding a sound by ear. ...
 #. "Scrubbing" is variable-speed playback, ...
@@ -1538,7 +1540,7 @@ msgstr "Kliknite alebo ťahajte pre začatie snímania"
 #: src/AdornedRulerPanel.cpp
 msgid "Click & move to Scrub. Click & drag to Seek."
 msgstr ""
-"Kliknite a posúvajte pre snímanie. Kliknite a ťahajte pre vyhľadávanie."
+"Kliknite a posúvajte pre pretáčanie. Kliknite a ťahajte pre vyhľadávanie."
 
 #. i18n-hint: These commands assist the user in finding a sound by ear. ...
 #. "Scrubbing" is variable-speed playback, ...
@@ -1554,7 +1556,7 @@ msgstr "Posúvajte pre vyhľadávanie"
 #.
 #: src/AdornedRulerPanel.cpp
 msgid "Move to Scrub"
-msgstr "Posúvajte pre snímanie"
+msgstr "Posúvajte pre pretáčanie"
 
 #: src/AdornedRulerPanel.cpp
 msgid "Drag to Seek. Release to stop seeking."
@@ -1562,11 +1564,11 @@ msgstr "Ťahajte pre vyhľadávanie. Uvoľnite pre ukončenie vyhľadávania."
 
 #: src/AdornedRulerPanel.cpp
 msgid "Drag to Seek. Release and move to Scrub."
-msgstr "Ťahajte pre vyhľadávanie. Uvoľnite a posúvajte pre snímanie."
+msgstr "Ťahajte pre vyhľadávanie. Uvoľnite a posúvajte pre pretáčanie."
 
 #: src/AdornedRulerPanel.cpp
 msgid "Move to Scrub. Drag to Seek."
-msgstr "Posúvajte pre snímanie. Ťahajte pre vyhľadávanie."
+msgstr "Posúvajte pre pretáčanie. Ťahajte pre vyhľadávanie."
 
 #: src/AdornedRulerPanel.cpp
 msgid "Quick-Play disabled"
@@ -1599,7 +1601,7 @@ msgstr "Nastaviť slučku na výber"
 
 #: src/AdornedRulerPanel.cpp
 msgid "Pinned Play Head"
-msgstr "Pripnutá snímacia &hlava"
+msgstr "Pripnutá pretáčacia &hlava"
 
 #: src/AudacityApp.cpp
 #, c-format
@@ -1639,7 +1641,7 @@ msgstr ""
 
 #: src/AudacityApp.cpp
 msgid "SQLite library failed to initialize.  Audacity cannot continue."
-msgstr ""
+msgstr "Spustenie knižnice SQLite zlihalo. Audacity nemôže pokračovať."
 
 #: src/AudacityApp.cpp
 msgid "Block size must be within 256 to 100000000\n"
@@ -1752,6 +1754,10 @@ msgid ""
 "This is likely due to a resource shortage\n"
 "and a reboot may be required."
 msgstr ""
+"Nepodarilo sa získať signál.\n"
+"\n"
+"Je to pravdepodobne spôsobené nedostatkom zdrojov\n"
+"a môže byť potrebný reštart."
 
 #: src/AudacityApp.cpp
 msgid "Audacity Startup Failure"
@@ -1764,6 +1770,10 @@ msgid ""
 "This is likely due to a resource shortage\n"
 "and a reboot may be required."
 msgstr ""
+"Nepodarilo sa vytvoriť signál.\n"
+"\n"
+"Je to pravdepodobne spôsobené nedostatkom zdrojov\n"
+"a môže byť potrebný reštart."
 
 #: src/AudacityApp.cpp
 msgid ""
@@ -1772,6 +1782,10 @@ msgid ""
 "This is likely due to a resource shortage\n"
 "and a reboot may be required."
 msgstr ""
+"Nepodarilo sa získať prístup k zamknutému signálu.\n"
+"\n"
+"Je to pravdepodobne spôsobené nedostatkom zdrojov\n"
+"a môže byť potrebný reštart."
 
 #: src/AudacityApp.cpp
 msgid ""
@@ -1780,6 +1794,10 @@ msgid ""
 "This is likely due to a resource shortage\n"
 "and a reboot may be required."
 msgstr ""
+"Nepodarilo sa získať serverový signál.\n"
+"\n"
+"Je to pravdepodobne spôsobené nedostatkom zdrojov\n"
+"a môže byť potrebný reštart."
 
 #: src/AudacityApp.cpp
 msgid ""
@@ -1788,6 +1806,10 @@ msgid ""
 "This is likely due to a resource shortage\n"
 "and a reboot may be required."
 msgstr ""
+"Spustenie Audacity IPC servera zlihalo.\n"
+"\n"
+"Je to pravdepodobne spôsobené nedostatkom zdrojov\n"
+"a môže byť potrebný reštart."
 
 #: src/AudacityApp.cpp
 msgid "An unrecoverable error has occurred during startup"
@@ -1804,7 +1826,7 @@ msgstr "nastaví maximálnu veľkosť bloku disku v bajtoch"
 #. "log," "trail," "trace" have somewhat similar meanings
 #: src/AudacityApp.cpp
 msgid "replay a journal file"
-msgstr ""
+msgstr "prehrať súbor záznamov"
 
 #. i18n-hint: This displays a list of available options
 #: src/AudacityApp.cpp
@@ -1865,6 +1887,19 @@ msgid ""
 "If you choose to \"Quit Audacity\", your project may be left in an unsaved "
 "state which will be recovered the next time you open it."
 msgstr ""
+"Prístup k tomuto súboru bol odmietnutý. Dôvodov:\n"
+"\n"
+"\t%s\n"
+"\n"
+"Dôvodou môže byť veľa, ale jedným z nich môže byť nedostatok voľného miesta "
+"na disku, prípadne ste nedali súboru povolenie. Ďalšiu pomoc získate po "
+"kliknutí na tlačidlo pomocník.\n"
+"\n"
+"Môžete sa pokúsiť o vyriešenie tohto problému a potom kliknite na tlačidlo "
+"znovu.\n"
+"\n"
+"Ak zvolíte možnosť ukončiť Audacity, váš projekt môže byť v stave "
+"neuložených projektov a môže byť obnovený, ak ho otvoríte."
 
 #: src/AudacityFileConfig.cpp src/ShuttleGui.cpp src/commands/HelpCommand.cpp
 #: src/effects/Equalization.cpp src/export/Export.cpp src/menus/HelpMenus.cpp
@@ -1873,9 +1908,8 @@ msgid "Help"
 msgstr "Nápoveda"
 
 #: src/AudacityFileConfig.cpp src/AutoRecoveryDialog.cpp
-#, fuzzy
 msgid "&Quit Audacity"
-msgstr "Ukončiť Audacity"
+msgstr "&Ukončiť Audacity"
 
 #: src/AudacityFileConfig.cpp
 msgid "&Retry"
@@ -2004,14 +2038,12 @@ msgid "Name"
 msgstr "Názov"
 
 #: src/AutoRecoveryDialog.cpp
-#, fuzzy
 msgid "&Discard Selected"
-msgstr " Vybrané"
+msgstr "&vymazať vybrané projekty"
 
 #: src/AutoRecoveryDialog.cpp
-#, fuzzy
 msgid "&Recover Selected"
-msgstr "Žiadny výber"
+msgstr "&Obnoviť vybrané projekty"
 
 #: src/AutoRecoveryDialog.cpp
 msgid "&Skip"
@@ -2070,9 +2102,8 @@ msgid "Fade Ends"
 msgstr "Stíšené konce"
 
 #: src/BatchCommands.cpp
-#, fuzzy
 msgid "Import Macro"
-msgstr "Importovať surové"
+msgstr "Importovať Makro"
 
 #: src/BatchCommands.cpp
 #, fuzzy, c-format
@@ -2083,9 +2114,8 @@ msgstr ""
 "Chcete ho vytvoriť?"
 
 #: src/BatchCommands.cpp
-#, fuzzy
 msgid "Export Macro"
-msgstr "Exportovať MIDI"
+msgstr "Exportovať Makro"
 
 #: src/BatchCommands.cpp
 msgid "Effect"
@@ -2463,9 +2493,9 @@ msgid "Doing correctness check...\n"
 msgstr "Prebieha kontrola správnosti...\n"
 
 #: src/Benchmark.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Bad: chunk %lld sample %lld\n"
-msgstr "Zlý: kus %ld snímka %ld\n"
+msgstr "Zlý: kus %lld vzorka %lld\n"
 
 #: src/Benchmark.cpp
 msgid "Passed correctness check!\n"
@@ -3347,9 +3377,8 @@ msgid "Clip&board space used"
 msgstr "Použité miesto schránky"
 
 #: src/HistoryWindow.cpp
-#, fuzzy
 msgid "D&iscard"
-msgstr "Zahodiť"
+msgstr "Za&hodiť"
 
 #: src/HistoryWindow.cpp
 #, fuzzy
@@ -3359,7 +3388,7 @@ msgstr "&Príkaz"
 #: src/HistoryWindow.cpp src/ProjectFileManager.cpp
 #, c-format
 msgid "Compacting actually freed %s of disk space."
-msgstr ""
+msgstr "Komprimuje sa aktuálne miesto na disku %s."
 
 #. i18n-hint: Clicking this menu item shows the various editing steps
 #. that have been taken.
@@ -3374,7 +3403,7 @@ msgstr "Chyba dekódovania súboru"
 
 #: src/LabelDialog.cpp
 msgid "Edit Labels"
-msgstr "Upraviť návesti"
+msgstr "Upraviť popisky"
 
 #. i18n-hint: (noun).  A track contains waves, audio etc.
 #: src/LabelDialog.cpp
@@ -3386,17 +3415,17 @@ msgstr "Stopa"
 #: src/menus/LabelMenus.cpp src/toolbars/TranscriptionToolBar.cpp
 #: src/tracks/labeltrack/ui/LabelTrackView.cpp plug-ins/equalabel.ny
 msgid "Label"
-msgstr "Návesť"
+msgstr "Popisok"
 
 #. i18n-hint: (noun) of a label
 #: src/LabelDialog.cpp src/TimerRecordDialog.cpp
 msgid "Start Time"
-msgstr "Čas štartu"
+msgstr "Počiatočný čas"
 
 #. i18n-hint: (noun) of a label
 #: src/LabelDialog.cpp src/TimerRecordDialog.cpp
 msgid "End Time"
-msgstr "Čas konca"
+msgstr "Koncový čas"
 
 #. i18n-hint: (noun) of a label
 #: src/LabelDialog.cpp src/toolbars/SpectralSelectionBar.cpp
@@ -3418,7 +3447,7 @@ msgstr "Stlačte F2 alebo dvakrát kliknite pre úpravu obsahu bunky."
 
 #: src/LabelDialog.cpp src/menus/FileMenus.cpp
 msgid "Select a text file containing labels"
-msgstr "Zvoľte textový súbor obsahujúci návesti"
+msgstr "Zvoľte textový súbor obsahujúci popisky"
 
 #: src/LabelDialog.cpp src/ProjectFileManager.cpp src/menus/FileMenus.cpp
 #, c-format
@@ -3427,15 +3456,15 @@ msgstr "Nemožno otvoriť súbor: %s"
 
 #: src/LabelDialog.cpp
 msgid "No labels to export."
-msgstr "Žiadne návesti na export."
+msgstr "Žiadne popisky na export."
 
 #: src/LabelDialog.cpp src/menus/FileMenus.cpp
 msgid "Export Labels As:"
-msgstr "Exportovať návesti ako:"
+msgstr "Exportovať popisky ako:"
 
 #: src/LabelDialog.cpp
 msgid "New Label Track"
-msgstr "Nová návesť stopy"
+msgstr "Nová stopa s popiskami"
 
 #: src/LabelDialog.cpp
 msgid "Enter track name"
@@ -3447,7 +3476,7 @@ msgstr "Vložte názov stopy"
 #: src/LabelDialog.cpp src/LabelDialog.h src/LabelTrack.cpp
 #: src/TrackPanelAx.cpp
 msgid "Label Track"
-msgstr "Návesť stopy"
+msgstr "Stopa s popiskami"
 
 #: src/LabelTrack.cpp
 msgid "One or more saved labels could not be read."
@@ -4108,7 +4137,7 @@ msgstr "Je vybratých príliš málo kompatibilných stôp"
 #, c-format
 msgctxt "clip name template"
 msgid "%s #%d"
-msgstr ""
+msgstr "%s #%d"
 
 #: src/ProjectAudioManager.cpp
 msgid "Recorded Audio"
@@ -4407,6 +4436,10 @@ msgid ""
 "\n"
 "%s"
 msgstr ""
+"Získanie údajov z projektového súboru zlihalo. \n"
+"Nasledujúci príkaz zlihal:\n"
+"\n"
+"%s"
 
 #. i18n-hint: An error message.
 #: src/ProjectFileIO.cpp
@@ -4414,6 +4447,8 @@ msgid ""
 "Project is in a read only directory\n"
 "(Unable to create the required temporary files)"
 msgstr ""
+"Projekt je v priečinku, ktorý je iba na čítanie.\n"
+"Nie je možné vytvoriť požadované dočasné súbory."
 
 #: src/ProjectFileIO.cpp
 #, fuzzy
@@ -4426,6 +4461,8 @@ msgid ""
 "\n"
 "You will need to upgrade to open it."
 msgstr ""
+"Tento projekt bol vytvorený v novej verzii Audacity. Musíte Audacity "
+"aktualizovať."
 
 #: src/ProjectFileIO.cpp
 #, fuzzy
@@ -4443,6 +4480,8 @@ msgid ""
 "Project is read only\n"
 "(Unable to work with the blockfiles)"
 msgstr ""
+"Projekt je iba na čítanie\n"
+"(Nie je možné pracovať s blokovými súbormi)"
 
 #. i18n-hint: An error message.  Don't translate blockfiles.
 #: src/ProjectFileIO.cpp
@@ -5151,7 +5190,7 @@ msgstr "Zrýchlené prehrávanie"
 #: src/Screenshot.cpp src/commands/ScreenshotCommand.cpp
 #: src/toolbars/ScrubbingToolBar.cpp
 msgid "Scrub"
-msgstr "Zosnímať"
+msgstr "Pretáčanie"
 
 #: src/Screenshot.cpp src/TrackPanel.cpp
 msgid "Track Panel"
@@ -5970,14 +6009,14 @@ msgstr "Prevzorkovanie zlyhalo."
 #, c-format
 msgctxt "clip name template"
 msgid "%s.%i"
-msgstr ""
+msgstr "%s.%i"
 
 #. i18n-hint Template for clip name generation on inserting new empty clip
 #: src/WaveTrack.cpp
 #, c-format
 msgctxt "clip name template"
 msgid "%s %i"
-msgstr ""
+msgstr "%s %i"
 
 #: src/WaveTrack.cpp
 msgid "There is not enough room available to paste the selection"
@@ -6092,15 +6131,15 @@ msgstr "Demo"
 
 #: src/commands/Demo.cpp
 msgid "Delay time (seconds):"
-msgstr "Čas oneskorenia (sekundy):"
+msgstr "Čas odrazu (sekundy):"
 
 #: src/commands/Demo.cpp
 msgid "Decay factor:"
-msgstr "Faktor rozkladu:"
+msgstr "Faktor doznievania:"
 
 #: src/commands/Demo.h
 msgid "Does the demo action."
-msgstr "Spustí ukážkovú akciu."
+msgstr "Spustí ukážku."
 
 #: src/commands/DragCommand.cpp
 msgid "Drag"
@@ -6239,7 +6278,7 @@ msgstr "Príkaz:"
 
 #: src/commands/HelpCommand.cpp
 msgid "_"
-msgstr ""
+msgstr "_"
 
 #: src/commands/HelpCommand.h
 msgid "Gives help on a command."
@@ -6313,9 +6352,8 @@ msgid "Save Project2"
 msgstr "Uložiť projekt2"
 
 #: src/commands/OpenSaveCommands.cpp
-#, fuzzy
 msgid "Save Copy"
-msgstr "Kopírovať návesť"
+msgstr "Uložiť kópiu"
 
 #: src/commands/OpenSaveCommands.cpp
 #, fuzzy
@@ -6608,7 +6646,7 @@ msgstr "Farba:"
 
 #: src/commands/SetClipCommand.cpp src/commands/SetLabelCommand.cpp
 msgid "Start:"
-msgstr "Štart:"
+msgstr "Začiatok:"
 
 #: src/commands/SetClipCommand.h
 msgid "Sets various values for a clip."
@@ -6643,11 +6681,11 @@ msgstr "Nastavuje polohu bodu obálky."
 
 #: src/commands/SetLabelCommand.cpp
 msgid "Set Label"
-msgstr "Nastaviť návesť"
+msgstr "Nastaviť popisok"
 
 #: src/commands/SetLabelCommand.cpp
 msgid "Label Index"
-msgstr "Index nápisu"
+msgstr "Index popiskov"
 
 #: src/commands/SetLabelCommand.cpp
 msgid "End:"
@@ -6659,11 +6697,11 @@ msgstr "Vybraný"
 
 #: src/commands/SetLabelCommand.cpp
 msgid "Edited Label"
-msgstr "Upravené popisky"
+msgstr "Upravený popisok"
 
 #: src/commands/SetLabelCommand.h
 msgid "Sets various values for a label."
-msgstr "Nastaví rôzne hodnoty pre návesť."
+msgstr "Nastaví rôzne hodnoty pre popisok."
 
 #: src/commands/SetProjectCommand.cpp
 msgid "Set Project"
@@ -6784,7 +6822,7 @@ msgstr "Výber spektra"
 #: src/commands/SetTrackInfoCommand.cpp src/prefs/SpectrumPrefs.cpp
 msgctxt "spectrum prefs"
 msgid "Sche&me"
-msgstr ""
+msgstr "Sché&ma"
 
 #: src/commands/SetTrackInfoCommand.cpp
 msgid "Set Track"
@@ -7074,7 +7112,7 @@ msgstr "Zmeniť rýchlosť, ovplyvní zmenu tempa a zmenu výšky tónu"
 
 #: src/effects/ChangeSpeed.cpp
 msgid "&Speed Multiplier:"
-msgstr "&Násobič rýchlosti:"
+msgstr "Nás&obič rýchlosti:"
 
 #. i18n-hint: "rpm" is an English abbreviation meaning "revolutions per minute".
 #. "vinyl" refers to old-fashioned phonograph records
@@ -7118,7 +7156,7 @@ msgstr "&Aktuálna dĺžka:"
 
 #: src/effects/ChangeSpeed.cpp
 msgid "Current length of selection."
-msgstr "Aktuálna dĺžka výberu."
+msgstr "&Aktuálna dĺžka výberu."
 
 #. i18n-hint: changing speed of audio "from" one value "to" another
 #: src/effects/ChangeSpeed.cpp
@@ -7128,13 +7166,13 @@ msgstr "z"
 
 #: src/effects/ChangeSpeed.cpp
 msgid "&New Length:"
-msgstr "&Nová dĺžka:"
+msgstr "Nová &dĺžka:"
 
 #. i18n-hint: changing speed of audio "from" one value "to" another
 #: src/effects/ChangeSpeed.cpp
 msgctxt "change speed"
 msgid "to"
-msgstr "do"
+msgstr "na"
 
 #: src/effects/ChangeTempo.cpp
 msgid "Change Tempo"
@@ -7328,7 +7366,7 @@ msgstr "Čas uvoľnenia"
 #. i18n-hint: Make-up, i.e. correct for any reduction, rather than fabricate it.
 #: src/effects/Compressor.cpp
 msgid "Ma&ke-up gain for 0 dB after compressing"
-msgstr "&Vylepšenie zisku pre 0 dB po kompresii"
+msgstr "Po kompresi nastaviť hl&asitosť na 0 DB"
 
 #. i18n-hint: "Compress" here means reduce variations of sound volume,
 #. NOT related to file-size compression; Peaks means extremes in volume
@@ -7641,11 +7679,11 @@ msgstr "Tvrdý rýchlobeh"
 
 #: src/effects/Distortion.cpp
 msgid "Cubic Curve (odd harmonics)"
-msgstr "Kubická krivka (nepárna harmonická)"
+msgstr "Kubická krivka (nepárna harmónia)"
 
 #: src/effects/Distortion.cpp
 msgid "Even Harmonics"
-msgstr "Párna harmonická"
+msgstr "Parná harmónia"
 
 #: src/effects/Distortion.cpp
 msgid "Expand and Compress"
@@ -7666,12 +7704,12 @@ msgstr "Tvrdý obmedzovač 1413"
 #: src/effects/Distortion.cpp
 #, no-c-format
 msgid "Hard clip -12dB, 80% make-up gain"
-msgstr "Tvrdé orezanie - 12dB, 80% vylepšenie zisku"
+msgstr "Tvrdé orezanie - 12dB, 80% hlasitosti"
 
 #: src/effects/Distortion.cpp
 #, no-c-format
 msgid "Soft clip -12dB, 80% make-up gain"
-msgstr "Jemné orezanie -12dB, 80% vylepšenie zisku"
+msgstr "Jemné orezanie -12dB, 80% hlasitosti"
 
 #: src/effects/Distortion.cpp
 msgid "Fuzz Box"
@@ -7695,7 +7733,7 @@ msgstr "Ťažká chrapľavosť"
 
 #: src/effects/Distortion.cpp
 msgid "3rd Harmonic (Perfect Fifth)"
-msgstr "Tretia harmonická (perfektná piata)"
+msgstr "Tretia harmónia (čistá kvinta)"
 
 #: src/effects/Distortion.cpp
 msgid "Valve Overdrive"
@@ -7703,7 +7741,7 @@ msgstr "Klapkový chrapot"
 
 #: src/effects/Distortion.cpp
 msgid "2nd Harmonic (Octave)"
-msgstr "Druhá harmonická (oktáva)"
+msgstr "Druhá harmónia (oktáva)"
 
 #: src/effects/Distortion.cpp
 msgid "Gated Expansion Distortion"
@@ -7795,7 +7833,7 @@ msgstr "Jednotka"
 
 #: src/effects/Distortion.cpp
 msgid "Make-up Gain"
-msgstr "Vylepšenie zisku"
+msgstr "Nastavenie hlasitosti"
 
 #: src/effects/Distortion.cpp
 msgid "Clipping threshold"
@@ -7835,11 +7873,11 @@ msgstr "dB limitu"
 
 #: src/effects/Distortion.cpp
 msgid "Wet level"
-msgstr "Úroveň vlhka"
+msgstr "Úroveň efektu"
 
 #: src/effects/Distortion.cpp
 msgid "Residual level"
-msgstr "Zvyšková úroveň"
+msgstr "Úroveň pozostatku"
 
 #: src/effects/Distortion.cpp
 msgid "(Not Used):"
@@ -7947,11 +7985,11 @@ msgstr "Požadovaná hodnota presahuje kapacitu pamäte."
 
 #: src/effects/Echo.cpp
 msgid "&Delay time (seconds):"
-msgstr "Čas &oneskorenia (sekundy):"
+msgstr "Čas &ozvien  (sekundy):"
 
 #: src/effects/Echo.cpp
 msgid "D&ecay factor:"
-msgstr "Faktor &rozkladu:"
+msgstr "Faktor &doznievania:"
 
 #: src/effects/Effect.cpp
 msgid "Built-in"
@@ -8159,7 +8197,7 @@ msgstr "Správa predvolieb a možností"
 
 #: src/effects/EffectUI.cpp
 msgid "&Manage"
-msgstr "&Spravovať"
+msgstr "Spravo&vať"
 
 #: src/effects/EffectUI.cpp
 msgid "Start and stop playback"
@@ -8193,7 +8231,7 @@ msgstr "Skočí dopredu"
 
 #: src/effects/EffectUI.cpp
 msgid "Skip &Forward"
-msgstr "Preskočiť &dopredu"
+msgstr "Preskočiť dopr&edu"
 
 #: src/effects/EffectUI.cpp
 msgid "Enable"
@@ -8696,11 +8734,11 @@ msgstr ""
 
 #: src/effects/Fade.cpp
 msgid "Fade In"
-msgstr "Zosilňovanie"
+msgstr "Zosilňovanie (Fade in)"
 
 #: src/effects/Fade.cpp
 msgid "Fade Out"
-msgstr "Zoslabovanie"
+msgstr "Zoslabovanie (Fade out)"
 
 #: src/effects/Fade.cpp
 msgid "Applies a linear fade-in to the selected audio"
@@ -8724,11 +8762,11 @@ msgstr "Strihy"
 
 #: src/effects/FindClipping.cpp
 msgid "&Start threshold (samples):"
-msgstr "&Počiatočný prah (snímky):"
+msgstr "&Počiatočný prah (vzorky):"
 
 #: src/effects/FindClipping.cpp
 msgid "St&op threshold (samples):"
-msgstr "Kon&cový prah (snímky):"
+msgstr "Kon&cový prah (vzorky):"
 
 #: src/effects/Generator.cpp
 msgid "There is not enough room available to generate the audio"
@@ -8740,7 +8778,7 @@ msgstr "Invertovať"
 
 #: src/effects/Invert.cpp
 msgid "Flips the audio samples upside-down, reversing their polarity"
-msgstr "Prehodí audio vzorky zhora-nadol, pretočením ich polarity"
+msgstr "Prehodí audio vzorky zhora-nadol, prevrátením ich polarity"
 
 #: src/effects/LoadEffects.cpp
 msgid "Builtin Effects"
@@ -8817,20 +8855,20 @@ msgstr "(Maximum 0dB)"
 #: src/effects/Noise.cpp
 msgctxt "noise"
 msgid "White"
-msgstr "Biele"
+msgstr "Biely"
 
 #. i18n-hint: not a color, but "pink noise" having a spectrum with more power
 #. in low frequencies
 #: src/effects/Noise.cpp
 msgctxt "noise"
 msgid "Pink"
-msgstr "Ružové"
+msgstr "Ružový"
 
 #. i18n-hint: a kind of noise spectrum also known as "red" or "brown"
 #: src/effects/Noise.cpp
 msgctxt "noise"
 msgid "Brownian"
-msgstr "Hnedé"
+msgstr "Hnedý"
 
 #: src/effects/Noise.cpp
 msgid "Noise"
@@ -9303,11 +9341,11 @@ msgstr "Spätná väzba v percentách"
 
 #: src/effects/Phaser.cpp src/effects/Wahwah.cpp
 msgid "&Output gain (dB):"
-msgstr "Výstupný &zisk (dB):"
+msgstr "Hlasit&osť výstupu (DB):"
 
 #: src/effects/Phaser.cpp src/effects/Wahwah.cpp
 msgid "Output gain (dB)"
-msgstr "Výstupný zisk (dB):"
+msgstr "Hlasitosť výstupu (dB):"
 
 #: src/effects/Repair.cpp
 msgid "Repair"
@@ -9443,7 +9481,7 @@ msgstr "Ní&zky tón (%):"
 
 #: src/effects/Reverb.cpp
 msgid "Tone &High (%):"
-msgstr "Vy&soký tón (%):"
+msgstr "Vyso&ký tón (%):"
 
 #: src/effects/Reverb.cpp
 msgid "Wet &Gain (dB):"
@@ -9527,7 +9565,7 @@ msgstr "P&oradie:"
 
 #: src/effects/ScienFilter.cpp
 msgid "&Passband Ripple:"
-msgstr "&Zvlnenie pásma:"
+msgstr "&Pass&band pretrhnutie:"
 
 #: src/effects/ScienFilter.cpp
 msgid "Passband Ripple (dB)"
@@ -9547,11 +9585,11 @@ msgstr "O&drezanie:"
 
 #: src/effects/ScienFilter.cpp
 msgid "Minimum S&topband Attenuation:"
-msgstr "Minimálny útlm &nepriepustného pásma:"
+msgstr "&Minimálny útlm zastavenia pásma:"
 
 #: src/effects/ScienFilter.cpp
 msgid "Minimum S&topband Attenuation (dB)"
-msgstr "Minimálny útlm &nepriepustného pásma (dB)"
+msgstr "&Minimálny útlm zastavenia pásma(dB)"
 
 #: src/effects/ScoreAlignDialog.cpp
 msgid "Align MIDI to Audio"
@@ -9681,7 +9719,7 @@ msgstr "Zmiešavaní do &mono pri exporte"
 
 #: src/effects/TimeScale.cpp
 msgid "Sliding Stretch"
-msgstr "Posúvanie napínania"
+msgstr "Posúvacie predĺženie"
 
 #: src/effects/TimeScale.cpp
 msgid "Allows continuous changes to the tempo and/or pitch"
@@ -9729,7 +9767,7 @@ msgstr "Štvorcová"
 
 #: src/effects/ToneGen.cpp plug-ins/tremolo.ny
 msgid "Sawtooth"
-msgstr "Pílovitá"
+msgstr "Pílový zub"
 
 #: src/effects/ToneGen.cpp
 msgid "Square, no alias"
@@ -9745,7 +9783,7 @@ msgstr "Tón"
 
 #: src/effects/ToneGen.cpp
 msgid "Generates an ascending or descending tone of one of four types"
-msgstr "Vygeneruje klesajúce alebo stúpajúce tóny jedného zo štyroch typov"
+msgstr "Vygeneruje klesajúci alebo stúpajúci tón jedného zo štyroch typov"
 
 #: src/effects/ToneGen.cpp
 msgid "Generates a constant frequency tone of one of four types"
@@ -9753,7 +9791,7 @@ msgstr "Vygeneruje konštantný frekvenčný tón jedného zo štyroch typov"
 
 #: src/effects/ToneGen.cpp
 msgid "&Waveform:"
-msgstr "&Tvarová vlna:"
+msgstr "&krivka:"
 
 #: src/effects/ToneGen.cpp
 msgid "&Frequency (Hz):"
@@ -10396,7 +10434,7 @@ msgstr "Efekty ';nástroj typu' nemôžu vrátiť zvuk z Nyquistu.\n"
 #. i18n-hint: Don't translate ';type tool'.
 #: src/effects/nyquist/Nyquist.cpp
 msgid "';type tool' effects cannot return labels from Nyquist.\n"
-msgstr "Efekty ';nástroj typu' nemôžu vrátiť návesti z Nyquistu.\n"
+msgstr "Efekty ';nástroj typu' nemôžu vrátiť popisky z Nyquistu.\n"
 
 #. i18n-hint: "%s" is replaced by name of plug-in.
 #: src/effects/nyquist/Nyquist.cpp
@@ -11919,7 +11957,7 @@ msgid ""
 "labels, so you cannot export to separate audio files."
 msgstr ""
 "Nemáte žiadne nestíšené stopy audia a žiadne aplikovateľné \n"
-"návesti, takže ich nemôžete exportovať do oddelených audio súborov."
+"popisky, takže ich nemôžete exportovať do oddelených audio súborov."
 
 #: src/export/ExportMultiple.cpp
 msgid "Export files to:"
@@ -11943,7 +11981,7 @@ msgstr "Rozdeliť súbory na základe:"
 
 #: src/export/ExportMultiple.cpp
 msgid "Include audio before first label"
-msgstr "Do prvej návesti začleňte audio"
+msgstr "Do prvého popisku začleňte audio"
 
 #: src/export/ExportMultiple.cpp
 msgid "First file name:"
@@ -12033,7 +12071,7 @@ msgstr "Chcete pokračovať v exporte zostávajúcich súborov?"
 
 #. i18n-hint: The second %s gives some letters that can't be used.
 #: src/export/ExportMultiple.cpp
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Label or track \"%s\" is not a legal file name.\n"
 "You cannot use any of these characters:\n"
@@ -12042,21 +12080,21 @@ msgid ""
 "\n"
 "Suggested replacement:"
 msgstr ""
-"Návesť alebo stopa \"%s\" nie je legálny názov súboru. Žiadny z týchto "
-"názvov nemožno použiť: %s \n"
-"Použite..."
+"Popisok alebo stopa \"%s\" nie je platný názov súboru.\n"
+"Žiadny z týchto názvov nemožno použiť: %s \n"
+"Použite:"
 
 #. i18n-hint: The second %s gives a letter that can't be used.
 #: src/export/ExportMultiple.cpp
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Label or track \"%s\" is not a legal file name. You cannot use \"%s\".\n"
 "\n"
 "Suggested replacement:"
 msgstr ""
-"Návesť alebo stopa \"%s\" nie je legálny názov súboru. Nemôžete použiť \"%s"
+"Popisok alebo stopa \"%s\" nie je platný názov súboru. Nemôžete použiť \"%s"
 "\".\n"
-"Použite..."
+"Použite:"
 
 #: src/export/ExportMultiple.cpp
 msgid "Save As..."
@@ -13055,16 +13093,16 @@ msgstr "%s pravý"
 #. clips.
 #.
 #: src/menus/ClipMenus.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%s %s, %d of %d clip %s"
 msgid_plural "%s %s, %d of %d clips %s"
-msgstr[0] "%s %d z %d strihu %s"
-msgstr[1] "%s %d z %d strihov %s"
-msgstr[2] "%s %d z %d strihov %s"
+msgstr[0] "%s %s, %d z %d strihu %s"
+msgstr[1] "%s %s, %d z %d strihov %s"
+msgstr[2] "%s %s, %d z %d strihov %s"
 
 #: src/menus/ClipMenus.cpp
 msgid "start"
-msgstr "štart"
+msgstr "začiatok"
 
 #: src/menus/ClipMenus.cpp
 msgid "end"
@@ -13081,12 +13119,12 @@ msgstr "koniec"
 #. clips.
 #.
 #: src/menus/ClipMenus.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%s %s and %s %s, %d and %d of %d clip %s"
 msgid_plural "%s %s and %s %s, %d and %d of %d clips %s"
-msgstr[0] "%s %d a %s %d zo %d strihu %s"
-msgstr[1] "%s %d a %s %d z %d strihov %s"
-msgstr[2] "%s %d a %s %d z %d strihov %s"
+msgstr[0] "%s %s a %s %s, %d a %d z %d strihu %s"
+msgstr[1] "%s %s a %s %s, %d a %d z %d strihov %s"
+msgstr[2] "%s %s a %s %s, %d a %d z %d strihov %s"
 
 #. i18n-hint:
 #. first string is the name of a clip,
@@ -13095,12 +13133,12 @@ msgstr[2] "%s %d a %s %d z %d strihov %s"
 #. last number counts all clips,
 #. last string names a track
 #: src/menus/ClipMenus.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%s, %d of %d clip %s"
 msgid_plural "%s, %d of %d clips %s"
-msgstr[0] "%s %d z %d strihu %s"
-msgstr[1] "%s %d z %d strihov %s"
-msgstr[2] "%s %d z %d strihov %s"
+msgstr[0] "%s, %d z %d strihu %s"
+msgstr[1] "%s, %d z %d strihov %s"
+msgstr[2] "%s, %d z %d strihov %s"
 
 #: src/menus/ClipMenus.cpp
 msgid "Time shifted clips to the right"
@@ -13449,11 +13487,11 @@ msgstr "Exportovať vybrané audio"
 #. i18n-hint: filename containing exported text from label tracks
 #: src/menus/FileMenus.cpp
 msgid "labels.txt"
-msgstr "návesti.txt"
+msgstr "popisky.txt"
 
 #: src/menus/FileMenus.cpp
 msgid "There are no label tracks to export."
-msgstr "Žiadne návesti stôp na export."
+msgstr "Žiadne stopy popiskov na export sa nepodarilo nájsť."
 
 #: src/menus/FileMenus.cpp
 msgid "Please select only one Note Track at a time."
@@ -13490,11 +13528,11 @@ msgstr "Exportovať MIDI"
 #: src/menus/FileMenus.cpp
 #, c-format
 msgid "Imported labels from '%s'"
-msgstr "Importované návesti z '%s'"
+msgstr "Importované popisky z '%s'"
 
 #: src/menus/FileMenus.cpp
 msgid "Import Labels"
-msgstr "Importovať návesti"
+msgstr "Importovať popisky"
 
 #: src/menus/FileMenus.cpp
 msgid "Select a MIDI file"
@@ -13535,9 +13573,8 @@ msgid "Save Project &As..."
 msgstr "Uložiť projekt &ako..."
 
 #: src/menus/FileMenus.cpp
-#, fuzzy
 msgid "&Backup Project..."
-msgstr "Otvoriť projekt..."
+msgstr "&Zálohovať projekt..."
 
 #: src/menus/FileMenus.cpp
 msgid "&Export"
@@ -13565,7 +13602,7 @@ msgstr "Expor&tovať vybrané audio..."
 
 #: src/menus/FileMenus.cpp
 msgid "Export &Labels..."
-msgstr "Exportovať &návesti..."
+msgstr "Exportovať &popisky..."
 
 #: src/menus/FileMenus.cpp
 msgid "Export &Multiple..."
@@ -13581,7 +13618,7 @@ msgstr "&Audio..."
 
 #: src/menus/FileMenus.cpp
 msgid "&Labels..."
-msgstr "&Návesti..."
+msgstr "&popisky..."
 
 #: src/menus/FileMenus.cpp
 msgid "&MIDI..."
@@ -13714,136 +13751,136 @@ msgstr "&Skontrolovať aktualizácie..."
 #: src/menus/LabelMenus.cpp src/toolbars/TranscriptionToolBar.cpp
 #: src/tracks/labeltrack/ui/LabelTrackView.cpp
 msgid "Added label"
-msgstr "Pridaná návesť"
+msgstr "Pridaný popisok"
 
 #: src/menus/LabelMenus.cpp
 msgid "Paste Text to New Label"
-msgstr "Vložiť text do novej návesti"
+msgstr "Prilepiť text do nového popisku"
 
 #. i18n-hint: (verb) past tense.  Audacity has just cut the labeled audio
 #. regions.
 #: src/menus/LabelMenus.cpp
 msgid "Cut labeled audio regions to clipboard"
-msgstr "Vystrihnúť oblasti audia označené návesťou do schránky"
+msgstr "Vystrihnúť oblasti audia označené popiskom do schránky"
 
 #. i18n-hint: (verb)
 #: src/menus/LabelMenus.cpp
 msgid "Cut Labeled Audio"
-msgstr "Vystrihnúť audio a návesťou"
+msgstr "Vystrihnúť audio označené popiskom"
 
 #. i18n-hint: (verb) Audacity has just deleted the labeled audio regions
 #: src/menus/LabelMenus.cpp
 msgid "Deleted labeled audio regions"
-msgstr "Odstránené oblasti audia označené návesťou"
+msgstr "Odstránené oblasti audia označené popiskom"
 
 #. i18n-hint: (verb)
 #: src/menus/LabelMenus.cpp
 msgid "Delete Labeled Audio"
-msgstr "Odstrániť audio označené návesťou"
+msgstr "Odstrániť audio označené popiskom"
 
 #. i18n-hint: (verb) Audacity has just split cut the labeled audio
 #. regions
 #: src/menus/LabelMenus.cpp
 msgid "Split Cut labeled audio regions to clipboard"
-msgstr "Vystrihnúť oddelenú oblasť audia označené návesťou do schránky"
+msgstr "Vystrihnúť oddelenú oblasť audia označenú popiskom do schránky"
 
 #. i18n-hint: (verb) Do a special kind of cut on the labels
 #: src/menus/LabelMenus.cpp
 msgid "Split Cut Labeled Audio"
-msgstr "Vystrihnúť oddelené audio označené návesťou"
+msgstr "Vystrihnúť oddelené audio označené popiskom"
 
 #. i18n-hint: (verb) Audacity has just done a special kind of DELETE on
 #. the labeled audio regions
 #: src/menus/LabelMenus.cpp
 msgid "Split Deleted labeled audio regions"
-msgstr "Odstrániť oddelenú oblasť audia označené návesťou"
+msgstr "Oddeliť vymazanú oblasť audia označenú popiskom"
 
 #. i18n-hint: (verb) Do a special kind of DELETE on labeled audio
 #. regions
 #: src/menus/LabelMenus.cpp
 msgid "Split Delete Labeled Audio"
-msgstr "Odstrániť oddelené audio označené návesťou"
+msgstr "Odstrániť oddelené audio označené popiskom"
 
 #. i18n-hint: (verb)
 #: src/menus/LabelMenus.cpp
 msgid "Silenced labeled audio regions"
-msgstr "Stlmené oblasti audia označené návesťou"
+msgstr "Tiché oblasti audia označené popiskom"
 
 #. i18n-hint: (verb)
 #: src/menus/LabelMenus.cpp
 msgid "Silence Labeled Audio"
-msgstr "Stlmiť audio označené návesťou"
+msgstr "Pridať ticho na audio označené popiskom"
 
 #: src/menus/LabelMenus.cpp
 msgid "Copied labeled audio regions to clipboard"
-msgstr "Kopírovať oblasti audia označené návesťou do schránky"
+msgstr "Kopírovať oblasti audia označené popiskom do schránky"
 
 #. i18n-hint: (verb)
 #: src/menus/LabelMenus.cpp
 msgid "Copy Labeled Audio"
-msgstr "Kopírovať audio označené návesťou"
+msgstr "Kopírovať audio označené popiskom"
 
 #. i18n-hint: (verb) past tense.  Audacity has just split the labeled
 #. audio (a point or a region)
 #: src/menus/LabelMenus.cpp
 msgid "Split labeled audio (points or regions)"
-msgstr "Oddeliť audio označené návesťou (body alebo oblasti)"
+msgstr "Oddeliť audio označené popiskom (body alebo oblasti)"
 
 #. i18n-hint: (verb)
 #: src/menus/LabelMenus.cpp
 msgid "Split Labeled Audio"
-msgstr "Oddeliť audio označené návesťou"
+msgstr "Oddeliť audio označené popiskom"
 
 #. i18n-hint: (verb) Audacity has just joined the labeled audio (points or
 #. regions)
 #: src/menus/LabelMenus.cpp
 msgid "Joined labeled audio (points or regions)"
-msgstr "Spojené audio označené návesťou (body alebo oblasti)"
+msgstr "Spojené audio označené popiskom (body alebo oblasti)"
 
 #. i18n-hint: (verb)
 #: src/menus/LabelMenus.cpp
 msgid "Join Labeled Audio"
-msgstr "Spojiť audio označené návesťou"
+msgstr "Spojiť audio označené popiskom"
 
 #. i18n-hint: (verb) Audacity has just detached the labeled audio regions.
 #. This message appears in history and tells you about something
 #. Audacity has done.
 #: src/menus/LabelMenus.cpp
 msgid "Detached labeled audio regions"
-msgstr "Odpojené oblasti audia označené návesťou"
+msgstr "Odpojené oblasti audia označené popiskom"
 
 #. i18n-hint: (verb)
 #: src/menus/LabelMenus.cpp
 msgid "Detach Labeled Audio"
-msgstr "Odpojiť audio označené návesťou"
+msgstr "Odpojiť audio označené popiskom"
 
 #: src/menus/LabelMenus.cpp
 msgid "&Labels"
-msgstr "&Návesti"
+msgstr "&Popisky"
 
 #: src/menus/LabelMenus.cpp
 msgid "&Edit Labels..."
-msgstr "&Upraviť návesti..."
+msgstr "&Upraviť popisky..."
 
 #: src/menus/LabelMenus.cpp
 msgid "Add Label at &Selection"
-msgstr "Pridať ná&vesť podľa výberu"
+msgstr "Pridať po&pisok podľa výberu"
 
 #: src/menus/LabelMenus.cpp
 msgid "Add Label at &Playback Position"
-msgstr "Pridať návesť na pozícii &prehrávania"
+msgstr "Pridať popisok na pozícii &prehrávania"
 
 #: src/menus/LabelMenus.cpp
 msgid "Paste Te&xt to New Label"
-msgstr "Prilepiť te&xt do novej návesti"
+msgstr "Prilepiť te&xt do nového popisku"
 
 #: src/menus/LabelMenus.cpp
 msgid "&Type to Create a Label (on/off)"
-msgstr "&Písať pre vytvorenie návesti (zapnuté/vypnuté)"
+msgstr "&Písať pre vytvorenie popisku (zapnuté/vypnuté)"
 
 #: src/menus/LabelMenus.cpp
 msgid "La&beled Audio"
-msgstr "Audio označené návesťou"
+msgstr "Audio označené &popiskom"
 
 #. i18n-hint: (verb)
 #: src/menus/LabelMenus.cpp
@@ -13852,36 +13889,36 @@ msgstr "&Vystrihnúť"
 
 #: src/menus/LabelMenus.cpp
 msgid "Label Cut"
-msgstr "Vystrihnúť návesť"
+msgstr "Vystrihnúť popisok"
 
 #: src/menus/LabelMenus.cpp
 msgid "Label Delete"
-msgstr "Odstrániť návesť"
+msgstr "Odstrániť popisok"
 
 #. i18n-hint: (verb) A special way to cut out a piece of audio
 #: src/menus/LabelMenus.cpp
 msgid "&Split Cut"
-msgstr "Vystrihnúť &oddelené"
+msgstr "Vystrihnúť &oddeliť"
 
 #: src/menus/LabelMenus.cpp
 msgid "Label Split Cut"
-msgstr "Návesť vystrihnutia oddeleného"
+msgstr "Vystrihnúť a &oddeliť popisok"
 
 #: src/menus/LabelMenus.cpp
 msgid "Sp&lit Delete"
-msgstr "Odstrániť od&delené"
+msgstr "Odstrániť s od&delením"
 
 #: src/menus/LabelMenus.cpp
 msgid "Label Split Delete"
-msgstr "Návesť odstránenia oddeleného"
+msgstr "Odstrániť popisok s odd&elením"
 
 #: src/menus/LabelMenus.cpp
 msgid "Silence &Audio"
-msgstr "Stlmiť &audio"
+msgstr "Stíšiť &audio"
 
 #: src/menus/LabelMenus.cpp
 msgid "Label Silence"
-msgstr "Návesť ticha"
+msgstr "Popisok pre ticho"
 
 #. i18n-hint: (verb)
 #: src/menus/LabelMenus.cpp
@@ -13890,7 +13927,7 @@ msgstr "Ko&pírovať"
 
 #: src/menus/LabelMenus.cpp
 msgid "Label Copy"
-msgstr "Kopírovať návesť"
+msgstr "Kopírovať popisok"
 
 #. i18n-hint: (verb)
 #: src/menus/LabelMenus.cpp
@@ -13899,11 +13936,11 @@ msgstr "Od&deliť"
 
 #: src/menus/LabelMenus.cpp
 msgid "Label Split"
-msgstr "Návesť oddelenia"
+msgstr "Oddeliť popisky"
 
 #: src/menus/LabelMenus.cpp
 msgid "Label Join"
-msgstr "Návesť spojenia"
+msgstr "Spojiť popisky"
 
 #: src/menus/NavigationMenus.cpp
 msgid "Move Backward Through Active Windows"
@@ -14115,7 +14152,7 @@ msgstr "Nastaviť obal..."
 
 #: src/menus/PluginMenus.cpp
 msgid "Set Label..."
-msgstr "Nastaviť návesť..."
+msgstr "Nastaviť popisok..."
 
 #: src/menus/PluginMenus.cpp
 msgid "Set Project..."
@@ -14481,7 +14518,7 @@ msgstr "Vyvážiť stopu"
 
 #: src/menus/TrackMenus.cpp
 msgid "Start to &Zero"
-msgstr "Začať od &nuly"
+msgstr "Začiatok na &nulu"
 
 #: src/menus/TrackMenus.cpp
 msgid "Start to &Cursor/Selection Start"
@@ -14604,7 +14641,7 @@ msgstr "Synchronizácia MIDI a audio stôp"
 
 #: src/menus/TrackMenus.cpp
 msgid "Adjusted gain"
-msgstr "Upravený zisk"
+msgstr "Upravená hlasitosť"
 
 #: src/menus/TrackMenus.cpp
 msgid "Adjusted Pan"
@@ -14624,7 +14661,7 @@ msgstr "Vytvorená nová stereo audio stopa"
 
 #: src/menus/TrackMenus.cpp
 msgid "Created new label track"
-msgstr "Vytvorená nová návesť stopy"
+msgstr "Vytvorená nová stopa s popiskami"
 
 #: src/menus/TrackMenus.cpp
 msgid ""
@@ -14723,7 +14760,7 @@ msgstr "&Stereo stopa"
 
 #: src/menus/TrackMenus.cpp
 msgid "&Label Track"
-msgstr "Ná&vesť stopy"
+msgstr "Stopa s &popiskami"
 
 #: src/menus/TrackMenus.cpp
 msgid "&Time Track"
@@ -14855,15 +14892,15 @@ msgstr "Vyvážiť v&pravo na zameranej stope"
 
 #: src/menus/TrackMenus.cpp
 msgid "Change Gai&n on Focused Track..."
-msgstr "Zmeniť &zisk na zameranej stope..."
+msgstr "Zmeniť &hlasitosť na zameranej stope..."
 
 #: src/menus/TrackMenus.cpp
 msgid "&Increase Gain on Focused Track"
-msgstr "Z&výšiť zisk na zameranej stope"
+msgstr "Z&výšiť hlasitosťna zameranej stope"
 
 #: src/menus/TrackMenus.cpp
 msgid "&Decrease Gain on Focused Track"
-msgstr "Z&nížiť zisk na zameranej stope"
+msgstr "Z&nížiť hlasitosť na zameranej stope"
 
 #: src/menus/TrackMenus.cpp
 msgid "Op&en Menu on Focused Track..."
@@ -14914,11 +14951,11 @@ msgstr "Nahrávanie"
 
 #: src/menus/TransportMenus.cpp
 msgid "no label track"
-msgstr "stopa bez návesti"
+msgstr "žiadna stopa s popiskami"
 
 #: src/menus/TransportMenus.cpp
 msgid "no label track at or below focused track"
-msgstr "žiadna stopa s návesťou tu alebo nižšie pod zameranou stopou"
+msgstr "žiadna stopa s popiskami tu alebo nižšie pod zameranou stopou"
 
 #. i18n-hint:
 #. String is replaced by the name of a label,
@@ -14933,7 +14970,7 @@ msgstr "%s %d of %d"
 
 #: src/menus/TransportMenus.cpp
 msgid "no labels in label track"
-msgstr "žiadne návesti v stope návestí"
+msgstr "žiadne popisky v stope s popiskami"
 
 #. i18n-hint Sets a starting point for looping play
 #: src/menus/TransportMenus.cpp
@@ -15064,7 +15101,7 @@ msgstr "Zvukom a&ktivované nahrávanie (zap/vyp)"
 
 #: src/menus/TransportMenus.cpp
 msgid "Pinned Play/Record &Head (on/off)"
-msgstr "Pripnutá snímacia &hlava (zap/vyp)"
+msgstr "Pripnutá pretáčacia &hlava (zap/vyp)"
 
 #: src/menus/TransportMenus.cpp
 msgid "&Overdub (on/off)"
@@ -15156,14 +15193,12 @@ msgid "&Decrease Playback Speed"
 msgstr "&Znížiť rýchlosť prehrávania"
 
 #: src/menus/TransportMenus.cpp
-#, fuzzy
 msgid "Move to Pre&vious Label"
-msgstr "Presunúť na &predošlú návesť"
+msgstr "Presunúť na &predošlý popisok"
 
 #: src/menus/TransportMenus.cpp
-#, fuzzy
 msgid "Move to Ne&xt Label"
-msgstr "Presunúť na ď&alšiu návesť"
+msgstr "Presunúť na ď&alší popisok"
 
 #: src/menus/ViewMenus.cpp
 msgid "&View"
@@ -15281,7 +15316,7 @@ msgstr "Nastavenie kvality"
 #. i18n-hint: Title for the update notifications panel in the preferences dialog.
 #: src/prefs/ApplicationPrefs.cpp
 msgid "Update notifications"
-msgstr ""
+msgstr "Upozornenie o aktualizácii"
 
 #. i18n-hint: Check-box title that configures periodic updates checking.
 #: src/prefs/ApplicationPrefs.cpp
@@ -15294,7 +15329,7 @@ msgstr "&Skontrolovať aktualizácie..."
 msgid ""
 "App update checking requires network access. In order to protect your "
 "privacy, Audacity does not store any personal information."
-msgstr ""
+msgstr "Kontrola aktualizácie aplikácie vyžaduje pripojenie na internet."
 
 #: src/prefs/BatchPrefs.cpp src/prefs/BatchPrefs.h
 msgid "Batch"
@@ -15347,7 +15382,6 @@ msgstr "&Zariadenie:"
 #. i18n-hint: modifier as in "Recording preferences", not progressive verb
 #: src/prefs/DevicePrefs.cpp src/prefs/RecordingPrefs.cpp
 #: src/prefs/RecordingPrefs.h
-#, fuzzy
 msgctxt "preference"
 msgid "Recording"
 msgstr "Nahrávanie"
@@ -15838,7 +15872,7 @@ msgstr "&Pípnuť pri dokončení dlhších aktivít"
 
 #: src/prefs/GUIPrefs.cpp
 msgid "Re&tain labels if selection snaps to a label"
-msgstr "Za&chovať návesti ak výber pripadne po návesť"
+msgstr "Za&chovať popisky ak výber sa prelína s popiskom"
 
 #: src/prefs/GUIPrefs.cpp
 msgid "B&lend system and Audacity theme"
@@ -15859,7 +15893,7 @@ msgstr "Zobraziť popisy časovej osi"
 
 #: src/prefs/GUIPrefs.cpp src/toolbars/ScrubbingToolBar.cpp
 msgid "Show Scrub Ruler"
-msgstr "Zobraziť pravítko snímania"
+msgstr "Zobraziť pravítko pretáčania"
 
 #: src/prefs/GUIPrefs.cpp
 #, c-format
@@ -15918,9 +15952,8 @@ msgid "&Ignore blank space at the beginning"
 msgstr "&Ignorovať medzeru na začiatku"
 
 #: src/prefs/ImportExportPrefs.cpp
-#, fuzzy
 msgid "Exported Label Style:"
-msgstr "Exportovať návesti ako:"
+msgstr "Exportovať popisky ako:"
 
 #: src/prefs/ImportExportPrefs.cpp
 msgid "Exported Allegro (.gro) files save time as:"
@@ -16338,7 +16371,7 @@ msgstr "Otáčanie kolieskom myši"
 
 #: src/prefs/MousePrefs.cpp
 msgid "Change scrub speed"
-msgstr "Zmeniť rýchlosť snímania"
+msgstr "Zmeniť rýchlosť pretáčania"
 
 #: src/prefs/MousePrefs.cpp
 msgid "Zoom in on Point"
@@ -16524,7 +16557,7 @@ msgstr "&Mikro vytrácanie"
 
 #: src/prefs/PlaybackPrefs.cpp
 msgid "Always scrub un&pinned"
-msgstr "Vždy snímať ne&pripnuté"
+msgstr "Vždy pretáčať, aj keď nie je hlavica &pripnutá"
 
 #: src/prefs/PrefsDialog.cpp
 msgid "Audacity Preferences"
@@ -16553,7 +16586,7 @@ msgstr "Iné..."
 
 #: src/prefs/QualityPrefs.cpp
 msgid "Sampling"
-msgstr "Snímanie"
+msgstr "Vzorkovanie"
 
 #: src/prefs/QualityPrefs.cpp
 msgid "Default Sample &Rate:"
@@ -16561,7 +16594,7 @@ msgstr "Predvolená vzorkovacia &frekvencia:"
 
 #: src/prefs/QualityPrefs.cpp
 msgid "Default Sample &Format:"
-msgstr "Predvolený snímací &formát:"
+msgstr "Predvolený vzorkovací &formát:"
 
 #: src/prefs/QualityPrefs.cpp
 msgid "Real-time Conversion"
@@ -16781,11 +16814,11 @@ msgstr "Rozsah musí byť aspoň 1 dB"
 
 #: src/prefs/SpectrogramSettings.cpp
 msgid "The frequency gain cannot be negative"
-msgstr "Frekvenčný zisk nemôže byť záporný"
+msgstr "Hlasitosť frekvencie nemôže byť záporná"
 
 #: src/prefs/SpectrogramSettings.cpp
 msgid "The frequency gain must be no more than 60 dB/dec"
-msgstr "Frekvenčný zisk nemôže byť väčšie ako 60 dB/dec"
+msgstr "Hlasitosť frekvencie nemôže byť väčšia ako 60 dB/dec"
 
 #: src/prefs/SpectrumPrefs.cpp
 msgid "Spectrogram Settings"
@@ -16822,7 +16855,7 @@ msgstr "Farby"
 
 #: src/prefs/SpectrumPrefs.cpp
 msgid "&Gain (dB):"
-msgstr "&Zisk (dB):"
+msgstr "&hlasitosť (dB):"
 
 #: src/prefs/SpectrumPrefs.cpp
 msgid "&Range (dB):"
@@ -16915,7 +16948,7 @@ msgstr "Minimálna frekvencia musí byť celé číslo"
 
 #: src/prefs/SpectrumPrefs.cpp
 msgid "The gain must be an integer"
-msgstr "Zisk musí byť celé číslo"
+msgstr "Hlasitosť musí byť celé číslo"
 
 #: src/prefs/SpectrumPrefs.cpp
 msgid "The range must be a positive integer"
@@ -16923,7 +16956,7 @@ msgstr "Rozsah musí byť kladné celé číslo"
 
 #: src/prefs/SpectrumPrefs.cpp
 msgid "The frequency gain must be an integer"
-msgstr "Frekvenčný zisk musí byť celé číslo"
+msgstr "Hlasitosť frekvencie musí byť celé číslo"
 
 #: src/prefs/SpectrumPrefs.cpp
 msgid "The minimum amplitude (dB) must be an integer"
@@ -17058,11 +17091,11 @@ msgstr "\"Presunúť zameranie stopy\" &opakovane prechádza stopami"
 
 #: src/prefs/TracksBehaviorsPrefs.cpp
 msgid "&Type to create a label"
-msgstr "&Písaním vytvárať návesti"
+msgstr "&píšte na vytvorenie popiskov"
 
 #: src/prefs/TracksBehaviorsPrefs.cpp
 msgid "Use dialog for the &name of a new label"
-msgstr "Použiť dialóg pre &názov novej návesti"
+msgstr "Použiť dialóg pre &názov nového popisku"
 
 #: src/prefs/TracksBehaviorsPrefs.cpp
 msgid "Enable scrolling left of &zero"
@@ -17512,11 +17545,11 @@ msgstr "Vyhľadať"
 
 #: src/toolbars/ScrubbingToolBar.cpp
 msgid "Scrub Ruler"
-msgstr "Snímacie pravítko"
+msgstr "Pravítko pretáčania"
 
 #: src/toolbars/ScrubbingToolBar.cpp src/tracks/ui/Scrubbing.cpp
 msgid "Scrubbing"
-msgstr "Snímanie"
+msgstr "Pretáčanie"
 
 #. i18n-hint: These commands assist the user in finding a sound by ear. ...
 #. "Scrubbing" is variable-speed playback, ...
@@ -17524,7 +17557,7 @@ msgstr "Snímanie"
 #.
 #: src/toolbars/ScrubbingToolBar.cpp
 msgid "Stop Scrubbing"
-msgstr "Zastaviť snímanie"
+msgstr "Zastaviť pretáčanie"
 
 #. i18n-hint: These commands assist the user in finding a sound by ear. ...
 #. "Scrubbing" is variable-speed playback, ...
@@ -17532,7 +17565,7 @@ msgstr "Zastaviť snímanie"
 #.
 #: src/toolbars/ScrubbingToolBar.cpp
 msgid "Start Scrubbing"
-msgstr "Začať snímanie"
+msgstr "Začať pretáčanie"
 
 #. i18n-hint: These commands assist the user in finding a sound by ear. ...
 #. "Scrubbing" is variable-speed playback, ...
@@ -17552,13 +17585,13 @@ msgstr "Spustiť hľadanie"
 
 #: src/toolbars/ScrubbingToolBar.cpp
 msgid "Hide Scrub Ruler"
-msgstr "Skryť pravítko snímania"
+msgstr "Skryť pravítko pretáčania"
 
 #. i18n-hint: Clicking this menu item shows the toolbar
 #. that enables Scrub or Seek playback and Scrub Ruler
 #: src/toolbars/ScrubbingToolBar.cpp
 msgid "Scru&b Toolbar"
-msgstr "Panel nástrojov &snímania"
+msgstr "Panel nástrojov pre&táčania"
 
 #: src/toolbars/SelectionBar.cpp
 msgid "Project Rate (Hz)"
@@ -17758,25 +17791,25 @@ msgstr ""
 
 #: src/tracks/labeltrack/ui/LabelGlyphHandle.cpp
 msgid "Drag one or more label boundaries."
-msgstr "Ťahajte jeden alebo viac okrajov návesti."
+msgstr "Ťahajte jeden alebo viac okrajov popisku."
 
 #: src/tracks/labeltrack/ui/LabelGlyphHandle.cpp
 msgid "Drag label boundary."
-msgstr "Ťahať okraj návesti."
+msgstr "Ťahať okraj popisku."
 
 #: src/tracks/labeltrack/ui/LabelGlyphHandle.cpp
 #: src/tracks/labeltrack/ui/LabelTrackView.cpp
 msgid "Modified Label"
-msgstr "Zmenená návesť"
+msgstr "Zmenený popisok"
 
 #: src/tracks/labeltrack/ui/LabelGlyphHandle.cpp
 #: src/tracks/labeltrack/ui/LabelTrackView.cpp
 msgid "Label Edit"
-msgstr "Upraviť návesť"
+msgstr "Upraviť popisky"
 
 #: src/tracks/labeltrack/ui/LabelTextHandle.cpp
 msgid "Click to edit label text"
-msgstr "Kliknite pre úpravu textu návesti"
+msgstr "Kliknite pre úpravu textu popisku"
 
 #: src/tracks/labeltrack/ui/LabelTrackControls.cpp
 msgid "&Font..."
@@ -17785,7 +17818,7 @@ msgstr "&Písmo..."
 #. i18n-hint: (noun) This is the font for the label track.
 #: src/tracks/labeltrack/ui/LabelTrackControls.cpp
 msgid "Label Track Font"
-msgstr "Písmo pre návesť stopy"
+msgstr "Písmo pre stopu s popiskami"
 
 #. i18n-hint: (noun) The name of the typeface
 #: src/tracks/labeltrack/ui/LabelTrackControls.cpp
@@ -17799,41 +17832,41 @@ msgstr "Veľkosť plôšky"
 
 #: src/tracks/labeltrack/ui/LabelTrackView.cpp
 msgid "Cu&t Label text"
-msgstr "Vy&strihnúť text návesti"
+msgstr "Vy&strihnúť text popisku"
 
 #: src/tracks/labeltrack/ui/LabelTrackView.cpp
 msgid "&Copy Label text"
-msgstr "&Kopírovať text návesti"
+msgstr "&Kopírovať text popisku"
 
 #: src/tracks/labeltrack/ui/LabelTrackView.cpp
 msgid "&Delete Label"
-msgstr "&Zmazať návesť"
+msgstr "&Vymazať popisok"
 
 #: src/tracks/labeltrack/ui/LabelTrackView.cpp
 msgid "&Edit Label..."
-msgstr "&Upraviť návesť..."
+msgstr "&Upraviť popisok..."
 
 #: src/tracks/labeltrack/ui/LabelTrackView.cpp
 msgid "Deleted Label"
-msgstr "Zmazaná návesť"
+msgstr "Vymazaný popisok"
 
 #: src/tracks/labeltrack/ui/LabelTrackView.cpp
 msgid "Edited labels"
-msgstr "Upravené návesti"
+msgstr "Upravené popisky"
 
 #: src/tracks/labeltrack/ui/LabelTrackView.cpp
 msgid "New label"
-msgstr "Nová návesť"
+msgstr "Nový popisok"
 
 #: src/tracks/playabletrack/notetrack/ui/NoteTrackControls.cpp
 #: src/tracks/playabletrack/notetrack/ui/NoteTrackVZoomHandle.cpp
 msgid "Up &Octave"
-msgstr "Horná &oktáva"
+msgstr "Oktáva &Hore"
 
 #: src/tracks/playabletrack/notetrack/ui/NoteTrackControls.cpp
 #: src/tracks/playabletrack/notetrack/ui/NoteTrackVZoomHandle.cpp
 msgid "Down Octa&ve"
-msgstr "Dolná oktá&va"
+msgstr "Oktáva &Dole"
 
 #: src/tracks/playabletrack/notetrack/ui/NoteTrackVZoomHandle.cpp
 #: src/tracks/playabletrack/wavetrack/ui/WaveTrackVZoomHandle.cpp
@@ -17992,9 +18025,8 @@ msgid "Click and drag to select text"
 msgstr "Kliknite a ťahajte pre výber audia"
 
 #: src/tracks/playabletrack/wavetrack/ui/WaveTrackAffordanceControls.cpp
-#, fuzzy
 msgid "Modified Clip Name"
-msgstr "Zmenená návesť"
+msgstr "Zmenené meno strihu"
 
 #: src/tracks/playabletrack/wavetrack/ui/WaveTrackAffordanceControls.cpp
 #, fuzzy
@@ -18006,12 +18038,12 @@ msgstr "Úprava vzoriek"
 #. first number is the position of that clip in a sequence of clips,
 #. second number counts the clips
 #: src/tracks/playabletrack/wavetrack/ui/WaveTrackAffordanceControls.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "%s, %d of %d clip"
 msgid_plural "%s, %d of %d clips"
-msgstr[0] "%s %d z %d strihu %s"
-msgstr[1] "%s %d z %d strihov %s"
-msgstr[2] "%s %d z %d strihov %s"
+msgstr[0] "%s, %d z %d strihu"
+msgstr[1] "%s, %d z %d strihov"
+msgstr[2] "%s, %d z %d strihov"
 
 #: src/tracks/playabletrack/wavetrack/ui/WaveTrackAffordanceControls.cpp
 msgid "Rename Clip..."
@@ -18379,9 +18411,8 @@ msgid "Add Stereo Track"
 msgstr "&Stereo stopa"
 
 #: src/tracks/ui/BackgroundCell.cpp
-#, fuzzy
 msgid "Add Label Track"
-msgstr "Návesť stopy"
+msgstr "Pridať stopu s popiskami"
 
 #: src/tracks/ui/BackgroundCell.cpp
 #, fuzzy
@@ -18454,7 +18485,7 @@ msgstr "Úprava obalu."
 #.
 #: src/tracks/ui/Scrubbing.cpp
 msgid "&Scrub"
-msgstr "&Snímanie"
+msgstr "&pretáčanie"
 
 #: src/tracks/ui/Scrubbing.cpp
 msgid "Seeking"
@@ -18466,7 +18497,7 @@ msgstr "Vyhľadávanie"
 #.
 #: src/tracks/ui/Scrubbing.cpp
 msgid "Scrub &Ruler"
-msgstr "&Pravítko snímania"
+msgstr "&Pravítko pretáčania"
 
 #: src/tracks/ui/Scrubbing.cpp
 msgid "Playing at Speed"
@@ -18478,19 +18509,19 @@ msgstr "Pre vyhľadávanie posúvajte kurzorom myši"
 
 #: src/tracks/ui/Scrubbing.cpp
 msgid "Move mouse pointer to Scrub"
-msgstr "Pre snímanie posúvajte kurzorom myši"
+msgstr "Pre pretáčanieposúvajte kurzorom myši"
 
 #: src/tracks/ui/Scrubbing.cpp
 msgid "Scru&bbing"
-msgstr "S&nímanie"
+msgstr "Pre&táčanie"
 
 #: src/tracks/ui/Scrubbing.cpp
 msgid "Scrub Bac&kwards"
-msgstr "Snímať do&zadu"
+msgstr "Pretočiť do&zadu"
 
 #: src/tracks/ui/Scrubbing.cpp
 msgid "Scrub For&wards"
-msgstr "Snímať do&predu"
+msgstr "Pretočiť do&predu"
 
 #: src/tracks/ui/SelectHandle.cpp
 msgid "Click and drag to move left selection boundary."
@@ -18675,12 +18706,12 @@ msgstr "Chyba dekódovania súboru"
 #: src/update/UpdateManager.cpp
 msgctxt "update dialog"
 msgid "Unable to connect to Audacity update server."
-msgstr ""
+msgstr "Nepodarilo sa pripojiť ku serveru Audacity pre aktualizáciu Audacity."
 
 #: src/update/UpdateManager.cpp
 msgctxt "update dialog"
 msgid "Update data was corrupted."
-msgstr ""
+msgstr "Údaje o aktualizácii boli poškodené."
 
 #: src/update/UpdateManager.cpp
 #, fuzzy
@@ -18691,7 +18722,7 @@ msgstr "Chyba načítania metaúdajov"
 #: src/update/UpdateManager.cpp
 msgctxt "update dialog"
 msgid "Can't open the Audacity download link."
-msgstr ""
+msgstr "Nemôžem otvoriť odkaz na stiahnutie programu Audacity."
 
 #: src/update/UpdateManager.cpp
 #, fuzzy
@@ -18706,7 +18737,7 @@ msgstr "Stiahnuť"
 #. i18n-hint: Title of the app update notice dialog.
 #: src/update/UpdateNoticeDialog.cpp
 msgid "App update checking"
-msgstr ""
+msgstr "Kontrola aktualizácie aplikácie"
 
 #: src/update/UpdateNoticeDialog.cpp
 msgid ""
@@ -18762,7 +18793,7 @@ msgstr "Kanál"
 #: src/update/UpdatePopupDialog.cpp
 msgctxt "update dialog"
 msgid "Read more on GitHub"
-msgstr ""
+msgstr "Čítajte viac na Githube"
 
 #: src/widgets/AButton.cpp
 msgid "(disabled)"
@@ -19503,7 +19534,7 @@ msgstr "Spektrálna úprava parametrického EQ"
 
 #: plug-ins/SpectralEditParametricEQ.ny plug-ins/SpectralEditShelves.ny
 msgid "Gain (dB)"
-msgstr "Zisk (dB)"
+msgstr "Hlasitosť (dB)"
 
 #: plug-ins/SpectralEditParametricEQ.ny
 #, lisp-format
@@ -19617,15 +19648,15 @@ msgstr "% originálu"
 
 #: plug-ins/adjustable-fade.ny
 msgid "dB Gain"
-msgstr "dB zisku"
+msgstr "hlasitosť v decibeloch"
 
 #: plug-ins/adjustable-fade.ny
 msgid "Start (or end)"
-msgstr "Štart (alebo koniec)"
+msgstr "Začiatok (alebo koniec)"
 
 #: plug-ins/adjustable-fade.ny
 msgid "End (or start)"
-msgstr "Koniec (alebo štart)"
+msgstr "Koniec (alebo začiatok)"
 
 #: plug-ins/adjustable-fade.ny
 msgid "Handy Presets (override controls)"
@@ -19781,7 +19812,7 @@ msgstr "Typ zoslabenia"
 
 #: plug-ins/crossfadetracks.ny
 msgid "Constant Gain"
-msgstr "Konštantný zisk"
+msgstr "Konštantná hlasitosť"
 
 #: plug-ins/crossfadetracks.ny
 msgid "Constant Power 1"
@@ -19818,15 +19849,15 @@ msgstr "Chyba.~%Vyberte 2 (alebo viac) stôp na prelínanie."
 
 #: plug-ins/delay.ny
 msgid "Delay"
-msgstr "Oneskorenie"
+msgstr "Delay"
 
 #: plug-ins/delay.ny
 msgid "Applying Delay Effect..."
-msgstr "Použitie efektu oneskorenia..."
+msgstr "Použitie efektu Delay..."
 
 #: plug-ins/delay.ny
 msgid "Delay type"
-msgstr "Typ oneskorenia"
+msgstr "Typ efektu Delay"
 
 #: plug-ins/delay.ny
 msgid "Regular"
@@ -19842,15 +19873,15 @@ msgstr "Obrátená skákajúca lopta"
 
 #: plug-ins/delay.ny
 msgid "Delay level per echo (dB)"
-msgstr "Úroveň oneskorenia na echo (dB)"
+msgstr "Úroveň odrazu ozveny (dB)"
 
 #: plug-ins/delay.ny
 msgid "Delay time (seconds)"
-msgstr "Čas oneskorenia (sekundy)"
+msgstr "Čas odrazu (sekundy)"
 
 #: plug-ins/delay.ny
 msgid "Pitch change effect"
-msgstr "Efekt zmena výšky tónu"
+msgstr "Efekt zmeny výšky tónu"
 
 #: plug-ins/delay.ny
 msgid "Pitch/Tempo"
@@ -19862,7 +19893,7 @@ msgstr "Posun nízkej kvality výšky tónu"
 
 #: plug-ins/delay.ny
 msgid "Pitch change per echo (semitones)"
-msgstr "Zmena výšky tónu za echo (poltóny)"
+msgstr "Zmena výšky tónu počaz ozveny (poltóny)"
 
 #: plug-ins/delay.ny
 msgid "Number of echoes"
@@ -19918,53 +19949,53 @@ msgstr "Chyba.~%Nemožno zapísať súbor:~%\"~a.txt\""
 
 #: plug-ins/equalabel.ny
 msgid "Regular Interval Labels"
-msgstr "Bežné návesti intervalu"
+msgstr "Pravidelné intervalové popisky"
 
 #: plug-ins/equalabel.ny
 msgid "Adding equally-spaced labels to the label track..."
-msgstr "Pridávanie do stopy návestí rovnomerne rozmiestnené návesti..."
+msgstr "Pridá rovnako veľké popisky do stopy s popiskami..."
 
 #. i18n-hint: Refers to the controls 'Number of labels' and 'Label interval'.
 #: plug-ins/equalabel.ny
 msgid "Create labels based on"
-msgstr "Vytvárať návesti na základe"
+msgstr "Vytvárať popisky na základe"
 
 #: plug-ins/equalabel.ny
 msgid "Number & Interval"
-msgstr "Číslo &intervalu"
+msgstr "Čísla &intervalu"
 
 #: plug-ins/equalabel.ny
 msgid "Number of Labels"
-msgstr "Počet návestí"
+msgstr "Počtu popiskov"
 
 #: plug-ins/equalabel.ny
 msgid "Label Interval"
-msgstr "Interval návesti"
+msgstr "Intervalu popisku"
 
 #: plug-ins/equalabel.ny
 msgid "Number of labels"
-msgstr "Počet návestí"
+msgstr "Počtu popiskov"
 
 #: plug-ins/equalabel.ny
 msgid "Label interval (seconds)"
-msgstr "Interval návesti (sekundy)"
+msgstr "Intervalu popisku (sekundy)"
 
 #: plug-ins/equalabel.ny
 msgid "Length of label region (seconds)"
-msgstr "Dĺžka oblasti návesti (sekundy)"
+msgstr "Dĺžky oblasti popisku (sekundy)"
 
 #: plug-ins/equalabel.ny
 msgid "Adjust label interval to fit length"
-msgstr "Upraviť interval návesti prispôsobený dĺžke"
+msgstr "Upraviť interval popisku podľa dĺžky"
 
 #. i18n-hint: Do not translate '##1'
 #: plug-ins/equalabel.ny plug-ins/label-sounds.ny
 msgid "Label text"
-msgstr "Text návesti"
+msgstr "Text popisku"
 
 #: plug-ins/equalabel.ny
 msgid "Minimum number of digits in label"
-msgstr "Minimálny počet čísel v návesti"
+msgstr "Minimálny počet čísel v popisku"
 
 #: plug-ins/equalabel.ny
 msgid "None - Text Only"
@@ -19972,27 +20003,27 @@ msgstr "Nič - len text"
 
 #: plug-ins/equalabel.ny
 msgid "1 (Before Label)"
-msgstr "1 (pred návesťou)"
+msgstr "1 (pred popiskom)"
 
 #: plug-ins/equalabel.ny
 msgid "2 (Before Label)"
-msgstr "2 (pred návesťou)"
+msgstr "2 (pred popiskom)"
 
 #: plug-ins/equalabel.ny
 msgid "3 (Before Label)"
-msgstr "3 (pred návesťou)"
+msgstr "3 (pred popiskom)"
 
 #: plug-ins/equalabel.ny
 msgid "1 (After Label)"
-msgstr "1 (po návesti)"
+msgstr "1 (po popisku)"
 
 #: plug-ins/equalabel.ny
 msgid "2 (After Label)"
-msgstr "2 (po návesti)"
+msgstr "2 (po popisku)"
 
 #: plug-ins/equalabel.ny
 msgid "3 (After Label)"
-msgstr "3 (po návesti)"
+msgstr "3 (po popisku)"
 
 #: plug-ins/equalabel.ny
 msgid "Begin numbering from"
@@ -20013,16 +20044,16 @@ msgstr "Len upozornenia"
 #: plug-ins/equalabel.ny
 #, lisp-format
 msgid "Warning: Overlapping region labels.~%"
-msgstr "Upozornenie: Prekrývajúce oblasti návestí.~%"
+msgstr "Upozornenie: Prekrývajúce oblasti popiskov.~%"
 
 #. i18n-hint:  Type of label
 #: plug-ins/equalabel.ny
 msgid "region labels"
-msgstr "návesti regiónov"
+msgstr "popisky oblastí"
 
 #: plug-ins/equalabel.ny
 msgid "point labels"
-msgstr "bodové návesti"
+msgstr "bodové popisky"
 
 #. i18n-hint:  Number of labels produced at specified intervals.
 #: plug-ins/equalabel.ny
@@ -20094,9 +20125,8 @@ msgstr ""
 
 #. i18n-hint: Name of effect that labels sounds
 #: plug-ins/label-sounds.ny
-#, fuzzy
 msgid "Label Sounds"
-msgstr "Návesť spojenia"
+msgstr "Zvuky popiskov"
 
 #: plug-ins/label-sounds.ny
 #, fuzzy
@@ -20129,33 +20159,28 @@ msgid "Minimum silence duration"
 msgstr "Minimálna dĺžka ticha:"
 
 #: plug-ins/label-sounds.ny
-#, fuzzy
 msgid "Minimum label interval"
-msgstr "Interval návesti"
+msgstr "Minimálny interval popisku"
 
 #: plug-ins/label-sounds.ny
-#, fuzzy
 msgid "Label type"
-msgstr "Text návesti"
+msgstr "Typ popisku"
 
 #: plug-ins/label-sounds.ny
-#, fuzzy
 msgid "Point before sound"
-msgstr "Spojené stereo"
+msgstr "Bod pred zvukom"
 
 #: plug-ins/label-sounds.ny
-#, fuzzy
 msgid "Point after sound"
-msgstr "Spojené stereo"
+msgstr "Bod po zvuku"
 
 #: plug-ins/label-sounds.ny
 msgid "Region around sounds"
-msgstr ""
+msgstr "Oblasť okolo zvukov"
 
 #: plug-ins/label-sounds.ny
-#, fuzzy
 msgid "Region between sounds"
-msgstr "~aDĺžka oblasti = ~a sekúnd."
+msgstr "Oblasť medzi zvukmi"
 
 #: plug-ins/label-sounds.ny
 #, fuzzy
@@ -20237,7 +20262,7 @@ msgid ""
 "Input Gain (dB)\n"
 "mono/Left"
 msgstr ""
-"Vstupný zisk (dB)\n"
+"Hlasitosť vstupu (dB)\n"
 "mono/ľavý"
 
 #: plug-ins/limiter.ny
@@ -20245,7 +20270,7 @@ msgid ""
 "Input Gain (dB)\n"
 "Right channel"
 msgstr ""
-"Vstupný zisk (dB)\n"
+"Hlasitosť vstupu (dB)\n"
 "pravý kanál"
 
 #: plug-ins/limiter.ny
@@ -20258,7 +20283,7 @@ msgstr "Zdržanie (ms)"
 
 #: plug-ins/limiter.ny
 msgid "Apply Make-up Gain"
-msgstr "Použiť vylepšenie zisku"
+msgstr "Upravovať hlasitosť"
 
 #: plug-ins/lowpass.ny
 msgid "Low-Pass Filter"
@@ -20315,9 +20340,8 @@ msgid "Attack (ms)"
 msgstr "Nábeh/rozklad (ms)"
 
 #: plug-ins/noisegate.ny
-#, fuzzy
 msgid "Decay (ms)"
-msgstr "Nábeh/rozklad (ms)"
+msgstr "Doznievanie (ms)"
 
 #: plug-ins/noisegate.ny
 #, lisp-format
@@ -20361,9 +20385,9 @@ msgstr ""
 
 #. i18n-hint: hours and minutes. Do not translate "~a".
 #: plug-ins/noisegate.ny
-#, fuzzy, lisp-format
+#, lisp-format
 msgid "~ah ~am"
-msgstr "~ah ~am ~as"
+msgstr "~ah ~am"
 
 #: plug-ins/notch.ny
 msgid "Notch Filter"
@@ -20530,15 +20554,15 @@ msgstr "Tempo (úder/m)"
 
 #: plug-ins/rhythmtrack.ny
 msgid "30 - 300 beats/minute"
-msgstr "30 - 300 úderov/minútu"
+msgstr "30 - 300 úderov/minúta"
 
 #: plug-ins/rhythmtrack.ny
 msgid "Beats per bar"
-msgstr "Údery na pás"
+msgstr "Údery za takt"
 
 #: plug-ins/rhythmtrack.ny
 msgid "1 - 20 beats/measure"
-msgstr "1 - 20 úderov/meranie"
+msgstr "1 - 20 úderov/takt"
 
 #: plug-ins/rhythmtrack.ny
 msgid "Swing amount"
@@ -20551,7 +20575,8 @@ msgstr "+/- 1"
 #: plug-ins/rhythmtrack.ny
 msgid "Set 'Number of bars' to zero to enable the 'Rhythm track duration'."
 msgstr ""
-"Nastavte 'Počet pásov' na nulu pre povolenie 'Trvania rytmickej stopy'."
+"Nastavte 'Počet taktov' na hodnotu nula pre povolenie 'Trvania rytmickej "
+"stopy'."
 
 #: plug-ins/rhythmtrack.ny
 msgid "Number of bars"
@@ -20647,7 +20672,7 @@ msgstr "Steven Jones"
 
 #: plug-ins/rissetdrum.ny
 msgid "Decay (seconds)"
-msgstr "Rozpad (sekúnd)"
+msgstr "Doznievanie (sekundy)"
 
 #: plug-ins/rissetdrum.ny
 msgid "Center frequency of noise (Hz)"
@@ -21023,7 +21048,7 @@ msgstr "Spektrálne odstránenie"
 #: plug-ins/spectral-delete.ny
 #, lisp-format
 msgid "Error.~%Track sample rate below 100 Hz is not supported."
-msgstr "Chyba.~%Snímková frekvencia stopy pod 100 Hz nie je podporovaná."
+msgstr "Chyba.~%Vzorkovacia frekvencia stopy pod 100 Hz nie je podporovaná."
 
 #: plug-ins/tremolo.ny
 msgid "Tremolo"

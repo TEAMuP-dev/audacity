@@ -68,7 +68,6 @@ kCaptureWhatStrings[ ScreenshotCommand::nCaptureWhats ] =
    { XO("Timer") },
    { XO("Tools") },
    { XO("Transport") },
-   { XO("Mixer") },
    { XO("Meter") },
    { wxT("PlayMeter"), XO("Play Meter") },
    { wxT("RecordMeter"), XO("Record Meter") },
@@ -107,19 +106,23 @@ ScreenshotCommand::ScreenshotCommand()
    mbBringToTop=true;
    mIgnore=NULL;
    
-   static std::once_flag flag;
-   std::call_once( flag, []{
-      ::SetVetoDialogHook( MayCapture );
-   });
+   static VetoDialogHook::Scope scope{ MayCapture };
 }
 
-bool ScreenshotCommand::DefineParams( ShuttleParams & S ){
-   S.Define(                               mPath,        wxT("Path"),         wxT(""));
+template<bool Const>
+bool ScreenshotCommand::VisitSettings( SettingsVisitorBase<Const> & S ){
+   S.Define(                               mPath,        wxT("Path"),         wxString{});
    S.DefineEnum(                           mWhat,        wxT("CaptureWhat"),  kwindow,kCaptureWhatStrings, nCaptureWhats );
    S.DefineEnum(                           mBack,        wxT("Background"),   kNone, kBackgroundStrings, nBackgrounds );
    S.Define(                               mbBringToTop, wxT("ToTop"), true );
    return true;
 };
+
+bool ScreenshotCommand::VisitSettings( SettingsVisitor & S )
+   { return VisitSettings<false>(S); }
+
+bool ScreenshotCommand::VisitSettings( ConstSettingsVisitor & S )
+   { return VisitSettings<true>(S); }
 
 void ScreenshotCommand::PopulateOrExchange(ShuttleGui & S)
 {
@@ -442,9 +445,9 @@ void ScreenshotCommand::CaptureEffects(
       "PlotSpectrum",
 
       "Auto Duck...",  // needs a track below.
-      //"Spectral edit multi tool",
-      "Spectral edit parametric EQ...", // Needs a spectral selection.
-      "Spectral edit shelves...",
+      //"Spectral Edit Multi Tool",
+      "Spectral Edit Parametric EQ...", // Needs a spectral selection.
+      "Spectral Edit Shelves...",
 
       //"Noise Reduction...", // Exits twice...
       //"SC4...", //Has 'Close' rather than 'Cancel'.
@@ -799,8 +802,6 @@ bool ScreenshotCommand::Apply(const CommandContext & context)
       return CaptureToolbar(context, &toolManager, ToolsBarID, mFileName);
    case ktransport:
       return CaptureToolbar(context, &toolManager, TransportBarID, mFileName);
-   case kmixer:
-      return CaptureToolbar(context, &toolManager, MixerBarID, mFileName);
    case kmeter:
       return CaptureToolbar(context, &toolManager, MeterBarID, mFileName);
    case krecordmeter:

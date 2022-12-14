@@ -171,12 +171,13 @@ struct CommandListEntry
    bool useStrictFlags{ false };
 };
 
-NonKeystrokeInterceptingWindow::~NonKeystrokeInterceptingWindow()
-{
-}
+NonKeystrokeInterceptingWindow::~NonKeystrokeInterceptingWindow() = default;
 
-TopLevelKeystrokeHandlingWindow::~TopLevelKeystrokeHandlingWindow()
+TopLevelKeystrokeHandlingWindow::~TopLevelKeystrokeHandlingWindow() = default;
+
+bool TopLevelKeystrokeHandlingWindow::HandleCommandKeystrokes()
 {
+   return true;
 }
 
 MenuBarListEntry::MenuBarListEntry(const wxString &name_, wxMenuBar *menubar_)
@@ -212,20 +213,6 @@ CommandManager &CommandManager::Get( AudacityProject &project )
 const CommandManager &CommandManager::Get( const AudacityProject &project )
 {
    return Get( const_cast< AudacityProject & >( project ) );
-}
-
-static CommandManager::MenuHook &sMenuHook()
-{
-   static CommandManager::MenuHook theHook;
-   return theHook;
-}
-
-auto CommandManager::SetMenuHook( const MenuHook &hook ) -> MenuHook
-{
-   auto &theHook = sMenuHook();
-   auto result = theHook;
-   theHook = hook;
-   return result;
 }
 
 ///
@@ -1135,8 +1122,8 @@ bool CommandManager::FilterKeyEvent(AudacityProject *project, const wxKeyEvent &
    // Bug 1557.  MixerBoard should count as 'destined for project'
    // MixerBoard IS a TopLevelWindow, and its parent is the project.
    if( pParent && pParent->GetParent() == pWindow ){
-      if( dynamic_cast< TopLevelKeystrokeHandlingWindow* >( pParent ) != NULL )
-         validTarget = true;
+      if(auto keystrokeHandlingWindow = dynamic_cast< TopLevelKeystrokeHandlingWindow* >( pParent ))
+         validTarget = keystrokeHandlingWindow->HandleCommandKeystrokes();
    }
    validTarget = validTarget && wxEventLoop::GetActive()->IsMain();
 
@@ -1277,8 +1264,13 @@ bool CommandManager::HandleCommandEntry(AudacityProject &project,
    CommandContext context{ project, evt, entry->index, entry->parameter };
    if (pGivenContext)
       context.temporarySelection = pGivenContext->temporarySelection;
-   auto &handler = entry->finder(project);
-   (handler.*(entry->callback))(context);
+   // Discriminate the union entry->callback by entry->finder
+   if (auto &finder = entry->finder) {
+      auto &handler = finder(project);
+      (handler.*(entry->callback.memberFn))(context);
+   }
+   else
+      (entry->callback.nonMemberFn)(context);
    mLastProcessId = 0;
    return true;
 }
@@ -1313,8 +1305,13 @@ void CommandManager::RegisterLastTool(const CommandContext& context) {
 void CommandManager::DoRepeatProcess(const CommandContext& context, int id) {
    mLastProcessId = 0;  //Don't Process this as repeat
    CommandListEntry* entry = mCommandNumericIDHash[id];
-   auto& handler = entry->finder(context.project);
-   (handler.*(entry->callback))(context);
+   // Discriminate the union entry->callback by entry->finder
+   if (auto &finder = entry->finder) {
+      auto &handler = finder(context.project);
+      (handler.*(entry->callback.memberFn))(context);
+   }
+   else
+      (entry->callback.nonMemberFn)(context);
 }
 
 
@@ -1329,8 +1326,7 @@ bool CommandManager::HandleMenuID(
    mLastProcessId = id;
    CommandListEntry *entry = mCommandNumericIDHash[id];
 
-   auto hook = sMenuHook();
-   if (hook && hook(entry->name))
+   if (GlobalMenuHook::Call(entry->name))
       return true;
 
    return HandleCommandEntry( project, entry, flags, alwaysEnabled );
@@ -1712,25 +1708,21 @@ void CommandManager::RemoveDuplicateShortcuts()
 
 #include "../KeyboardCapture.h"
 
-static struct InstallHandlers
-{
-   InstallHandlers()
-   {
-      KeyboardCapture::SetPreFilter( []( wxKeyEvent & ) {
-         // We must have a project since we will be working with the
-         // CommandManager, which is tied to individual projects.
-         auto project = GetActiveProject().lock();
-         return project && GetProjectFrame( *project ).IsEnabled();
-      } );
-      KeyboardCapture::SetPostFilter( []( wxKeyEvent &key ) {
-         // Capture handler window didn't want it, so ask the CommandManager.
-         if (auto project = GetActiveProject().lock()) {
-            auto &manager = CommandManager::Get( *project );
-            return manager.FilterKeyEvent(project.get(), key);
-         }
-         else
-            return false;
-      } );
+static KeyboardCapture::PreFilter::Scope scope1{
+[]( wxKeyEvent & ) {
+   // We must have a project since we will be working with the
+   // CommandManager, which is tied to individual projects.
+   auto project = GetActiveProject().lock();
+   return project && GetProjectFrame( *project ).IsEnabled();
+} };
+static KeyboardCapture::PostFilter::Scope scope2{
+[]( wxKeyEvent &key ) {
+   // Capture handler window didn't want it, so ask the CommandManager.
+   if (auto project = GetActiveProject().lock()) {
+      auto &manager = CommandManager::Get( *project );
+      return manager.FilterKeyEvent(project.get(), key);
    }
-} installHandlers;
+   else
+      return false;
+} };
 

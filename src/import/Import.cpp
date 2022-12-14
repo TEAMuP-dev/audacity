@@ -28,7 +28,7 @@ It's defined in Import.h
 
 \class Importer
 \brief Class which actually imports the auido, using functions defined
-in ImportPCM.cpp, ImportMP3.cpp, ImportOGG.cpp, ImportRawData.cpp,
+in ImportPCM.cpp, ImportMP3_*.cpp, ImportOGG.cpp, ImportRawData.cpp,
 ImportLOF.cpp, and ImportAUP.cpp.
 
 *//******************************************************************/
@@ -138,7 +138,7 @@ bool Importer::Initialize()
    using namespace Registry;
    static OrderingPreferenceInitializer init{
       PathStart,
-      { {wxT(""), wxT("AUP,PCM,OGG,FLAC,MP3,LOF,FFmpeg") } }
+      { {wxT(""), wxT("AUP,PCM,OGG,FLAC,MP3,LOF,WavPack,FFmpeg") } }
       // QT and GStreamer are only conditionally compiled and would get
       // placed at the end if present
    };
@@ -659,10 +659,8 @@ bool Importer::Import( AudacityProject &project,
             }
          }
 
-         if (res == ProgressResult::Cancelled || res == ProgressResult::Failed)
-         {
+         if (res == ProgressResult::Cancelled)
             return false;
-         }
 
          // We could exit here since we had a match on the file extension,
          // but there may be another plug-in that can import the file and

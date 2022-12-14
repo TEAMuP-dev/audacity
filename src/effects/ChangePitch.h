@@ -26,6 +26,7 @@ the pitch without changing the tempo.
 #endif
 
 #include "SoundTouchEffect.h"
+#include "../ShuttleAutomation.h"
 
 class wxSlider;
 class wxChoice;
@@ -37,6 +38,8 @@ class ShuttleGui;
 class EffectChangePitch final : public EffectSoundTouch
 {
 public:
+   static inline EffectChangePitch *
+   FetchParameters(EffectChangePitch &e, EffectSettings &) { return &e; }
    static const ComponentInterfaceSymbol Symbol;
 
    EffectChangePitch();
@@ -44,29 +47,24 @@ public:
 
    // ComponentInterface implementation
 
-   ComponentInterfaceSymbol GetSymbol() override;
-   TranslatableString GetDescription() override;
-   ManualPageID ManualPage() override;
+   ComponentInterfaceSymbol GetSymbol() const override;
+   TranslatableString GetDescription() const override;
+   ManualPageID ManualPage() const override;
 
    // EffectDefinitionInterface implementation
 
-   EffectType GetType() override;
-   bool GetAutomationParameters(CommandParameters & parms) override;
-   bool SetAutomationParameters(CommandParameters & parms) override;
-   bool LoadFactoryDefaults() override;
+   EffectType GetType() const override;
+   OptionalMessage LoadFactoryDefaults(EffectSettings &settings)
+      const override;
+   OptionalMessage DoLoadFactoryDefaults(EffectSettings &settings);
 
-   // EffectProcessor implementation
-
-   bool DefineParams( ShuttleParams & S ) override;
-
-   // Effect implementation
-
-   bool Init() override;
-   bool Process() override;
-   bool CheckWhetherSkipEffect() override;
-   void PopulateOrExchange(ShuttleGui & S) override;
-   bool TransferDataToWindow() override;
-   bool TransferDataFromWindow() override;
+   bool Process(EffectInstance &instance, EffectSettings &settings) override;
+   bool CheckWhetherSkipEffect(const EffectSettings &settings) const override;
+   std::unique_ptr<EffectUIValidator> PopulateOrExchange(
+      ShuttleGui & S, EffectInstance &instance,
+      EffectSettingsAccess &access, const EffectOutputs *pOutputs) override;
+   bool TransferDataToWindow(const EffectSettings &settings) override;
+   bool TransferDataFromWindow(EffectSettings &settings) override;
 
 private:
    // EffectChangePitch implementation
@@ -146,7 +144,13 @@ private:
    wxCheckBox *   mUseSBSMSCheckBox;
 #endif
 
+   const EffectParameterMethods& Parameters() const override;
    DECLARE_EVENT_TABLE()
+
+static constexpr EffectParameter Percentage{ &EffectChangePitch::m_dPercentChange,
+   L"Percentage", 0.0,  -99.0,   3000.0,  1  };
+static constexpr EffectParameter UseSBSMS{ &EffectChangePitch::mUseSBSMS,
+   L"SBSMS",     false, false,   true,    1  };
 };
 
 #endif // __AUDACITY_EFFECT_CHANGEPITCH__

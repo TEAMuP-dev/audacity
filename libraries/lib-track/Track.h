@@ -12,6 +12,7 @@
 #ifndef __AUDACITY_TRACK__
 #define __AUDACITY_TRACK__
 
+#include <atomic>
 #include <utility>
 #include <vector>
 #include <list>
@@ -222,6 +223,13 @@ class TRACK_API Track /* not final */
    , public AttachedTrackObjects
    , public std::enable_shared_from_this<Track> // see SharedPointer()
 {
+protected:
+   //! Empty argument passed to some public constructors
+   /*!
+    Passed to function templates like make_shared, which don't need to be
+    friends; but construction of the argument is controlled by the class
+    */
+   struct ProtectedCreationArg{};
 public:
 
    //! For two tracks describes the type of the linkage
@@ -231,13 +239,27 @@ public:
        Aligned, //< Tracks are grouped and changes should be synchronized
    };
 
+   struct ChannelGroupData;
+
+   //! Hosting of objects attached by higher level code
+   using ChannelGroupAttachments = ClientData::Site<
+      ChannelGroupData, ClientData::Cloneable<>, ClientData::DeepCopying
+   >;
+
+   // Structure describing data common to channels of a group of tracks
+   // Should be deep-copyable (think twice before adding shared pointers!)
+   struct ChannelGroupData : ChannelGroupAttachments {
+      LinkType mLinkType{ LinkType::None };
+   };
+
 private:
 
    friend class TrackList;
 
  private:
    TrackId mId; //!< Identifies the track only in-session, not persistently
-   LinkType mLinkType{ LinkType::None };
+
+   std::unique_ptr<ChannelGroupData> mpGroupData;
 
  protected:
    std::weak_ptr<TrackList> mList; //!< Back pointer to owning TrackList
@@ -246,7 +268,6 @@ private:
    TrackNodePointer mNode{};
    int            mIndex; //!< 0-based position of this track in its TrackList
    wxString       mName;
-   wxString       mDefaultName;
 
  private:
    bool           mSelected;
@@ -370,8 +391,18 @@ private:
 public:
    static void FinishCopy (const Track *n, Track *dest);
 
-   // For use when loading a file.  Return true if ok, else make repair
-   virtual bool LinkConsistencyCheck();
+   //! Check consistency of channel groups, and maybe fix it
+   /*!
+    @param doFix whether to make any changes to correct inconsistencies
+    @param completeList whether to assume that the TrackList containing this
+    is completely loaded; if false, skip some of the checks
+    @return true if no inconsistencies were found
+    */
+   virtual bool LinkConsistencyFix(bool doFix = true, bool completeList = true);
+
+   //! Do the non-mutating part of consistency fix only and return status
+   bool LinkConsistencyCheck(bool completeList)
+   { return const_cast<Track*>(this)->LinkConsistencyFix(false, completeList); }
 
    bool HasOwner() const { return static_cast<bool>(GetOwner());}
 
@@ -381,13 +412,24 @@ public:
    //! Returns true if the leader track has link type LinkType::Aligned
    bool IsAlignedWithLeader() const;
 
+   ChannelGroupData &GetGroupData();
+   const ChannelGroupData &GetGroupData() const;
+
 protected:
    
-   void SetLinkType(LinkType linkType);
-   void DoSetLinkType(LinkType linkType) noexcept;
+   /*!
+    @param completeList only influences debug build consistency checking
+    */
+   void SetLinkType(LinkType linkType, bool completeList = true);
    void SetChannel(ChannelType c) noexcept;
+
 private:
-   
+   ChannelGroupData &MakeGroupData();
+   /*!
+    @param completeList only influences debug build consistency checking
+    */
+   void DoSetLinkType(LinkType linkType, bool completeList = true);
+
    Track* GetLinkedTrack() const;
    //! Returns true for leaders of multichannel groups
    bool HasLinkedTrack() const noexcept;
@@ -407,7 +449,8 @@ private:
  public:
 
    Track();
-   Track(const Track &orig);
+   Track(const Track &orig, ProtectedCreationArg&&);
+   Track& operator =(const Track &orig) = delete;
 
    virtual ~ Track();
 
@@ -422,8 +465,6 @@ private:
 
    wxString GetName() const { return mName; }
    void SetName( const wxString &n );
-   wxString GetDefaultName() const { return mDefaultName; }
-   void SetDefaultName( const wxString &n ) { mDefaultName = n; }
 
    bool GetSelected() const { return mSelected; }
 
@@ -454,6 +495,7 @@ public:
    // Note that subclasses may want to distinguish tracks stored in a clipboard
    // from those stored in a project
    // May assume precondition: t0 <= t1
+   // Should invoke Track::Init
    virtual Holder Copy
       (double WXUNUSED(t0), double WXUNUSED(t1), bool forClipboard = true) const = 0;
 
@@ -854,9 +896,8 @@ ENUMERATE_TRACK_TYPE(Track);
 class TRACK_API AudioTrack /* not final */ : public Track
 {
 public:
-   AudioTrack()
-      : Track{} {}
-   AudioTrack(const Track &orig) : Track{ orig } {}
+   AudioTrack();
+   AudioTrack(const Track &orig, ProtectedCreationArg &&a);
 
    static const TypeInfo &ClassTypeInfo();
 
@@ -874,16 +915,15 @@ ENUMERATE_TRACK_TYPE(AudioTrack);
 class TRACK_API PlayableTrack /* not final */ : public AudioTrack
 {
 public:
-   PlayableTrack()
-      : AudioTrack{} {}
-   PlayableTrack(const Track &orig) : AudioTrack{ orig } {}
+   PlayableTrack();
+   PlayableTrack(const PlayableTrack &orig, ProtectedCreationArg&&);
 
    static const TypeInfo &ClassTypeInfo();
 
-   bool GetMute    () const { return mMute;     }
-   bool GetSolo    () const { return mSolo;     }
-   bool GetNotMute () const { return !mMute;     }
-   bool GetNotSolo () const { return !mSolo;     }
+   bool GetMute    () const { return DoGetMute();     }
+   bool GetSolo    () const { return DoGetSolo();     }
+   bool GetNotMute () const { return !DoGetMute();     }
+   bool GetNotSolo () const { return !DoGetSolo();     }
    void SetMute    (bool m);
    void SetSolo    (bool s);
 
@@ -897,8 +937,16 @@ public:
    bool HandleXMLAttribute(const std::string_view &attr, const XMLAttributeValueView &value);
 
 protected:
-   bool                mMute { false };
-   bool                mSolo { false };
+   // These just abbreviate load and store with relaxed memory ordering
+   bool DoGetMute() const;
+   void DoSetMute(bool value);
+   bool DoGetSolo() const;
+   void DoSetSolo(bool value);
+
+   //! Atomic because it may be read by worker threads in playback
+   std::atomic<bool>  mMute { false };
+   //! Atomic because it may be read by worker threads in playback
+   std::atomic<bool>  mSolo { false };
 };
 
 ENUMERATE_TRACK_TYPE(PlayableTrack);
@@ -1259,7 +1307,9 @@ struct TrackListEvent
       ADDITION,
 
       //! Posted when a track has been deleted from a tracklist. Also posted when one track replaces another
-      /*! mpTrack points to the first track after the deletion, if there is one. */
+      /*! mpTrack points to the removed track. It is expected, that track is valid during the event.
+       *! mExtra is 1 if the track is being replaced by another track, 0 otherwise.
+       */
       DELETION,
    };
 
@@ -1322,6 +1372,14 @@ class TRACK_API TrackList final
    // Find the owning project, which may be null
    AudacityProject *GetOwner() { return mOwner; }
    const AudacityProject *GetOwner() const { return mOwner; }
+
+   /**
+    * \brief Returns string that contains baseTrackName,
+    * but is guaranteed to be unique among other tracks in that list.
+    * \param baseTrackName String to be put into the template
+    * \return Formatted string: "[baseTrackName] [N]"
+    */
+   wxString MakeUniqueTrackName(const wxString& baseTrackName) const;
 
    // Iteration
 
@@ -1486,6 +1544,10 @@ public:
       return Channels_<TrackType>( pTrack->GetOwner()->FindLeader(pTrack) );
    }
 
+   //! If the given track is one of a pair of channels, swap them
+   /*! @return success */
+   static bool SwapChannels(Track &track);
+
    friend class Track;
 
    //! For use in sorting:  assume each iterator points into this list, no duplications
@@ -1649,7 +1711,7 @@ private:
    void DataEvent( const std::shared_ptr<Track> &pTrack, int code );
    void EnsureVisibleEvent(
       const std::shared_ptr<Track> &pTrack, bool modifyState );
-   void DeletionEvent(TrackNodePointer node = {});
+   void DeletionEvent(std::weak_ptr<Track> node, bool duringReplace);
    void AdditionEvent(TrackNodePointer node);
    void ResizingEvent(TrackNodePointer node);
 

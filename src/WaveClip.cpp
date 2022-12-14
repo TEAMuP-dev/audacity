@@ -82,9 +82,9 @@ WaveClip::WaveClip(const WaveClip& orig,
                    bool copyCutlines,
                    double t0, double t1)
 {
-   // Copy only a range of the other WaveClip
-
    mSequenceOffset = orig.mSequenceOffset;
+   mTrimLeft = orig.mTrimLeft + (t0 > orig.GetPlayStartTime()? t0 - orig.GetPlayStartTime() : 0);
+   mTrimRight = orig.mTrimRight + (t1 < orig.GetPlayEndTime()? orig.GetPlayEndTime() - t1 : 0);
    
    mRate = orig.mRate;
    mColourIndex = orig.mColourIndex;
@@ -94,13 +94,9 @@ WaveClip::WaveClip(const WaveClip& orig,
    auto s0 = orig.TimeToSequenceSamples(t0);
    auto s1 = orig.TimeToSequenceSamples(t1);
 
-   mSequence = orig.mSequence->Copy(factory, s0, s1);
+   mSequence = std::make_unique<Sequence>(*orig.mSequence, factory);
 
-   mEnvelope = std::make_unique<Envelope>(
-      *orig.mEnvelope,
-      GetSequenceStartTime() + s0.as_double()/mRate,
-      GetSequenceStartTime() + s1.as_double()/mRate
-   );
+   mEnvelope = std::make_unique<Envelope>(*orig.mEnvelope);
 
    if ( copyCutlines )
       // Copy cutline clips that fall in the range
@@ -158,6 +154,8 @@ void WaveClip::MarkChanged() // NOFAIL-GUARANTEE
 std::pair<float, float> WaveClip::GetMinMax(
    double t0, double t1, bool mayThrow) const
 {
+   t0 = std::max(t0, GetPlayStartTime());
+   t1 = std::min(t1, GetPlayEndTime());
    if (t0 > t1) {
       if (mayThrow)
          THROW_INCONSISTENCY_EXCEPTION;
@@ -435,8 +433,9 @@ void WaveClip::Paste(double t0, const WaveClip* other)
    }
    else
    {
-       newClip = std::make_unique<WaveClip>(*other, mSequence->GetFactory(), true,
-           other->GetPlayStartTime(), other->GetPlayEndTime());
+      newClip = std::make_unique<WaveClip>(*other, mSequence->GetFactory(), true);
+      newClip->ClearSequence(newClip->GetPlayEndTime(), newClip->GetSequenceEndTime());
+      newClip->ClearSequence(newClip->GetSequenceStartTime(), newClip->GetPlayStartTime());
    }
 
    if (clipNeedsResampling || clipNeedsNewFormat)
@@ -684,10 +683,11 @@ bool WaveClip::FindCutLine(double cutLinePosition,
    {
       if (fabs(GetSequenceStartTime() + cutline->GetSequenceStartTime() - cutLinePosition) < 0.0001)
       {
+         auto startTime = GetSequenceStartTime() + cutline->GetSequenceStartTime();
          if (cutlineStart)
-            *cutlineStart = GetSequenceStartTime() + cutline->GetSequenceStartTime();
+            *cutlineStart = startTime;
          if (cutlineEnd)
-            *cutlineEnd = GetSequenceStartTime() + cutline->GetSequenceEndTime();
+            *cutlineEnd = startTime + cutline->SamplesToTime(cutline->GetPlaySamplesCount());
          return true;
       }
    }

@@ -26,7 +26,7 @@
 #include "ViewInfo.h"
 #include "../../../../WaveTrack.h"
 #include "../../../../WaveClip.h"
-#include "../../../../UndoManager.h"
+#include "UndoManager.h"
 #include "../../../../ShuttleGui.h"
 #include "../../../../ProjectWindows.h"
 #include "../../../../commands/AudacityCommand.h"
@@ -36,7 +36,7 @@
 #include "WaveTrackView.h"//need only ClipParameters
 #include "WaveTrackAffordanceHandle.h"
 
-#include "../../../../ProjectHistory.h"
+#include "ProjectHistory.h"
 #include "../../../../ProjectSettings.h"
 #include "../../../../SelectionState.h"
 #include "../../../../RefreshCode.h"
@@ -57,7 +57,7 @@ class SetWaveClipNameCommand : public AudacityCommand
 public:
     static const ComponentInterfaceSymbol Symbol;
 
-    ComponentInterfaceSymbol GetSymbol() override
+    ComponentInterfaceSymbol GetSymbol() const override
     {
         return Symbol;
     }
@@ -264,12 +264,14 @@ void WaveTrackAffordanceControls::Draw(TrackPanelDrawingContext& context, const 
                 auto highlight = selected || affordanceRect.Contains(px, py);
                 if (mTextEditHelper && mEditedClip.lock() == clip)
                 {
-                    TrackArt::DrawClipAffordance(context.dc, affordanceRect, wxEmptyString, highlight, selected);
-                    mTextEditHelper->Draw(context.dc, TrackArt::GetAffordanceTitleRect(affordanceRect));
+                    auto titleRect = TrackArt::DrawClipAffordance(context.dc, affordanceRect, wxEmptyString, highlight, selected);
+                    mTextEditHelper->Draw(context.dc, titleRect);
                 }
                 else
-                    TrackArt::DrawClipAffordance(context.dc, affordanceRect, clip->GetName(), highlight, selected);
-
+                {
+                    auto titleRect = TrackArt::DrawClipAffordance(context.dc, affordanceRect, clip->GetName(), highlight, selected);
+                    mClipNameVisible = !titleRect.IsEmpty();
+                }
             }
         }
 
@@ -302,6 +304,10 @@ bool WaveTrackAffordanceControls::StartEditClipName(AudacityProject* project)
         {
             if (mTextEditHelper)
                 mTextEditHelper->Finish(project);
+
+            if(!mClipNameVisible)
+                //Clip name isn't visible, there is no point in showing editor then
+                return false;
 
             mEditedClip = lock;
             mTextEditHelper = MakeTextEditHelper(clip->GetName());
@@ -561,8 +567,6 @@ namespace {
 
 // Menu handler functions
 
-struct Handler : CommandHandlerObject {
-
 void OnEditClipName(const CommandContext &context)
 {
    auto &project = context.project;
@@ -577,28 +581,13 @@ void OnEditClipName(const CommandContext &context)
    }
 }
 
-};
-
-#define FN(X) (& Handler :: X)
-
-CommandHandlerObject &findCommandHandler(AudacityProject &) {
-   // Handler is not stateful.  Doesn't need a factory registered with
-   // AudacityProject.
-   static Handler instance;
-   return instance;
-};
-
 using namespace MenuTable;
 
 // Register menu items
 
 AttachedItem sAttachment{ wxT("Edit/Other"),
-   ( FinderScope{ findCommandHandler },
-      Command( L"RenameClip", XXO("Rename Clip..."),
-         &Handler::OnEditClipName, SomeClipIsSelectedFlag(),
-         wxT("Ctrl+F2") ) )
+   Command( L"RenameClip", XXO("Rename Clip..."),
+      OnEditClipName, SomeClipIsSelectedFlag(), wxT("Ctrl+F2") )
 };
 
 }
-
-#undef FN

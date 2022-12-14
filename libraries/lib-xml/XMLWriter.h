@@ -56,9 +56,10 @@ class XML_API XMLWriter /* not final */ {
 
    virtual void Write(const wxString &data) = 0;
 
+ private:
    // Escape a string, replacing certain characters with their
    // XML encoding, i.e. '<' becomes '&lt;'
-   wxString XMLEsc(const wxString & s);
+   static wxString XMLEsc(const wxString & s);
 
  protected:
 

@@ -403,9 +403,11 @@ void ExportMP3Options::PopulateOrExchange(ShuttleGui & S)
                      break;
                }
 
+               IntSetting Setting{ L"/FileFormats/MP3Bitrate", defrate };
+
                mRate = S.Id(ID_QUALITY).TieNumberAsChoice(
                   XXO("Quality"),
-                  { wxT("/FileFormats/MP3Bitrate"), defrate },
+                  Setting,
                   *choices,
                   codes
                );
@@ -926,7 +928,7 @@ MP3Exporter::MP3Exporter()
 // We could use #defines rather than this variable.
 // The idea of the variable is that if we wanted, we could allow
 // a dynamic override of the library, e.g. with a newer faster version,
-// or to fix CVEs in the underlying librray.
+// or to fix CVEs in the underlying library.
 // for now though the 'variable' is a constant.
 #ifdef MP3_EXPORT_BUILT_IN
    mLibIsExternal = false;
@@ -1702,7 +1704,7 @@ public:
 
    void OptionsCreate(ShuttleGui &S, int format) override;
    ProgressResult Export(AudacityProject *project,
-               std::unique_ptr<ProgressDialog> &pDialog,
+               std::unique_ptr<BasicUI::ProgressDialog> &pDialog,
                unsigned channels,
                const wxFileNameWrapper &fName,
                bool selectedOnly,
@@ -1760,7 +1762,7 @@ int ExportMP3::SetNumExportChannels()
 
 
 ProgressResult ExportMP3::Export(AudacityProject *project,
-                       std::unique_ptr<ProgressDialog> &pDialog,
+                       std::unique_ptr<BasicUI::ProgressDialog> &pDialog,
                        unsigned channels,
                        const wxFileNameWrapper &fName,
                        bool selectionOnly,
@@ -1969,11 +1971,9 @@ ProgressResult ExportMP3::Export(AudacityProject *project,
       auto &progress = *pDialog;
 
       while (updateResult == ProgressResult::Success) {
-         auto blockLen = mixer->Process(inSamples);
-
-         if (blockLen == 0) {
+         auto blockLen = mixer->Process();
+         if (blockLen == 0)
             break;
-         }
 
          float *mixed = (float *)mixer->GetBuffer();
 
@@ -2009,7 +2009,7 @@ ProgressResult ExportMP3::Export(AudacityProject *project,
             break;
          }
 
-         updateResult = progress.Update(mixer->MixGetCurrentTime() - t0, t1 - t0);
+         updateResult = progress.Poll(mixer->MixGetCurrentTime() - t0, t1 - t0);
       }
    }
 

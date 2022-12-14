@@ -163,6 +163,12 @@ public:
 
    //! Change an existing dialog's message
    virtual void SetMessage(const TranslatableString & message) = 0;
+
+   //! Change the dialog's title
+   virtual void SetDialogTitle(const TranslatableString & title) = 0;
+
+   //! Reset the dialog state
+   virtual void Reinit() = 0;
 };
 
 //! Abstraction of a progress dialog with undefined time-to-completion estimate
@@ -207,6 +213,8 @@ public:
       const TranslatableStrings &buttons,
       const ManualPageID &helpPage,
       const TranslatableString &boxMsg, bool log) = 0;
+
+   virtual bool DoOpenInDefaultBrowser(const wxString &url) = 0;
 };
 
 //! Fetch the global instance, or nullptr if none is yet installed
@@ -236,6 +244,11 @@ BASIC_UI_API void CallAfter(Action action);
  dispatching.
  */
 BASIC_UI_API void Yield();
+
+//! Open an URL in default browser
+/*! This function may be called in other threads than the main.
+ */
+BASIC_UI_API bool OpenInDefaultBrowser(const wxString &url);
 
 //! Show an error dialog with a link to the manual for further help
 inline void ShowErrorDialog(

@@ -74,7 +74,6 @@ enum ToolBarID
    MeterBarID,
    RecordMeterBarID,
    PlayMeterBarID,
-   MixerBarID,
    EditBarID,
    TranscriptionBarID,
    ScrubbingBarID,
@@ -82,6 +81,10 @@ enum ToolBarID
    SelectionBarID,
 #ifdef EXPERIMENTAL_SPECTRAL_EDITING
    SpectralSelectionBarID,
+#endif
+   AudioSetupBarID,
+#ifdef HAS_AUDIOCOM_UPLOAD
+   ShareAudioBarID,
 #endif
    TimeBarID,
    ToolBarCount
@@ -107,6 +110,7 @@ class AUDACITY_DLL_API ToolBar /* not final */
    virtual ~ToolBar();
 
    bool AcceptsFocus() const override { return false; };
+   bool AcceptsFocusFromKeyboard() const override;
 
    virtual void SetToDefaultSize();
    //NEW virtuals:
@@ -163,6 +167,16 @@ public:
                        bool processdownevents,
                        wxSize size);
 
+
+   static
+   AButton *MakeButton(ToolBar *parent,
+                       teBmps eEnabledUp,
+                       teBmps eEnabledDown,
+                       teBmps eDisabled,
+                       int id,
+                       bool processdownevents,
+                       const TranslatableString &label);
+
    static
    void MakeAlternateImages(AButton &button, int idx,
                             teBmps eUp,
@@ -189,7 +203,9 @@ public:
    void SetButton(bool down, AButton *button);
 
    static void MakeMacRecoloredImage(teBmps eBmpOut, teBmps eBmpIn);
+   static void MakeMacRecoloredImageSize(teBmps eBmpOut, teBmps eBmpIn, const wxSize& size);
    static void MakeRecoloredImage(teBmps eBmpOut, teBmps eBmpIn);
+   static void MakeRecoloredImageSize(teBmps eBmpOut, teBmps eBmpIn, const wxSize& size);
 
    wxBoxSizer *GetSizer();
 

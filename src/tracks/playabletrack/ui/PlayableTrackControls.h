@@ -21,11 +21,15 @@ class AUDACITY_DLL_API PlayableTrackControls /* not final */
 {
 public:
    // To help subclasses define GetTCPLines
-   static const TCPLines& StaticTCPLines();
+   static const TCPLines& StaticNoteTCPLines();
+   static const TCPLines& StaticWaveTCPLines();
 
    static void GetMuteSoloRect(
       const wxRect & rect, wxRect & dest, bool solo, bool bHasSoloButton,
       const Track *pTrack);
+
+   static void GetEffectsRect(
+      const wxRect & rect, wxRect & dest, const Track *pTrack);
 
    using CommonTrackControls::CommonTrackControls;
 };

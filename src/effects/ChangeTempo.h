@@ -22,6 +22,7 @@
 #endif
 
 #include "SoundTouchEffect.h"
+#include "../ShuttleAutomation.h"
 
 class wxSlider;
 class wxCheckBox;
@@ -31,6 +32,8 @@ class ShuttleGui;
 class EffectChangeTempo final : public EffectSoundTouch
 {
 public:
+   static inline EffectChangeTempo *
+   FetchParameters(EffectChangeTempo &e, EffectSettings &) { return &e; }
    static const ComponentInterfaceSymbol Symbol;
 
    EffectChangeTempo();
@@ -38,30 +41,27 @@ public:
 
    // ComponentInterface implementation
 
-   ComponentInterfaceSymbol GetSymbol() override;
-   TranslatableString GetDescription() override;
-   ManualPageID ManualPage() override;
+   ComponentInterfaceSymbol GetSymbol() const override;
+   TranslatableString GetDescription() const override;
+   ManualPageID ManualPage() const override;
 
    // EffectDefinitionInterface implementation
 
-   EffectType GetType() override;
-   bool SupportsAutomation() override;
-   bool GetAutomationParameters(CommandParameters & parms) override;
-   bool SetAutomationParameters(CommandParameters & parms) override;
-
-   // EffectProcessor implementation
-
-   bool DefineParams( ShuttleParams & S ) override;
+   EffectType GetType() const override;
+   bool SupportsAutomation() const override;
 
    // Effect implementation
 
    bool Init() override;
-   bool CheckWhetherSkipEffect() override;
-   bool Process() override;
-   double CalcPreviewInputLength(double previewLength) override;
-   void PopulateOrExchange(ShuttleGui & S) override;
-   bool TransferDataToWindow() override;
-   bool TransferDataFromWindow() override;
+   bool CheckWhetherSkipEffect(const EffectSettings &settings) const override;
+   bool Process(EffectInstance &instance, EffectSettings &settings) override;
+   double CalcPreviewInputLength(
+      const EffectSettings &settings, double previewLength) const override;
+   std::unique_ptr<EffectUIValidator> PopulateOrExchange(
+      ShuttleGui & S, EffectInstance &instance,
+      EffectSettingsAccess &access, const EffectOutputs *pOutputs) override;
+   bool TransferDataToWindow(const EffectSettings &settings) override;
+   bool TransferDataFromWindow(EffectSettings &settings) override;
 
 private:
    // EffectChangeTempo implementation
@@ -102,7 +102,13 @@ private:
    wxCheckBox *   mUseSBSMSCheckBox;
 #endif
 
+   const EffectParameterMethods& Parameters() const override;
    DECLARE_EVENT_TABLE()
+
+static constexpr EffectParameter Percentage{ &EffectChangeTempo::m_PercentChange,
+   L"Percentage", 0.0,  -95.0,   3000.0,  1  };
+static constexpr EffectParameter UseSBSMS{ &EffectChangeTempo::mUseSBSMS,
+   L"SBSMS",     false, false,   true,    1  };
 };
 
 #endif // __AUDACITY_EFFECT_CHANGETEMPO__

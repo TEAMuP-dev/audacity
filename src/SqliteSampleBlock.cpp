@@ -11,12 +11,15 @@ Paul Licameli -- split from SampleBlock.cpp and SampleBlock.h
 #include <float.h>
 #include <sqlite3.h>
 
+#include "BasicUI.h"
 #include "DBConnection.h"
 #include "ProjectFileIO.h"
 #include "SampleFormat.h"
 #include "XMLTagHandler.h"
 
 #include "SampleBlock.h" // to inherit
+#include "UndoManager.h"
+#include "WaveTrack.h"
 
 #include "SentryHelper.h"
 #include <wx/log.h>
@@ -152,12 +155,15 @@ public:
       sampleFormat srcformat,
       const AttributesList &attrs) override;
 
-   BlockDeletionCallback SetBlockDeletionCallback(
-      BlockDeletionCallback callback ) override;
-
 private:
-   friend SqliteSampleBlock;
+   void OnBeginPurge(size_t begin, size_t end);
+   void OnEndPurge();
 
+   friend SqliteSampleBlock;
+   
+   AudacityProject &mProject;
+   Observer::Subscription mUndoSubscription;
+   std::optional<SampleBlock::DeletionCallback::Scope> mScope;
    const std::shared_ptr<ConnectionPtr> mppConnection;
 
    // Track all blocks that this factory has created, but don't control
@@ -167,14 +173,23 @@ private:
    using AllBlocksMap =
       std::map< SampleBlockID, std::weak_ptr< SqliteSampleBlock > >;
    AllBlocksMap mAllBlocks;
-
-   BlockDeletionCallback mCallback;
 };
 
 SqliteSampleBlockFactory::SqliteSampleBlockFactory( AudacityProject &project )
-   : mppConnection{ ConnectionPtr::Get(project).shared_from_this() }
+   : mProject{ project }
+   , mppConnection{ ConnectionPtr::Get(project).shared_from_this() }
 {
-   
+   mUndoSubscription = UndoManager::Get(project)
+      .Subscribe([this](UndoRedoMessage message){
+         switch (message.type) {
+         case UndoRedoMessage::BeginPurge:
+            return OnBeginPurge(message.begin, message.end);
+         case UndoRedoMessage::EndPurge:
+            return OnEndPurge();
+         default:
+            return;
+         }
+      });
 }
 
 SqliteSampleBlockFactory::~SqliteSampleBlockFactory() = default;
@@ -274,14 +289,6 @@ SampleBlockPtr SqliteSampleBlockFactory::DoCreateFromXML(
    return sb;
 }
 
-auto SqliteSampleBlockFactory::SetBlockDeletionCallback(
-   BlockDeletionCallback callback ) -> BlockDeletionCallback
-{
-   auto result = mCallback;
-   mCallback = std::move( callback );
-   return result;
-}
-
 SqliteSampleBlock::SqliteSampleBlock(
    const std::shared_ptr<SqliteSampleBlockFactory> &pFactory)
 :  mpFactory(pFactory)
@@ -297,11 +304,7 @@ SqliteSampleBlock::SqliteSampleBlock(
 
 SqliteSampleBlock::~SqliteSampleBlock()
 {
-   if (mpFactory) {
-      auto &callback = mpFactory->mCallback;
-      if (callback)
-         GuardedCall( [&]{ callback( *this ); } );
-   }
+   DeletionCallback::Call(*this);
 
    if (IsSilent()) {
       // The block object was constructed but failed to Load() or Commit().
@@ -1008,18 +1011,74 @@ void SqliteSampleBlock::CalcSummary(Sizes sizes)
    mSumMax = max;
 }
 
-// Inject our database implementation at startup
-static struct Injector
+//! Just to find a denominator for a progress indicator.
+/*! This estimate procedure should in fact be exact */
+static size_t EstimateRemovedBlocks(
+   AudacityProject &project, size_t begin, size_t end)
 {
-   Injector()
-   {
-      // Do this some time before the first project is created
-      (void) SampleBlockFactory::RegisterFactoryFactory(
-         []( AudacityProject &project )
-         {
-            return std::make_shared<SqliteSampleBlockFactory>( project );
-         }
-      );
-   }
-} injector;
- 
+   auto &manager = UndoManager::Get(project);
+
+   // Collect ids that survive
+   SampleBlockIDSet wontDelete;
+   auto f = [&](const UndoStackElem &elem){
+      InspectBlocks(*elem.state.tracks, {}, &wontDelete);
+   };
+   manager.VisitStates(f, 0, begin);
+   manager.VisitStates(f, end, manager.GetNumStates());
+   if (const auto saved = manager.GetSavedState(); saved >= 0)
+      manager.VisitStates(f, saved, saved + 1);
+   InspectBlocks(TrackList::Get(project), {}, &wontDelete);
+
+   // Collect ids that won't survive (and are not negative pseudo ids)
+   SampleBlockIDSet seen, mayDelete;
+   manager.VisitStates( [&](const UndoStackElem &elem){
+      auto &tracks = *elem.state.tracks;
+      InspectBlocks(tracks, [&]( const SampleBlock &block ){
+         auto id = block.GetBlockID();
+         if ( id > 0 && !wontDelete.count( id ) )
+            mayDelete.insert( id );
+      },
+      &seen);
+   }, begin, end );
+   return mayDelete.size();
+}
+
+void SqliteSampleBlockFactory::OnBeginPurge(size_t begin, size_t end)
+{
+   // Install a callback function that updates a progress indicator
+   using namespace BasicUI;
+   
+   //Avoid showing dialog to the user if purge operation
+   //does not take much time, as it will resign focus from main window
+   //but dialog itself may not be presented to the user at all.
+   //On MacOS 13 (bug #3975) focus isn't restored in that case.
+   constexpr auto ProgressDialogShowDelay = std::chrono::milliseconds (200);
+   const auto nToDelete = EstimateRemovedBlocks(mProject, begin, end);
+   if(nToDelete == 0)
+       return;
+   auto purgeStartTime = std::chrono::system_clock::now();
+   std::shared_ptr<ProgressDialog> progressDialog;
+   mScope.emplace([=, nDeleted = 0](auto&) mutable {
+      ++nDeleted;
+      if(!progressDialog)
+      {
+         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now() - purgeStartTime);
+         if(elapsed >= ProgressDialogShowDelay)
+            progressDialog = MakeProgress(XO("Progress"), XO("Discarding undo/redo history"));
+      }
+      else
+         progressDialog->Poll(nDeleted, nToDelete);
+   });
+}
+
+void SqliteSampleBlockFactory::OnEndPurge()
+{
+   mScope.reset();
+}
+
+// Inject our database implementation at startup
+static SampleBlockFactory::Factory::Scope scope{ []( AudacityProject &project )
+{
+   return std::make_shared<SqliteSampleBlockFactory>( project );
+} };

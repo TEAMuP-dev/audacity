@@ -29,252 +29,14 @@ for shared and private configs - which need to move out.
 #include <wx/tokenzr.h>
 
 #include "BasicUI.h"
-#include "ModuleInterface.h"
+#include "PluginProvider.h"
 
 #include "Internat.h" // for macro XO
 #include "FileNames.h"
 #include "MemoryX.h"
 #include "ModuleManager.h"
 #include "PlatformCompatibility.h"
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// Plugindescriptor
-//
-///////////////////////////////////////////////////////////////////////////////
-
-PluginDescriptor::PluginDescriptor()
-{
-   mPluginType = PluginTypeNone;
-   mEnabled = false;
-   mValid = false;
-   mInstance = nullptr;
-
-   mEffectType = EffectTypeNone;
-   mEffectInteractive = false;
-   mEffectDefault = false;
-   mEffectLegacy = false;
-   mEffectRealtime = false;
-   mEffectAutomatable = false;
-}
-
-PluginDescriptor::~PluginDescriptor()
-{
-}
-
-PluginDescriptor &PluginDescriptor::operator =(PluginDescriptor &&) = default;
-
-bool PluginDescriptor::IsInstantiated() const
-{
-   return mInstance != nullptr;
-}
-
-ComponentInterface *PluginDescriptor::GetInstance()
-{
-   if (!mInstance)
-   {
-      if (GetPluginType() == PluginTypeModule)
-         mInstance = ModuleManager::Get().CreateProviderInstance(GetID(), GetPath());
-      else
-      {
-         muInstance = ModuleManager::Get().CreateInstance(GetProviderID(), GetPath());
-         mInstance = muInstance.get();
-      }
-   }
-
-   return mInstance;
-}
-
-void PluginDescriptor::SetInstance(std::unique_ptr<ComponentInterface> instance)
-{
-   muInstance = std::move(instance);
-   mInstance = muInstance.get();
-}
-
-PluginType PluginDescriptor::GetPluginType() const
-{
-   return mPluginType;
-}
-
-const PluginID & PluginDescriptor::GetID() const
-{
-   return mID;
-}
-
-const PluginID & PluginDescriptor::GetProviderID() const
-{
-   return mProviderID;
-}
-
-const PluginPath & PluginDescriptor::GetPath() const
-{
-   return mPath;
-}
-
-const ComponentInterfaceSymbol & PluginDescriptor::GetSymbol() const
-{
-   return mSymbol;
-}
-
-wxString PluginDescriptor::GetUntranslatedVersion() const
-{
-   return mVersion;
-}
-
-wxString PluginDescriptor::GetVendor() const
-{
-   return mVendor;
-}
-
-bool PluginDescriptor::IsEnabled() const
-{
-   return mEnabled;
-}
-
-bool PluginDescriptor::IsValid() const
-{
-   return mValid;
-}
-
-void PluginDescriptor::SetPluginType(PluginType type)
-{
-   mPluginType = type;
-}
-
-void PluginDescriptor::SetID(const PluginID & ID)
-{
-   mID = ID;
-}
-
-void PluginDescriptor::SetProviderID(const PluginID & providerID)
-{
-   mProviderID = providerID;
-}
-
-void PluginDescriptor::SetPath(const PluginPath & path)
-{
-   mPath = path;
-}
-
-void PluginDescriptor::SetSymbol(const ComponentInterfaceSymbol & symbol)
-{
-   mSymbol = symbol;
-}
-
-void PluginDescriptor::SetVersion(const wxString & version)
-{
-   mVersion = version;
-}
-
-void PluginDescriptor::SetVendor(const wxString & vendor)
-{
-   mVendor = vendor;
-}
-
-void PluginDescriptor::SetEnabled(bool enable)
-{
-   mEnabled = enable;
-}
-
-void PluginDescriptor::SetValid(bool valid)
-{
-   mValid = valid;
-}
-
-// Effects
-
-wxString PluginDescriptor::GetEffectFamily() const
-{
-   return mEffectFamily;
-}
-
-EffectType PluginDescriptor::GetEffectType() const
-{
-   return mEffectType;
-}
-
-bool PluginDescriptor::IsEffectInteractive() const
-{
-   return mEffectInteractive;
-}
-
-bool PluginDescriptor::IsEffectDefault() const
-{
-   return mEffectDefault;
-}
-
-bool PluginDescriptor::IsEffectLegacy() const
-{
-   return mEffectLegacy;
-}
-
-bool PluginDescriptor::IsEffectRealtime() const
-{
-   return mEffectRealtime;
-}
-
-bool PluginDescriptor::IsEffectAutomatable() const
-{
-   return mEffectAutomatable;
-}
-
-void PluginDescriptor::SetEffectFamily(const wxString & family)
-{
-   mEffectFamily = family;
-}
-
-void PluginDescriptor::SetEffectType(EffectType type)
-{
-   mEffectType = type;
-}
-
-void PluginDescriptor::SetEffectInteractive(bool interactive)
-{
-   mEffectInteractive = interactive;
-}
-
-void PluginDescriptor::SetEffectDefault(bool dflt)
-{
-   mEffectDefault = dflt;
-}
-
-void PluginDescriptor::SetEffectLegacy(bool legacy)
-{
-   mEffectLegacy = legacy;
-}
-
-void PluginDescriptor::SetEffectRealtime(bool realtime)
-{
-   mEffectRealtime = realtime;
-}
-
-void PluginDescriptor::SetEffectAutomatable(bool automatable)
-{
-   mEffectAutomatable = automatable;
-}
-
-// Importer
-
-const wxString & PluginDescriptor::GetImporterIdentifier() const
-{
-   return mImporterIdentifier;
-}
-
-void PluginDescriptor::SetImporterIdentifier(const wxString & identifier)
-{
-   mImporterIdentifier = identifier;
-}
-
-const FileExtensions & PluginDescriptor::GetImporterExtensions()
-   const
-{
-   return mImporterExtensions;
-}
-
-void PluginDescriptor::SetImporterExtensions( FileExtensions extensions )
-{
-   mImporterExtensions = std::move( extensions );
-}
+#include "Base64.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -284,7 +46,6 @@ void PluginDescriptor::SetImporterExtensions( FileExtensions extensions )
 
 // Registry has the list of plug ins
 #define REGVERKEY wxString(wxT("/pluginregistryversion"))
-#define REGVERCUR wxString(wxT("1.1"))
 #define REGROOT wxString(wxT("/pluginregistry/"))
 
 // Settings has the values of the plug in settings.
@@ -326,26 +87,17 @@ void PluginDescriptor::SetImporterExtensions( FileExtensions extensions )
 // ============================================================================
 
 const PluginID &PluginManagerInterface::DefaultRegistrationCallback(
-   ModuleInterface *provider, ComponentInterface *pInterface )
+   PluginProvider *provider, ComponentInterface *pInterface )
 {
-   EffectDefinitionInterface * pEInterface = dynamic_cast<EffectDefinitionInterface*>(pInterface);
-   if( pEInterface )
-      return PluginManager::Get().RegisterPlugin(provider, pEInterface, PluginTypeEffect);
-   ComponentInterface * pCInterface = dynamic_cast<ComponentInterface*>(pInterface);
-   if( pCInterface )
-      return PluginManager::Get().RegisterPlugin(provider, pCInterface);
-   static wxString empty;
-   return empty;
+   if(auto effectDefinitionInterface = dynamic_cast<EffectDefinitionInterface*>(pInterface))
+      return PluginManager::Get().RegisterPlugin(provider, effectDefinitionInterface, PluginTypeEffect);
+   return PluginManager::Get().RegisterPlugin(provider, pInterface);
 }
 
 const PluginID &PluginManagerInterface::AudacityCommandRegistrationCallback(
-   ModuleInterface *provider, ComponentInterface *pInterface )
+   PluginProvider *provider, ComponentInterface *pInterface )
 {
-   ComponentInterface * pCInterface = dynamic_cast<ComponentInterface*>(pInterface);
-   if( pCInterface )
-      return PluginManager::Get().RegisterPlugin(provider, pCInterface);
-   static wxString empty;
-   return empty;
+   return PluginManager::Get().RegisterPlugin(provider, pInterface);
 }
 
 RegistryPath PluginManager::GetPluginEnabledSetting( const PluginID &ID ) const
@@ -382,7 +134,7 @@ RegistryPath PluginManager::GetPluginEnabledSetting(
 bool PluginManager::IsPluginRegistered(
    const PluginPath &path, const TranslatableString *pName)
 {
-   for (auto &pair : mPlugins) {
+   for (auto &pair : mRegisteredPlugins) {
       if (auto &descriptor = pair.second; descriptor.GetPath() == path) {
          if (pName)
             descriptor.SetSymbol(
@@ -393,10 +145,21 @@ bool PluginManager::IsPluginRegistered(
    return false;
 }
 
-const PluginID & PluginManager::RegisterPlugin(ModuleInterface *module)
+bool PluginManager::IsPluginLoaded(const wxString& ID) const
 {
-   PluginDescriptor & plug = CreatePlugin(GetID(module), module, PluginTypeModule);
-   plug.SetEffectFamily(module->GetOptionalFamilySymbol().Internal());
+   return mLoadedInterfaces.find(ID) != mLoadedInterfaces.end();
+}
+
+void PluginManager::RegisterPlugin(PluginDescriptor&& desc)
+{
+   mRegisteredPlugins[desc.GetID()] = std::move(desc);
+}
+
+const PluginID & PluginManager::RegisterPlugin(PluginProvider *provider)
+{
+   PluginDescriptor & plug =
+      CreatePlugin(GetID(provider), provider, PluginTypeModule);
+   plug.SetEffectFamily(provider->GetOptionalFamilySymbol().Internal());
 
    plug.SetEnabled(true);
    plug.SetValid(true);
@@ -404,7 +167,8 @@ const PluginID & PluginManager::RegisterPlugin(ModuleInterface *module)
    return plug.GetID();
 }
 
-const PluginID & PluginManager::RegisterPlugin(ModuleInterface *provider, ComponentInterface *command)
+const PluginID & PluginManager::RegisterPlugin(
+   PluginProvider *provider, ComponentInterface *command)
 {
    PluginDescriptor & plug = CreatePlugin(GetID(command), command, (PluginType)PluginTypeAudacityCommand);
 
@@ -416,7 +180,8 @@ const PluginID & PluginManager::RegisterPlugin(ModuleInterface *provider, Compon
    return plug.GetID();
 }
 
-const PluginID & PluginManager::RegisterPlugin(ModuleInterface *provider, EffectDefinitionInterface *effect, int type)
+const PluginID & PluginManager::RegisterPlugin(
+   PluginProvider *provider, EffectDefinitionInterface *effect, int type)
 {
    PluginDescriptor & plug = CreatePlugin(GetID(effect), effect, (PluginType)type);
 
@@ -426,7 +191,7 @@ const PluginID & PluginManager::RegisterPlugin(ModuleInterface *provider, Effect
    plug.SetEffectFamily(effect->GetFamily().Internal());
    plug.SetEffectInteractive(effect->IsInteractive());
    plug.SetEffectDefault(effect->IsDefault());
-   plug.SetEffectRealtime(effect->SupportsRealtime());
+   plug.SetRealtimeSupport(effect->RealtimeSupport());
    plug.SetEffectAutomatable(effect->SupportsAutomation());
 
    plug.SetEnabled(true);
@@ -504,6 +269,12 @@ bool PluginManager::GetConfigSubgroups(ConfigurationType type,
    return GetSubgroups(Group(type, ID, group), subgroups);
 }
 
+bool PluginManager::HasConfigValue(ConfigurationType type, const PluginID & ID,
+      const RegistryPath & group, const RegistryPath & key)
+{
+   return HasConfigValue(Key(type, ID, group, key));
+}
+
 bool PluginManager::GetConfigValue(ConfigurationType type, const PluginID & ID,
    const RegistryPath & group, const RegistryPath & key,
    ConfigReference var, ConfigConstReference defval)
@@ -566,6 +337,31 @@ PluginManager::~PluginManager()
    Terminate();
 }
 
+void PluginManager::InitializePlugins()
+{
+   ModuleManager & moduleManager = ModuleManager::Get();
+   //ModuleManager::DiscoverProviders was called earlier, so we
+   //can be sure that providers are already loaded
+
+   //Check all known plugins to ensure they are still valid.
+   for (auto it = mRegisteredPlugins.begin(); it != mRegisteredPlugins.end();) {
+      auto &pluginDesc = it->second;
+      const auto pluginType = pluginDesc.GetPluginType();
+      if(pluginType == PluginTypeNone || pluginType == PluginTypeModule)
+      {
+         ++it;
+         continue;
+      }
+
+      if(!moduleManager.CheckPluginExist(pluginDesc.GetProviderID(), pluginDesc.GetPath()))
+         it = mRegisteredPlugins.erase(it);
+      else
+         ++it;
+   }
+
+   Save();
+}
+
 // ----------------------------------------------------------------------------
 // PluginManager implementation
 // ----------------------------------------------------------------------------
@@ -601,43 +397,28 @@ void PluginManager::Initialize(FileConfigFactory factory)
 
    auto &mm = ModuleManager::Get();
    mm.DiscoverProviders();
-   for (const auto &[id, module] : mm.Providers()) {
+   for (auto& [id, module] : mm.Providers()) {
       RegisterPlugin(module.get());
       // Allow the module to auto-register children
       module->AutoRegisterPlugins(*this);
    }
 
-   // And finally check for updates
-#ifndef EXPERIMENTAL_EFFECT_MANAGEMENT
-   CheckForUpdates();
-#else
-   const bool kFast = true;
-   CheckForUpdates( kFast );
-#endif
+   InitializePlugins();
 }
 
 void PluginManager::Terminate()
 {
-   // Get rid of all non-module plugins first
-   PluginMap::iterator iter = mPlugins.begin();
-   while (iter != mPlugins.end())
+   // Get rid of all non-module(effects?) plugins first
+   for(auto& p : mRegisteredPlugins)
    {
-      PluginDescriptor & plug = iter->second;
-      if (plug.GetPluginType() == PluginTypeEffect)
-      {
-         mPlugins.erase(iter++);
-         continue;
-      }
-
-      ++iter;
+      auto& desc = p.second;
+      if(desc.GetPluginType() == PluginTypeEffect)
+         mLoadedInterfaces.erase(desc.GetID());
    }
 
-   // Now get rid of the modules
-   iter = mPlugins.begin();
-   while (iter != mPlugins.end())
-   {
-      mPlugins.erase(iter++);
-   }
+   // Now get rid of others
+   mRegisteredPlugins.clear();
+   mLoadedInterfaces.clear();
 }
 
 bool PluginManager::DropFile(const wxString &fileName)
@@ -647,7 +428,7 @@ bool PluginManager::DropFile(const wxString &fileName)
    const wxFileName src{ fileName };
 
    for (auto &plug : PluginsOfType(PluginTypeModule)) {
-      auto module = static_cast<ModuleInterface *>
+      auto module = static_cast<PluginProvider *>
          (mm.CreateProviderInstance(plug.GetID(), plug.GetPath()));
       if (! module)
          continue;
@@ -706,7 +487,7 @@ bool PluginManager::DropFile(const wxString &fileName)
             std::vector<PluginID> ids;
             std::vector<wxString> names;
             nPlugIns = module->DiscoverPluginsAtPath(dstPath, errMsg,
-               [&](ModuleInterface *provider, ComponentInterface *ident)
+               [&](PluginProvider *provider, ComponentInterface *ident)
                                                      -> const PluginID& {
                   // Register as by default, but also collecting the PluginIDs
                   // and names
@@ -741,7 +522,7 @@ bool PluginManager::DropFile(const wxString &fileName)
                      .Caption(XO("Enable new plug-ins"))
                      .ButtonStyle(Button::YesNo)));
                for (const auto &id : ids)
-                  mPlugins[id].SetEnabled(enable);
+                  mRegisteredPlugins[id].SetEnabled(enable);
                // Make changes to enabled status persist:
                this->Save();
             }
@@ -776,9 +557,8 @@ void PluginManager::Load()
    // Check for a registry version that we can understand
    // TODO: Should also check for a registry file that is newer than
    // what we can understand.
-   wxString regver = registry.Read(REGVERKEY);
-   if (regver < REGVERCUR )
-   {
+   mRegver = registry.Read(REGVERKEY);
+   if (Regver_lt(mRegver, "1.1")) {
       // Conversion code here, for when registry version changes.
 
       // We iterate through the effects, possibly updating their info.
@@ -802,7 +582,7 @@ void PluginManager::Load()
          // For 2.3.0 the plugins we distribute have moved around.
          // So we upped the registry version number to 1.1.
          // These particular config edits were originally written to fix Bug 1914.
-         if (regver <= "1.0") {
+         if (Regver_le(mRegver, "1.0")) {
             // Nyquist prompt is a built-in that has moved to the tools menu.
             if (effectSymbol == NYQUIST_PROMPT_ID) {
                registry.Write(KEY_EFFECTTYPE, "Tool");
@@ -823,7 +603,6 @@ void PluginManager::Load()
          registry.DeleteGroup(groupsToDelete[i]);
       }
       registry.SetPath("");
-      registry.Write(REGVERKEY, REGVERCUR);
       // Updates done.  Make sure we read the updated data later.
       registry.Flush();
    }
@@ -897,7 +676,7 @@ void PluginManager::LoadGroup(FileConfig *pRegistry, PluginType type)
       groupName = ConvertID(groupName);
 
       // Bypass group if the ID is already in use
-      if (mPlugins.count(groupName))
+      if (mRegisteredPlugins.count(groupName))
          continue;
 
       // Set the ID and type
@@ -908,7 +687,7 @@ void PluginManager::LoadGroup(FileConfig *pRegistry, PluginType type)
       if (!pRegistry->Read(KEY_PROVIDERID, &strVal, wxEmptyString))
       {
          // Bypass group if the provider isn't valid
-         if (!strVal.empty() && !mPlugins.count(strVal))
+         if (!strVal.empty() && !mRegisteredPlugins.count(strVal))
             continue;
       }
       plug.SetProviderID(PluginID(strVal));
@@ -1033,11 +812,11 @@ void PluginManager::LoadGroup(FileConfig *pRegistry, PluginType type)
             plug.SetEffectInteractive(boolVal);
 
             // Is it a realtime capable effect and bypass group if not found
-            if (!pRegistry->Read(KEY_EFFECTREALTIME, &boolVal))
+            if (!pRegistry->Read(KEY_EFFECTREALTIME, &strVal))
             {
                continue;
             }
-            plug.SetEffectRealtime(boolVal);
+            plug.DeserializeRealtimeSupport(strVal);
 
             // Does the effect support automation...bypass group if not found
             if (!pRegistry->Read(KEY_EFFECTAUTOMATABLE, &boolVal))
@@ -1092,7 +871,7 @@ void PluginManager::LoadGroup(FileConfig *pRegistry, PluginType type)
       }
 
       // Everything checked out...accept the plugin
-      mPlugins[groupName] = std::move(plug);
+      mRegisteredPlugins[groupName] = std::move(plug);
    }
 
    return;
@@ -1106,9 +885,6 @@ void PluginManager::Save()
 
    // Clear pluginregistry.cfg (not audacity.cfg)
    registry.DeleteAll();
-
-   // Write the version string
-   registry.Write(REGVERKEY, REGVERCUR);
 
    // Save the individual groups
    SaveGroup(&registry, PluginTypeEffect);
@@ -1124,14 +900,24 @@ void PluginManager::Save()
    // And now the providers
    SaveGroup(&registry, PluginTypeModule);
 
+   // Write the version string
+   registry.Write(REGVERKEY, REGVERCUR);
+
    // Just to be safe
    registry.Flush();
+
+   mRegver = REGVERCUR;
+}
+
+const PluginRegistryVersion &PluginManager::GetRegistryVersion() const
+{
+   return mRegver;
 }
 
 void PluginManager::SaveGroup(FileConfig *pRegistry, PluginType type)
 {
    wxString group = GetPluginTypeString(type);
-   for (auto &pair : mPlugins) {
+   for (auto &pair : mRegisteredPlugins) {
       auto & plug = pair.second;
 
       if (plug.GetPluginType() != type)
@@ -1184,7 +970,7 @@ void PluginManager::SaveGroup(FileConfig *pRegistry, PluginType type)
             pRegistry->Write(KEY_EFFECTFAMILY, plug.GetEffectFamily());
             pRegistry->Write(KEY_EFFECTDEFAULT, plug.IsEffectDefault());
             pRegistry->Write(KEY_EFFECTINTERACTIVE, plug.IsEffectInteractive());
-            pRegistry->Write(KEY_EFFECTREALTIME, plug.IsEffectRealtime());
+            pRegistry->Write(KEY_EFFECTREALTIME, plug.SerializeRealtimeSupport());
             pRegistry->Write(KEY_EFFECTAUTOMATABLE, plug.IsEffectAutomatable());
          }
          break;
@@ -1211,93 +997,6 @@ void PluginManager::SaveGroup(FileConfig *pRegistry, PluginType type)
    return;
 }
 
-// If bFast is true, do not do a full check.  Just check the ones
-// that are quick to check.  Currently (Feb 2017) just Nyquist
-// and built-ins.
-void PluginManager::CheckForUpdates(bool bFast)
-{
-   ModuleManager & mm = ModuleManager::Get();
-   wxArrayString pathIndex;
-   for (auto &pair : mPlugins) {
-      auto &plug = pair.second;
-
-      // Bypass 2.1.0 placeholders...remove this after a few releases past 2.1.0
-      if (plug.GetPluginType() != PluginTypeNone)
-         pathIndex.push_back(plug.GetPath().BeforeFirst(wxT(';')));
-   }
-
-   // Check all known plugins to ensure they are still valid and scan for NEW ones.
-   // 
-   // All NEW plugins get a stub entry created that will remain in place until the
-   // user enables or disables the plugin.
-   //
-   // Because we use the plugins "path" as returned by the providers, we can actually
-   // have multiple providers report the same path since, at this point, they only
-   // know that the path might possibly be one supported by the provider.
-   //
-   // When the user enables the plugin, each provider that reported it will be asked
-   // to register the plugin.
-   for (auto &pair : mPlugins) {
-      auto &plug = pair.second;
-      const PluginID & plugID = plug.GetID();
-      const wxString & plugPath = plug.GetPath();
-      PluginType plugType = plug.GetPluginType();
-
-      // Bypass 2.1.0 placeholders...remove this after a few releases past 2.1.0
-      if (plugType == PluginTypeNone)
-      {
-         continue;
-      }
-
-      if ( plugType == PluginTypeModule  )
-      {
-         if( bFast ) 
-         {
-            // Skip modules, when doing a fast refresh/check.
-         } 
-         else if (!mm.IsProviderValid(plugID, plugPath))
-         {
-            plug.SetEnabled(false);
-            plug.SetValid(false);
-         }
-         else
-         {
-            // Collect plugin paths
-            PluginPaths paths;
-            if (auto provider = mm.CreateProviderInstance( plugID, plugPath ) )
-               paths = provider->FindPluginPaths( *this );
-            for (size_t i = 0, cnt = paths.size(); i < cnt; i++)
-            {
-               wxString path = paths[i].BeforeFirst(wxT(';'));;
-               if ( ! make_iterator_range( pathIndex ).contains( path ) )
-               {
-                  PluginID ID = plugID + wxT("_") + path;
-                  PluginDescriptor & plug2 = mPlugins[ID];  // This will create a NEW descriptor
-                  plug2.SetPluginType(PluginTypeStub);
-                  plug2.SetID(ID);
-                  plug2.SetProviderID(plugID);
-                  plug2.SetPath(path);
-                  plug2.SetEnabled(false);
-                  plug2.SetValid(false);
-               }
-            }
-         }
-      }
-      else if (plugType != PluginTypeNone && plugType != PluginTypeStub)
-      {
-         plug.SetValid(mm.IsPluginValid(plug.GetProviderID(), plugPath, bFast));
-         if (!plug.IsValid())
-         {
-            plug.SetEnabled(false);
-         }
-      }
-   }
-
-   Save();
-
-   return;
-}
-
 // Here solely for the purpose of Nyquist Workbench until
 // a better solution is devised.
 const PluginID & PluginManager::RegisterPlugin(
@@ -1310,39 +1009,48 @@ const PluginID & PluginManager::RegisterPlugin(
    plug.SetEffectFamily(effect->GetFamily().Internal());
    plug.SetEffectInteractive(effect->IsInteractive());
    plug.SetEffectDefault(effect->IsDefault());
-   plug.SetEffectRealtime(effect->SupportsRealtime());
+   plug.SetRealtimeSupport(effect->RealtimeSupport());
    plug.SetEffectAutomatable(effect->SupportsAutomation());
-
-   plug.SetInstance(std::move(effect));
+   
    plug.SetEffectLegacy(true);
    plug.SetEnabled(true);
    plug.SetValid(true);
+
+   mLoadedInterfaces[plug.GetID()] = std::move(effect);
 
    return plug.GetID();
 }
 
 void PluginManager::UnregisterPlugin(const PluginID & ID)
 {
-   mPlugins.erase(ID);
+   mRegisteredPlugins.erase(ID);
+   mLoadedInterfaces.erase(ID);
 }
 
 int PluginManager::GetPluginCount(PluginType type)
 {
-   return count_if(mPlugins.begin(), mPlugins.end(), [type](auto &pair){
+   return count_if(mRegisteredPlugins.begin(), mRegisteredPlugins.end(), [type](auto &pair){
       return pair.second.GetPluginType() == type; });
 }
 
 const PluginDescriptor *PluginManager::GetPlugin(const PluginID & ID) const
 {
-   if (auto iter = mPlugins.find(ID); iter == mPlugins.end())
-      return nullptr;
-   else
+   if (auto iter = mRegisteredPlugins.find(ID); iter != mRegisteredPlugins.end())
       return &iter->second;
+
+   auto iter2 = make_iterator_range(mEffectPluginsCleared)
+      .find_if([&ID](const PluginDescriptor& plug) {
+         return plug.GetID() == ID;
+      });
+   if (iter2 != mEffectPluginsCleared.end())
+      return &(*iter2);
+
+   return nullptr;
 }
 
 void PluginManager::Iterator::Advance(bool incrementing)
 {
-   const auto end = mPm.mPlugins.end();
+   const auto end = mPm.mRegisteredPlugins.end();
    if (incrementing && mIterator != end)
       ++mIterator;
    bool all = mPluginType == PluginTypeNone && mEffectType == EffectTypeNone;
@@ -1367,13 +1075,13 @@ void PluginManager::Iterator::Advance(bool incrementing)
 
 PluginManager::Iterator::Iterator(PluginManager &manager)
 : mPm{ manager }
-, mIterator{ manager.mPlugins.begin() }
+, mIterator{ manager.mRegisteredPlugins.begin() }
 {   
 }
 
 PluginManager::Iterator::Iterator(PluginManager &manager, int type)
 : mPm{ manager }
-, mIterator{ manager.mPlugins.begin() }
+, mIterator{ manager.mRegisteredPlugins.begin() }
 , mPluginType{ type }
 {
    Advance(false);
@@ -1381,7 +1089,7 @@ PluginManager::Iterator::Iterator(PluginManager &manager, int type)
 
 PluginManager::Iterator::Iterator(PluginManager &manager, EffectType type)
 : mPm{ manager }
-, mIterator{ manager.mPlugins.begin() }
+, mIterator{ manager.mRegisteredPlugins.begin() }
 , mEffectType{ type }
 {
    Advance(false);
@@ -1395,7 +1103,7 @@ auto PluginManager::Iterator::operator ++() -> Iterator &
 
 bool PluginManager::IsPluginEnabled(const PluginID & ID)
 {
-   if (auto iter = mPlugins.find(ID); iter == mPlugins.end())
+   if (auto iter = mRegisteredPlugins.find(ID); iter == mRegisteredPlugins.end())
       return false;
    else
       return iter->second.IsEnabled();
@@ -1403,7 +1111,7 @@ bool PluginManager::IsPluginEnabled(const PluginID & ID)
 
 void PluginManager::EnablePlugin(const PluginID & ID, bool enable)
 {
-   if (auto iter = mPlugins.find(ID); iter == mPlugins.end())
+   if (auto iter = mRegisteredPlugins.find(ID); iter == mRegisteredPlugins.end())
       return;
    else
       iter->second.SetEnabled(enable);
@@ -1411,7 +1119,7 @@ void PluginManager::EnablePlugin(const PluginID & ID, bool enable)
 
 const ComponentInterfaceSymbol & PluginManager::GetSymbol(const PluginID & ID)
 {
-   if (auto iter = mPlugins.find(ID); iter == mPlugins.end()) {
+   if (auto iter = mRegisteredPlugins.find(ID); iter == mRegisteredPlugins.end()) {
       static ComponentInterfaceSymbol empty;
       return empty;
    }
@@ -1419,30 +1127,109 @@ const ComponentInterfaceSymbol & PluginManager::GetSymbol(const PluginID & ID)
       return iter->second.GetSymbol();
 }
 
-ComponentInterface *PluginManager::GetInstance(const PluginID & ID)
+ComponentInterface *PluginManager::Load(const PluginID & ID)
 {
-   if (auto iter = mPlugins.find(ID); iter == mPlugins.end())
-      return nullptr;
-   else {
-      auto &plug = iter->second;
+   if(auto it = mLoadedInterfaces.find(ID); it != mLoadedInterfaces.end())
+      return it->second.get();
 
-      // If not dealing with legacy effects, make sure the provider is loaded
-      if (!plug.IsEffectLegacy())
+   if(auto it = mRegisteredPlugins.find(ID); it != mRegisteredPlugins.end())
+   {
+      auto& desc = it->second;
+      if(desc.GetPluginType() == PluginTypeModule)
+         //it's very likely that this code path is not used
+         return ModuleManager::Get().CreateProviderInstance(desc.GetID(), desc.GetPath());
+      
+      if(auto provider = ModuleManager::Get().CreateProviderInstance(desc.GetProviderID(), wxEmptyString))
       {
-         const PluginID & prov = plug.GetProviderID();
-         if (auto iter2 = mPlugins.find(prov); iter2 == mPlugins.end())
-            return nullptr;
-         else
-            iter2->second.GetInstance();
+         auto pluginInterface = provider->LoadPlugin(desc.GetPath());
+         auto result = pluginInterface.get();
+         mLoadedInterfaces[desc.GetID()] = std::move(pluginInterface);
+         return result;
       }
+   }
+   return nullptr;
+}
 
-      return plug.GetInstance();
+void PluginManager::ClearEffectPlugins()
+{
+   mEffectPluginsCleared.clear();
+
+   for ( auto it = mRegisteredPlugins.cbegin(); it != mRegisteredPlugins.cend(); )
+   {
+      const auto& desc = it->second;
+      const auto type = desc.GetPluginType();
+
+      if (type == PluginTypeEffect || type == PluginTypeStub)
+      {
+         mEffectPluginsCleared.push_back(desc);
+         it = mRegisteredPlugins.erase(it);
+      }
+      else
+      {
+         ++it;
+      }
+   }
+
+   // Repeat what usually happens at startup
+   // This prevents built-in plugins to appear in the plugin validation list
+   for (auto& [_, provider] : ModuleManager::Get().Providers())
+      provider->AutoRegisterPlugins(*this);
+
+   // Remove auto registered plugins from "cleared" list
+   for ( auto it = mEffectPluginsCleared.begin(); it != mEffectPluginsCleared.end(); )
+   {
+      if ( mRegisteredPlugins.find(it->GetID()) != mRegisteredPlugins.end() )
+         it = mEffectPluginsCleared.erase(it);
+      else
+         ++it;
    }
 }
 
-PluginID PluginManager::GetID(ModuleInterface *module)
+std::map<wxString, std::vector<wxString>> PluginManager::CheckPluginUpdates()
 {
-   return ModuleManager::GetID(module);
+   wxArrayString pathIndex;
+   for (auto &pair : mRegisteredPlugins) {
+      auto &plug = pair.second;
+
+      // Bypass 2.1.0 placeholders...remove this after a few releases past 2.1.0
+      if (plug.GetPluginType() != PluginTypeNone)
+         pathIndex.push_back(plug.GetPath().BeforeFirst(wxT(';')));
+   }
+
+   // Scan for NEW ones.
+   //
+   // Because we use the plugins "path" as returned by the providers, we can actually
+   // have multiple providers report the same path since, at this point, they only
+   // know that the path might possibly be one supported by the provider.
+   //
+   // When the user enables the plugin, each provider that reported it will be asked
+   // to register the plugin.
+
+   auto& moduleManager = ModuleManager::Get();
+   std::map<wxString, std::vector<wxString>> newPaths;
+   for(auto& [id, provider] : moduleManager.Providers())
+   {
+      const auto paths = provider->FindModulePaths(*this);
+      for(const auto& path : paths)
+      {
+         const auto modulePath = path.BeforeFirst(';');
+         if (!make_iterator_range(pathIndex).contains(modulePath) ||
+            make_iterator_range(mEffectPluginsCleared).any_of([&modulePath](const PluginDescriptor& plug) {
+               return plug.GetPath().BeforeFirst(wxT(';')) == modulePath;
+            })
+         )
+         {
+            newPaths[modulePath].push_back(id);
+         }
+      }
+   }
+
+   return newPaths;
+}
+
+PluginID PluginManager::GetID(PluginProvider *provider)
+{
+   return ModuleManager::GetID(provider);
 }
 
 PluginID PluginManager::GetID(ComponentInterface *command)
@@ -1455,7 +1242,7 @@ PluginID PluginManager::GetID(ComponentInterface *command)
                            command->GetPath());
 }
 
-PluginID PluginManager::GetID(EffectDefinitionInterface *effect)
+PluginID PluginManager::OldGetID(const EffectDefinitionInterface* effect)
 {
    return wxString::Format(wxT("%s_%s_%s_%s_%s"),
                            GetPluginTypeString(PluginTypeEffect),
@@ -1463,6 +1250,25 @@ PluginID PluginManager::GetID(EffectDefinitionInterface *effect)
                            effect->GetVendor().Internal(),
                            effect->GetSymbol().Internal(),
                            effect->GetPath());
+}
+
+PluginID PluginManager::GetID(const EffectDefinitionInterface* effect)
+{
+   return wxJoin(wxArrayStringEx{
+      GetPluginTypeString(PluginTypeEffect),
+      effect->GetFamily().Internal(),
+      effect->GetVendor().Internal(),
+      effect->GetSymbol().Internal(),
+      effect->GetPath()
+   }, '_');
+}
+
+Identifier PluginManager::GetEffectNameFromID(const PluginID &ID)
+{
+   auto strings = wxSplit(ID, '_');
+   if (strings.size() == 5)
+      return strings[3];
+   return {};
 }
 
 // This string persists in configuration files
@@ -1505,7 +1311,7 @@ PluginDescriptor & PluginManager::CreatePlugin(const PluginID & id,
                                                PluginType type)
 {
    // This will either create a NEW entry or replace an existing entry
-   PluginDescriptor & plug = mPlugins[id];
+   PluginDescriptor & plug = mRegisteredPlugins[id];
 
    plug.SetPluginType(type);
 
@@ -1590,6 +1396,11 @@ bool PluginManager::GetSubgroups(const RegistryPath & group, RegistryPaths & sub
    return true;
 }
 
+bool PluginManager::HasConfigValue(const RegistryPath & key)
+{
+   return GetSettings()->Exists(key);
+}
+
 bool PluginManager::GetConfigValue(
    const RegistryPath & key, ConfigReference var, ConfigConstReference defval)
 {
@@ -1601,16 +1412,7 @@ bool PluginManager::GetConfigValue(
       using Type = typename decltype(var)::type;
       const auto pDefval =
          std::get_if<std::reference_wrapper<const Type>>(&defval);
-      if constexpr( std::is_same_v<Type, float> ) {
-         double temp;
-         if( GetSettings()->Read(key, &temp, *pDefval) ) {
-            *pVar = static_cast<float>(temp);
-            return true;
-         }
-         return false;
-      }
-      else
-         return GetSettings()->Read(key, pVar, *pDefval);
+      return GetSettings()->Read(key, pVar, *pDefval);
    };
    return Visit(visitor, var);
 }
@@ -1637,7 +1439,7 @@ RegistryPath PluginManager::SettingsPath(
    // be changed across Audacity versions, or else compatibility of the
    // configuration files will break.
 
-   if (auto iter = mPlugins.find(ID); iter == mPlugins.end())
+   if (auto iter = mRegisteredPlugins.find(ID); iter == mRegisteredPlugins.end())
       return {};
    else {
       const PluginDescriptor & plug = iter->second;
@@ -1694,148 +1496,17 @@ wxString PluginManager::ConvertID(const PluginID & ID)
    {
       wxString id = ID.Mid(7);
       ArrayOf<char> buf{ id.length() / 4 * 3 };
-      id =  wxString::FromUTF8(buf.get(), b64decode(id, buf.get()));
+      id =  wxString::FromUTF8(buf.get(), Base64::Decode(id, buf.get()));
       return id;
    }
 
    const wxCharBuffer & buf = ID.ToUTF8();
-   return wxT("base64:") + b64encode(buf, strlen(buf));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Base64 en/decoding
-//
-// Original routines marked as public domain and found at:
-//
-// http://en.wikibooks.org/wiki/Algorithm_implementation/Miscellaneous/Base64
-//
-////////////////////////////////////////////////////////////////////////////////
-
-// Lookup table for encoding
-const static wxChar cset[] = wxT("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
-const static char padc = wxT('=');
-
-wxString PluginManager::b64encode(const void *in, int len)
-{
-   unsigned char *p = (unsigned char *) in;
-   wxString out;
-
-   unsigned long temp;
-   for (int i = 0; i < len / 3; i++)
-   {
-      temp  = (*p++) << 16; //Convert to big endian
-      temp += (*p++) << 8;
-      temp += (*p++);
-      out += cset[(temp & 0x00FC0000) >> 18];
-      out += cset[(temp & 0x0003F000) >> 12];
-      out += cset[(temp & 0x00000FC0) >> 6];
-      out += cset[(temp & 0x0000003F)];
-   }
-
-   switch (len % 3)
-   {
-      case 1:
-         temp  = (*p++) << 16; //Convert to big endian
-         out += cset[(temp & 0x00FC0000) >> 18];
-         out += cset[(temp & 0x0003F000) >> 12];
-         out += padc;
-         out += padc;
-      break;
-
-      case 2:
-         temp  = (*p++) << 16; //Convert to big endian
-         temp += (*p++) << 8;
-         out += cset[(temp & 0x00FC0000) >> 18];
-         out += cset[(temp & 0x0003F000) >> 12];
-         out += cset[(temp & 0x00000FC0) >> 6];
-         out += padc;
-      break;
-   }
-
-   return out;
-}
-
-int PluginManager::b64decode(const wxString &in, void *out)
-{
-   int len = in.length();
-   unsigned char *p = (unsigned char *) out;
-
-   if (len % 4)  //Sanity check
-   {
-      return 0;
-   }
-
-   int padding = 0;
-   if (len)
-   {
-      if (in[len - 1] == padc)
-      {
-         padding++;
-      }
-
-      if (in[len - 2] == padc)
-      {
-         padding++;
-      }
-   }
-
-   //const char *a = in.mb_str();
-   //Setup a vector to hold the result
-   unsigned long temp = 0; //Holds decoded quanta
-   int i = 0;
-   while (i < len)
-   {
-      for (int quantumPosition = 0; quantumPosition < 4; quantumPosition++)
-      {
-         unsigned char c = in[i];
-         temp <<= 6;
-
-         if (c >= 0x41 && c <= 0x5A)
-         {
-            temp |= c - 0x41;
-         }
-         else if (c >= 0x61 && c <= 0x7A)
-         {
-            temp |= c - 0x47;
-         }
-         else if (c >= 0x30 && c <= 0x39)
-         {
-            temp |= c + 0x04;
-         }
-         else if (c == 0x2B)
-         {
-            temp |= 0x3E;
-         }
-         else if (c == 0x2F)
-         {
-            temp |= 0x3F;
-         }
-         else if (c == padc)
-         {
-            switch (len - i)
-            {
-               case 1: //One pad character
-                  *p++ = (temp >> 16) & 0x000000FF;
-                  *p++ = (temp >> 8) & 0x000000FF;
-                  return p - (unsigned char *) out;
-               case 2: //Two pad characters
-                  *p++ = (temp >> 10) & 0x000000FF;
-                  return p - (unsigned char *) out;
-            }
-         }
-         i++;
-      }
-      *p++ = (temp >> 16) & 0x000000FF;
-      *p++ = (temp >> 8) & 0x000000FF;
-      *p++ = temp & 0x000000FF;
-   }
-
-   return p - (unsigned char *) out;
+   return wxT("base64:") + Base64::Encode(buf, strlen(buf));
 }
 
 // This is defined out-of-line here, to keep ComponentInterface free of other
 // #include directives.
-TranslatableString ComponentInterface::GetName()
+TranslatableString ComponentInterface::GetName() const
 {
    return GetSymbol().Msgid();
 }

@@ -11,6 +11,7 @@
 #include "KeyboardCapture.h"
 
 #if defined(__WXMAC__)
+#include "CFResources.h"
 #include <wx/textctrl.h>
 #include <AppKit/AppKit.h>
 #include <wx/osx/core/private.h>
@@ -40,16 +41,6 @@ wxWindowRef &sHandler()
    static wxWindowRef theHandler;
    return theHandler;
 }
-KeyboardCapture::FilterFunction &sPreFilter()
-{
-   static KeyboardCapture::FilterFunction theFilter;
-   return theFilter;
-}
-KeyboardCapture::FilterFunction &sPostFilter()
-{
-   static KeyboardCapture::FilterFunction theFilter;
-   return theFilter;
-}
 
 }
 
@@ -76,20 +67,6 @@ void Release(wxWindow *handler)
 {
 //   wxASSERT(sHandler() == handler);
    sHandler() = nullptr;
-}
-
-FilterFunction SetPreFilter( const FilterFunction &function )
-{
-   auto result = sPreFilter();
-   sPreFilter() = function;
-   return result;
-}
-
-FilterFunction SetPostFilter( const FilterFunction &function )
-{
-   auto result = sPostFilter();
-   sPostFilter() = function;
-   return result;
 }
 
 void OnFocus( wxWindow &window, wxFocusEvent &event )
@@ -192,7 +169,7 @@ public:
 
          wxKeyEvent key = static_cast<wxKeyEvent &>( event );
 
-         if ( !( sPreFilter() && sPreFilter()( key ) ) )
+         if ( !( KeyboardCapture::PreFilter::Call(key) ) )
             return Event_Skip;
 
 #ifdef __WXMAC__
@@ -236,7 +213,7 @@ public:
             return Event_Processed;
          }
 
-         if ( sPostFilter() && sPostFilter()( key ) )
+         if ( KeyboardCapture::PostFilter::Call( key ) )
             return Event_Processed;
 
          // Give it back to WX for normal processing.
@@ -373,13 +350,12 @@ private:
       c = [mEvent characters];
       chars = [c UTF8String];
 
-      TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardInputSource();
-      CFDataRef uchr = (CFDataRef)TISGetInputSourceProperty(currentKeyboard, kTISPropertyUnicodeKeyLayoutData);
-      CFRelease(currentKeyboard);
-      if (uchr == NULL)
-      {
+      auto uchr = static_cast<CFDataRef>(TISGetInputSourceProperty(
+         CF_ptr<TISInputSourceRef>{ TISCopyCurrentKeyboardInputSource() }
+            .get(),
+         kTISPropertyUnicodeKeyLayoutData));
+      if (!uchr)
          return chars;
-      }
 
       const UCKeyboardLayout *keyboardLayout = (const UCKeyboardLayout*)CFDataGetBytePtr(uchr);
       if (keyboardLayout == NULL)

@@ -703,7 +703,7 @@ bool AUPImportFileHandle::HandleProject(XMLTagHandler *&handler)
       // Viewinfo.SelectedRegion
       else if (attr == "sel0")
       {
-         if (!value.TryGet(dValue) || (dValue < 0.0))
+         if (!value.TryGet(dValue))
          {
             return SetError(XO("Invalid project 'sel0' attribute."));
          }
@@ -712,7 +712,7 @@ bool AUPImportFileHandle::HandleProject(XMLTagHandler *&handler)
       }
       else if (attr == "sel1")
       {
-         if (!value.TryGet(dValue) || (dValue < 0.0))
+         if (!value.TryGet(dValue))
          {
             return SetError(XO("Invalid project 'sel1' attribute."));
          }
@@ -901,7 +901,7 @@ bool AUPImportFileHandle::HandleWaveTrack(XMLTagHandler *&handler)
 {
    auto &trackFactory = WaveTrackFactory::Get(mProject);
    handler = mWaveTrack =
-      TrackList::Get(mProject).Add(trackFactory.NewWaveTrack());
+      TrackList::Get(mProject).Add(trackFactory.Create());
 
    // No active clip.  In early versions of Audacity, there was a single
    // implied clip so we'll create a clip when the first "sequence" is
@@ -1462,6 +1462,10 @@ bool AUPImportFileHandle::AddSamples(const FilePath &blockFilename,
    SNDFILE *sf = nullptr;
    bool success = false;
 
+#ifndef UNCAUGHT_EXCEPTIONS_UNAVAILABLE
+   const auto uncaughtExceptionsCount = std::uncaught_exceptions();
+#endif  
+   
    auto cleanup = finally([&]
    {
       // Do this before any throwing might happen
@@ -1476,7 +1480,11 @@ bool AUPImportFileHandle::AddSamples(const FilePath &blockFilename,
 
          // If we are unwinding for an exception, don't do another
          // potentially throwing operation
+#ifdef UNCAUGHT_EXCEPTIONS_UNAVAILABLE
          if (!std::uncaught_exception())
+#else
+         if (uncaughtExceptionsCount == std::uncaught_exceptions())
+#endif
             // If this does throw, let that propagate, don't guard the call
             AddSilence(len);
       }
