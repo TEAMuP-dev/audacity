@@ -27,19 +27,24 @@
 using BlockIndex = std::pair<sampleCount, size_t>;
 using ClipTimestamps = std::pair<double, double>;
 
-class DeepLearningEffectBase /* not final */ : public Effect
+class DeepLearningEffectBase /* not final */ : public EffectWithSettings<DeepLearningEffectBase, Effect>
 {
 public:
+
+   // static const ComponentInterfaceSymbol Symbol;
    DeepLearningEffectBase();
 
-   // Effect implementation
+   // Init, End and Process, stopped being virtuals
+   // so no need for override
 
-   bool Init() override;
-   void End() override;
-   bool Process() override;
-   void PopulateOrExchange(ShuttleGui & S) override;
+   bool Init();
+   void End();
+   bool Process();
+   std::unique_ptr<EffectUIValidator> PopulateOrExchange(
+      ShuttleGui & S, EffectInstance &instance,
+      EffectSettingsAccess &access, const EffectOutputs *pOutputs) override;
 
-   // DeepLearningEffect implementation
+   // DeepLearningEffect virtuals
 
    // TODO: write desc and instructions
    virtual bool ProcessOne(WaveTrack * track, double tStart, double tEnd) = 0;

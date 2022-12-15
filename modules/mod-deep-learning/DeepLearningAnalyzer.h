@@ -21,24 +21,29 @@ using Stamp = std::pair<double, double>;
 class DeepLearningAnalyzer final: public DeepLearningEffectBase
 {
 public:
+   static inline DeepLearningAnalyzer *
+   FetchParameters(DeepLearningAnalyzer &e, EffectSettings &){ return &e; }
+
    static const ComponentInterfaceSymbol Symbol;
 
    DeepLearningAnalyzer();
    virtual ~DeepLearningAnalyzer();
 
-   std::string GetDeepEffectID() override;
+   
 
    // ComponentInterface implementation
 
-   ComponentInterfaceSymbol GetSymbol() override;
-   TranslatableString GetDescription() override;
-   ManualPageID ManualPage() override;
+   ComponentInterfaceSymbol GetSymbol() const override;
+   TranslatableString GetDescription() const override;
+   ManualPageID ManualPage() const override;
 
    // EffectDefinitionInterface implementation
 
-   EffectType GetType() override;
+   EffectType GetType() const override;
 
    // Effect implementation
+
+   std::string GetDeepEffectID() override;
    bool ProcessOne(WaveTrack *track, double tStart, double tEnd) override;
 
 private:

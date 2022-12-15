@@ -29,26 +29,26 @@ class WaveTrack;
 class DeepLearningEffect final: public DeepLearningEffectBase
 {
 public:
+   // static inline DeepLearningEffect *
+   // FetchParameters(DeepLearningEffect &e, EffectSettings &){ return &e; }
    static const ComponentInterfaceSymbol Symbol;
 
    DeepLearningEffect();
    virtual ~DeepLearningEffect();
 
-   // DeepLearningEffectBase implementation
-
-   std::string GetDeepEffectID() override;
-
    // ComponentInterface implementation
 
-   ComponentInterfaceSymbol GetSymbol() override;
-   TranslatableString GetDescription() override;
-   ManualPageID ManualPage() override;
+   ComponentInterfaceSymbol GetSymbol() const override;
+   TranslatableString GetDescription() const override;
+   ManualPageID ManualPage() const override;
 
    // EffectDefinitionInterface implementation
 
-   EffectType GetType() override;
+   EffectType GetType() const override;
 
-   // Effect implementation
+   // DeepLearningEffectBase implementation
+
+   std::string GetDeepEffectID() override;
    bool ProcessOne(WaveTrack * track, double tStart, double tEnd) override;
 
 private:

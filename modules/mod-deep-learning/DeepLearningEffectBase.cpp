@@ -331,7 +331,10 @@ void DeepLearningEffectBase::TensorToTrack(torch::Tensor waveform, WaveTrack::Ho
 }
 
 // UI stuff
-void DeepLearningEffectBase::PopulateOrExchange(ShuttleGui &S)
+// void DeepLearningEffectBase::PopulateOrExchange(ShuttleGui &S)
+std::unique_ptr<EffectUIValidator> DeepLearningEffectBase::PopulateOrExchange(
+   ShuttleGui & S, EffectInstance &, EffectSettingsAccess &,
+   const EffectOutputs *)
 {
    DeepModelManager &manager = DeepModelManager::Get();
 
@@ -345,4 +348,5 @@ void DeepLearningEffectBase::PopulateOrExchange(ShuttleGui &S)
    S.EndVerticalLay();
 
    mActiveModel->SetModel(*this);
+   return nullptr;
 }
