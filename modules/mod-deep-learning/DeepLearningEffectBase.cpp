@@ -24,9 +24,103 @@
 #include <wx/stattext.h>
 
 #include <WaveClip.h>
+#include "ShuttleAutomation.h"
+
+#include <memory>
+#include "widgets/valnum.h"
+
+
+
+const EffectParameterMethods& DeepLearningEffectBase::Parameters() const
+{
+   static CapturedParameters<DeepLearningEffectBase,Dummy> parameters;
+   return parameters;
+}
+
+struct DeepLearningEffectBase::Instance
+   : public PerTrackEffect::Instance
+   , public EffectInstanceWithBlockSize
+{
+   Instance(const PerTrackEffect& effect)
+      : PerTrackEffect::Instance{ effect }
+   {}
+
+   
+   // implementation of PerTrackEffect::Instance
+   size_t ProcessBlock(EffectSettings& settings,
+      const float* const* inBlock, float* const* outBlock, size_t blockLen)  override; 
+   bool ProcessInitialize(EffectSettings& settings, double sampleRate,
+      ChannelNames chanMap) override;
+   bool ProcessFinalize() noexcept override;
+   unsigned GetAudioOutCount() const override
+   {
+      return 1;
+   }
+
+   unsigned GetAudioInCount() const override
+   {
+      return 1;
+   }
+   // virtual bool ProcessOne(WaveTrack * track, double tStart, double tEnd) = 0;
+
+   // should Init() be replaced by ProcessInitialize?
+   // bool Init();
+   // void End();
+   // bool Process();
+
+   // // should the methods below belong in ::Instance ?
+   // //! gets the number of channels in a (possibly multichannel) track
+   // size_t GetNumChannels(WaveTrack *leader);
+
+   // //! builds a mono tensor with shape (1, samples) from a track
+   // torch::Tensor BuildMonoTensor(WaveTrack *track, float *buffer, 
+   //                               sampleCount start, size_t len);
+
+   // //! builds a multichannel tensor with shape (channels, samples) given a leader track.
+   // torch::Tensor BuildMultichannelTensor(WaveTrack *leader, float *buffer, 
+   //                                       sampleCount start, size_t len);
+
+   // //! performs a forward pass on a helper thread, and sends updates to a progress dialog to keep the main thread alive. 
+   // torch::jit::IValue ForwardPassInThread(torch::Tensor input);
+
+   // //! writes an output tensor to a track tensor should be shape (1, samples)
+   // void TensorToTrack(torch::Tensor waveform, WaveTrack::Holder track,
+   //                    double tStart, double tEnd);
+
+   // //! returns a list of block indices. Use these to process the audio in blocks
+   // std::vector<BlockIndex> GetBlockIndices(WaveTrack *track, 
+   //                                         double tStart, double tEnd);
+
+   // //! returns a list of start and end times for all clips in the track
+   // std::vector<ClipTimestamps> GetClipTimestamps(WaveTrack *track, 
+   //                                               double tStart, double tEnd) const;
+
+
+   // Floats history;
+   // size_t histPos;
+   // size_t histLen;
+};
+
+bool DeepLearningEffectBase::Instance::ProcessInitialize(
+   EffectSettings& settings, double sampleRate, ChannelNames)
+   {return true;}
+bool DeepLearningEffectBase::Instance::ProcessFinalize() noexcept
+{
+   return true;
+}
+size_t DeepLearningEffectBase::Instance::ProcessBlock(EffectSettings& settings,
+   const float *const *inBlock, float *const *outBlock, size_t blockLen)
+{
+   return blockLen;
+}
+
+std::shared_ptr<EffectInstance> DeepLearningEffectBase::MakeInstance() const
+{
+   return std::make_shared<Instance>(*this);
+}
+
 
 // ModelCardPanel
-
 DeepLearningEffectBase::DeepLearningEffectBase()
 {
    EnablePreview(false);
@@ -331,22 +425,94 @@ void DeepLearningEffectBase::TensorToTrack(torch::Tensor waveform, WaveTrack::Ho
 }
 
 // UI stuff
-// void DeepLearningEffectBase::PopulateOrExchange(ShuttleGui &S)
+
+struct DeepLearningEffectBase::Validator
+   : EffectUIValidator
+{
+   Validator(EffectUIClientInterface& effect,
+      EffectSettingsAccess& access, const EffectDeepLearningBaseSettings& settings)
+      : EffectUIValidator{ effect, access }
+      , mSettings{ settings }
+   {}
+   virtual ~Validator() = default;
+
+   // Effect& GetEffect() const { return static_cast<Effect&>(mEffect); }
+   DeepLearningEffectBase& GetEffect() const { return static_cast<DeepLearningEffectBase&>(mEffect); }
+
+   bool ValidateUI() override;
+   bool UpdateUI() override;
+
+   void PopulateOrExchange(ShuttleGui& S);
+
+   EffectDeepLearningBaseSettings mSettings;
+};
+
 std::unique_ptr<EffectUIValidator> DeepLearningEffectBase::PopulateOrExchange(
-   ShuttleGui & S, EffectInstance &, EffectSettingsAccess &,
+   ShuttleGui & S, EffectInstance &, EffectSettingsAccess &access,
    const EffectOutputs *)
 {
-   DeepModelManager &manager = DeepModelManager::Get();
+   auto& settings = access.Get();
+   auto& myEffSettings = GetSettings(settings);
+   auto result = std::make_unique<Validator>(*this, access, myEffSettings);
+   result->PopulateOrExchange(S);
+   return result;
+}
+
+// void DeepLearningEffectBase::PopulateOrExchange(ShuttleGui &S)
+// std::unique_ptr<EffectUIValidator> DeepLearningEffectBase::PopulateOrExchange(
+//    ShuttleGui & S, EffectInstance &, EffectSettingsAccess &,
+//    const EffectOutputs *)
+void DeepLearningEffectBase::Validator::PopulateOrExchange(ShuttleGui & S)
+
+{
+   // DeepModelManager &manager = DeepModelManager::Get();
+   auto& deepLearningSettings = mSettings;
+   DeepLearningEffectBase& effect = GetEffect();
+   Effect& effect_parent = static_cast<Effect&>(effect);
 
    S.StartVerticalLay(wxCENTER, true);
    {
-      mManagerPanel = safenew ModelManagerPanel(S.GetParent(), this,
-         mActiveModel, GetDeepEffectID());
-      S.AddWindow(mManagerPanel);
-      // mManagerPanel->PopulateOrExchange(S);
+      // effect.mManagerPanel = 
+      //       safenew ModelManagerPanel(S.GetParent(), 
+      //                                  &effect_parent,
+      //                                  effect.mActiveModel, 
+      //                                  effect.GetDeepEffectID());
+      // S.AddWindow(effect.mManagerPanel);
+      S.Validator<FloatingPointValidator<double>>(
+            3, &deepLearningSettings.dummy, NumValidatorStyle::NO_TRAILING_ZEROES,
+            Dummy.min, Dummy.max )
+         .AddTextBox(XXO("&Delay time (seconds):"), L"", 10);
    }
    S.EndVerticalLay();
 
-   mActiveModel->SetModel(*this);
-   return nullptr;
+   // effect.mActiveModel->SetModel(effect_parent);
+
+}
+
+
+bool DeepLearningEffectBase::Validator::ValidateUI()
+{
+   mAccess.ModifySettings
+   (
+      [this](EffectSettings& settings)
+   {
+      // pass back the modified settings to the MessageBuffer
+
+      DeepLearningEffectBase::GetSettings(settings) = mSettings;
+      return nullptr;
+   }
+   );
+
+   return true;
+}
+
+
+bool DeepLearningEffectBase::Validator::UpdateUI()
+{
+   // get the settings from the MessageBuffer and write them to our local copy
+   const auto& settings = mAccess.Get();
+
+   mSettings = GetSettings(settings);
+
+   return true;
 }

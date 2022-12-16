@@ -21,13 +21,29 @@
 #include "ModelManagerPanel.h"
 #include "effects/Effect.h"
 #include "WaveTrack.h"
+#include "effects/PerTrackEffect.h"
+#include "effects/../Shuttle.h"
+#include <float.h> // for FLT_MAX
+
+class ShuttleGui;
+
+using Floats = ArrayOf<float>;
 
 // BlockIndex.first corresponds to the starting sample of a block
 // BlockIndex.second corresponds to the length of the block
 using BlockIndex = std::pair<sampleCount, size_t>;
 using ClipTimestamps = std::pair<double, double>;
 
-class DeepLearningEffectBase /* not final */ : public EffectWithSettings<DeepLearningEffectBase, Effect>
+struct EffectDeepLearningBaseSettings
+{
+   // TODO : there are some dummy settings
+   static constexpr double dummyDefault = 1.0;
+
+   double dummy{ dummyDefault };
+};
+
+class DeepLearningEffectBase /* not final */ 
+      : public EffectWithSettings<EffectDeepLearningBaseSettings, PerTrackEffect>
 {
 public:
 
@@ -36,13 +52,21 @@ public:
 
    // Init, End and Process, stopped being virtuals
    // so no need for override
-
+   // I also moved them inside ::Instance
    bool Init();
    void End();
    bool Process();
    std::unique_ptr<EffectUIValidator> PopulateOrExchange(
       ShuttleGui & S, EffectInstance &instance,
-      EffectSettingsAccess &access, const EffectOutputs *pOutputs) override;
+      EffectSettingsAccess &access, const EffectOutputs *pOutputs);
+
+   
+   struct Validator;
+
+   struct Instance;
+
+   std::shared_ptr<EffectInstance> MakeInstance() const override;
+
 
    // DeepLearningEffect virtuals
 
@@ -53,7 +77,7 @@ public:
    virtual std::string GetDeepEffectID() = 0;
    
 protected:
-
+   // moved to ::Instance
    //! gets the number of channels in a (possibly multichannel) track
    size_t GetNumChannels(WaveTrack *leader);
 
@@ -90,4 +114,10 @@ protected:
 
 private:
    ModelManagerPanel *mManagerPanel {nullptr};
+   const EffectParameterMethods& Parameters() const override;
+
 };
+
+static constexpr EffectParameter Dummy{ &EffectDeepLearningBaseSettings::dummy,
+   L"Dummy",   EffectDeepLearningBaseSettings::dummyDefault, 0.001f,  FLT_MAX, 1.0f };
+
