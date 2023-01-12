@@ -61,12 +61,24 @@ ResponsePtr CurlResponseFactory::performRequest (RequestVerb verb, const Request
         buffer.insert (buffer.begin (), start, end);
     }
 
-    mThreadPool->enqueue ([response, dataBuffer = std::move (buffer)]() {
+    // mThreadPool->enqueue ([response, dataBuffer = std::move (buffer)]() {
+    //     if (!dataBuffer.empty())
+    //         response->setPayload (dataBuffer.data (), dataBuffer.size ());
+        
+    //     response->perform ();
+    // });
+
+    std::function<void()> fPerform = [response, dataBuffer = std::move (buffer)]() {
         if (!dataBuffer.empty())
             response->setPayload (dataBuffer.data (), dataBuffer.size ());
-        
-        response->perform ();
-    });
+        else
+            response->perform ();
+    };
+
+    if (request.getBlocking ())
+      fPerform();
+    else
+      mThreadPool->enqueue (fPerform);
 
     return response;
 }
