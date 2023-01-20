@@ -13,12 +13,7 @@ set( SOURCES
 set ( OUTPUTS )
 foreach( source ${SOURCES} )
    set( src "${_SRCDIR}/${source}" )
-   
-   if( CMAKE_SYSTEM_NAME MATCHES "Darwin|Windows" )
-      set( dst "${_DEST}/${TARGET}/${source}" )
-   else()
-      set( dst "${INSTALL_PREFIX}/${_PKGDATA}/${TARGET}/${source}" )
-   endif()
+   set( dst "${_DEST}/${TARGET}/${source}" )
 
    add_custom_command(
       DEPENDS
