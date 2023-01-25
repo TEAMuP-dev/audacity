@@ -198,7 +198,7 @@ void DeepLearningAnalyzer::TensorToLabelTrack
    // check that the output is one dimensional
    if (output.dim() != 1)
       throw ModelException {
-         XO("Labeler model output is not a single track."), ""
+         XO("Model Error: The tensor output by the labeler model is not one dimension."), ""
       };
 
    // create a map of labels to timestamps
