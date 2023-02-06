@@ -117,51 +117,51 @@ env:
   CRASH_REPORT_URL: ${{ secrets.CRASH_REPORT_URL }}
 
 jobs:
-  build_linux:
-    name: ${{ matrix.config.name }}
-    runs-on: ${{ matrix.config.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-        - name: Ubuntu 18.04 AppImage (x86_64)
-          os: ubuntu-18.04
-          force_gcc11: false
-          postfix: '-18.04'
-        - name: Ubuntu 20.04 AppImage (x86_64)
-          os: ubuntu-20.04
-          force_gcc11: false
-          postfix: '-20.04'
-        - name: Ubuntu 20.04 AppImage (x86_64, gcc 11)
-          os: ubuntu-20.04
-          force_gcc11: true
-          postfix: '-20.04-gcc11'
-    steps:
-    - name: Checkout Audacity
-      uses: actions/checkout@v2
-    - name: Setup Dependencies
-      uses: audacity/audacity-actions/dependencies@v1
-      with:
-        force_gcc11: ${{ matrix.config.force_gcc11 }}
-    - name: Configure
-      uses: audacity/audacity-actions/configure@v1
-      with:
-        generator: Unix Makefiles
-        build_type: ${{ env.BUILD_TYPE }}
-        configuration_types: ${{ env.CONFIGURATION_TYPES }}
-        build_level: ${{ env.BUILD_LEVEL }}
-        cmake_options: ${{ env.CONFIGURE_CMAKE_OPTIONS }}
-    - name: Build
-      uses: audacity/audacity-actions/build@v1
-    - name: Test
-      uses: GabrielBB/xvfb-action@v1
-      with:
-        run: ctest -C ${{ env.BUILD_TYPE }} --verbose
-        working-directory: ./.build.x64/
-    - name: Package
-      uses: audacity/audacity-actions/package@v1
-      with:
-        postfix: ${{ matrix.config.postfix }}
+  # build_linux:
+  #   name: ${{ matrix.config.name }}
+  #   runs-on: ${{ matrix.config.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       config:
+  #       - name: Ubuntu 18.04 AppImage (x86_64)
+  #         os: ubuntu-18.04
+  #         force_gcc11: false
+  #         postfix: '-18.04'
+  #       - name: Ubuntu 20.04 AppImage (x86_64)
+  #         os: ubuntu-20.04
+  #         force_gcc11: false
+  #         postfix: '-20.04'
+  #       - name: Ubuntu 20.04 AppImage (x86_64, gcc 11)
+  #         os: ubuntu-20.04
+  #         force_gcc11: true
+  #         postfix: '-20.04-gcc11'
+  #   steps:
+  #   - name: Checkout Audacity
+  #     uses: actions/checkout@v2
+  #   - name: Setup Dependencies
+  #     uses: audacity/audacity-actions/dependencies@v1
+  #     with:
+  #       force_gcc11: ${{ matrix.config.force_gcc11 }}
+  #   - name: Configure
+  #     uses: audacity/audacity-actions/configure@v1
+  #     with:
+  #       generator: Unix Makefiles
+  #       build_type: ${{ env.BUILD_TYPE }}
+  #       configuration_types: ${{ env.CONFIGURATION_TYPES }}
+  #       build_level: ${{ env.BUILD_LEVEL }}
+  #       cmake_options: ${{ env.CONFIGURE_CMAKE_OPTIONS }}
+  #   - name: Build
+  #     uses: audacity/audacity-actions/build@v1
+  #   - name: Test
+  #     uses: GabrielBB/xvfb-action@v1
+  #     with:
+  #       run: ctest -C ${{ env.BUILD_TYPE }} --verbose
+  #       working-directory: ./.build.x64/
+  #   - name: Package
+  #     uses: audacity/audacity-actions/package@v1
+  #     with:
+  #       postfix: ${{ matrix.config.postfix }}
 
   # build_windows:
   #   name: ${{ matrix.config.name }}
@@ -289,82 +289,82 @@ jobs:
       uses: audacity/audacity-actions/package@v1
       with:
         postfix: ${{ matrix.config.postfix }}
-  build_macos_intel:
-    name: Build macOS (x86_64)
-    runs-on: macos-11
-    steps:
-    - name: Checkout Audacity
-      uses: actions/checkout@v2
-    - name: Setup Dependencies
-      uses: audacity/audacity-actions/dependencies@v1
-      with:
-        force_gcc11: ${{ matrix.config.force_gcc11 }}
-    - name: Configure x86_64
-      uses: audacity/audacity-actions/configure@v1
-      with:
-        generator: Xcode
-        build_type: ${{ env.BUILD_TYPE }}
-        configuration_types: ${{ env.CONFIGURATION_TYPES }}
-        build_level: ${{ env.BUILD_LEVEL }}
-        cmake_options: ${{ env.CONFIGURE_CMAKE_OPTIONS }}
-        arch: x64
-    - name: Build x86_64
-      uses: audacity/audacity-actions/build@v1
-    - name: Test
-      shell: bash
-      run: |
-        pushd .build.x64
-        ctest -C ${{ env.BUILD_TYPE }} --verbose
-        popd
-    - name: 'Tar files'
-      shell: bash
-      run: tar cf macos_intel.tar .build.x64
-    - uses: actions/upload-artifact@v2
-      with:
-        name: macos-intel-${{ github.run_id }}-${{ github.run_attempt }}
-        path: macos_intel.tar
-  build_macos_arm64:
-    name: Build macOS (arm64)
-    runs-on: macos-11
-    steps:
-    - name: Checkout Audacity
-      uses: actions/checkout@v2
-    - name: Setup Dependencies
-      uses: audacity/audacity-actions/dependencies@v1
-      with:
-        force_gcc11: ${{ matrix.config.force_gcc11 }}
-    - name: Configure x86_64
-      uses: audacity/audacity-actions/configure@v1
-      with:
-        generator: Xcode
-        build_type: ${{ env.BUILD_TYPE }}
-        configuration_types: ${{ env.CONFIGURATION_TYPES }}
-        build_level: ${{ env.BUILD_LEVEL }}
-        cmake_options: ${{ env.CONFIGURE_CMAKE_OPTIONS }}
-        arch: x64
-    - name: Build x86_64
-      uses: audacity/audacity-actions/build@v1
-      with:
-        target: image-compiler
-    - name: Configure arm64
-      uses: audacity/audacity-actions/configure@v1
-      with:
-        generator: Xcode
-        build_type: ${{ env.BUILD_TYPE }}
-        configuration_types: ${{ env.CONFIGURATION_TYPES }}
-        build_level: ${{ env.BUILD_LEVEL }}
-        cmake_options: ${{ env.CONFIGURE_CMAKE_OPTIONS }}
-        arch: arm64
-        image_compiler: "${{ github.workspace }}/.build.x64/utils/RelWithDebInfo/image-compiler"
-    - name: Build arm64
-      uses: audacity/audacity-actions/build@v1
-    - name: 'Tar files'
-      shell: bash
-      run: tar cf macos_arm64.tar .build.arm64
-    - uses: actions/upload-artifact@v2
-      with:
-        name: macos-arm64-${{ github.run_id }}-${{ github.run_attempt }}
-        path: macos_arm64.tar
+  # build_macos_intel:
+  #   name: Build macOS (x86_64)
+  #   runs-on: macos-11
+  #   steps:
+  #   - name: Checkout Audacity
+  #     uses: actions/checkout@v2
+  #   - name: Setup Dependencies
+  #     uses: audacity/audacity-actions/dependencies@v1
+  #     with:
+  #       force_gcc11: ${{ matrix.config.force_gcc11 }}
+  #   - name: Configure x86_64
+  #     uses: audacity/audacity-actions/configure@v1
+  #     with:
+  #       generator: Xcode
+  #       build_type: ${{ env.BUILD_TYPE }}
+  #       configuration_types: ${{ env.CONFIGURATION_TYPES }}
+  #       build_level: ${{ env.BUILD_LEVEL }}
+  #       cmake_options: ${{ env.CONFIGURE_CMAKE_OPTIONS }}
+  #       arch: x64
+  #   - name: Build x86_64
+  #     uses: audacity/audacity-actions/build@v1
+  #   - name: Test
+  #     shell: bash
+  #     run: |
+  #       pushd .build.x64
+  #       ctest -C ${{ env.BUILD_TYPE }} --verbose
+  #       popd
+  #   - name: 'Tar files'
+  #     shell: bash
+  #     run: tar cf macos_intel.tar .build.x64
+  #   - uses: actions/upload-artifact@v2
+  #     with:
+  #       name: macos-intel-${{ github.run_id }}-${{ github.run_attempt }}
+  #       path: macos_intel.tar
+  # build_macos_arm64:
+  #   name: Build macOS (arm64)
+  #   runs-on: macos-11
+  #   steps:
+  #   - name: Checkout Audacity
+  #     uses: actions/checkout@v2
+  #   - name: Setup Dependencies
+  #     uses: audacity/audacity-actions/dependencies@v1
+  #     with:
+  #       force_gcc11: ${{ matrix.config.force_gcc11 }}
+  #   - name: Configure x86_64
+  #     uses: audacity/audacity-actions/configure@v1
+  #     with:
+  #       generator: Xcode
+  #       build_type: ${{ env.BUILD_TYPE }}
+  #       configuration_types: ${{ env.CONFIGURATION_TYPES }}
+  #       build_level: ${{ env.BUILD_LEVEL }}
+  #       cmake_options: ${{ env.CONFIGURE_CMAKE_OPTIONS }}
+  #       arch: x64
+  #   - name: Build x86_64
+  #     uses: audacity/audacity-actions/build@v1
+  #     with:
+  #       target: image-compiler
+  #   - name: Configure arm64
+  #     uses: audacity/audacity-actions/configure@v1
+  #     with:
+  #       generator: Xcode
+  #       build_type: ${{ env.BUILD_TYPE }}
+  #       configuration_types: ${{ env.CONFIGURATION_TYPES }}
+  #       build_level: ${{ env.BUILD_LEVEL }}
+  #       cmake_options: ${{ env.CONFIGURE_CMAKE_OPTIONS }}
+  #       arch: arm64
+  #       image_compiler: "${{ github.workspace }}/.build.x64/utils/RelWithDebInfo/image-compiler"
+  #   - name: Build arm64
+  #     uses: audacity/audacity-actions/build@v1
+  #   - name: 'Tar files'
+  #     shell: bash
+  #     run: tar cf macos_arm64.tar .build.arm64
+  #   - uses: actions/upload-artifact@v2
+  #     with:
+  #       name: macos-arm64-${{ github.run_id }}-${{ github.run_attempt }}
+  #       path: macos_arm64.tar
   package_macos:
     name: Package macOS (x86_64, arm64, universal)
     runs-on: macos-11
@@ -408,43 +408,43 @@ jobs:
           x64
           arm64
 
-  sources:
-    name: Source Tarball
-    runs-on: ubuntu-20.04
-    steps:
-    - name: Checkout Audacity
-      uses: actions/checkout@v2
-    - name: Setup Dependencies
-      uses: audacity/audacity-actions/dependencies@v1
-      with:
-        force_gcc11: ${{ matrix.config.force_gcc11 }}
-    - name: Configure
-      uses: audacity/audacity-actions/configure@v1
-      with:
-        generator: Unix Makefiles
-        build_type: ${{ env.BUILD_TYPE }}
-        configuration_types: ${{ env.CONFIGURATION_TYPES }}
-        build_level: ${{ env.BUILD_LEVEL }}
-        cmake_options: ${{ env.CONFIGURE_CMAKE_OPTIONS }}
-    - name: Package
-      shell: bash
-      run: |
-          function gh_export()
-          {
-              [[ "${GITHUB_ENV-}" ]] || local -r GITHUB_ENV="/dev/null"
-              export -- "$@" && printf "%s\n" "$@" >> "${GITHUB_ENV}"
-          }
+  # sources:
+  #   name: Source Tarball
+  #   runs-on: ubuntu-20.04
+  #   steps:
+  #   - name: Checkout Audacity
+  #     uses: actions/checkout@v2
+  #   - name: Setup Dependencies
+  #     uses: audacity/audacity-actions/dependencies@v1
+  #     with:
+  #       force_gcc11: ${{ matrix.config.force_gcc11 }}
+  #   - name: Configure
+  #     uses: audacity/audacity-actions/configure@v1
+  #     with:
+  #       generator: Unix Makefiles
+  #       build_type: ${{ env.BUILD_TYPE }}
+  #       configuration_types: ${{ env.CONFIGURATION_TYPES }}
+  #       build_level: ${{ env.BUILD_LEVEL }}
+  #       cmake_options: ${{ env.CONFIGURE_CMAKE_OPTIONS }}
+  #   - name: Package
+  #     shell: bash
+  #     run: |
+  #         function gh_export()
+  #         {
+  #             [[ "${GITHUB_ENV-}" ]] || local -r GITHUB_ENV="/dev/null"
+  #             export -- "$@" && printf "%s\n" "$@" >> "${GITHUB_ENV}"
+  #         }
 
-          cmake --build .build.x64 --target package_source
+  #         cmake --build .build.x64 --target package_source
 
-          artifact_name=$(basename "$(ls .build.x64/package/*.tar.gz | head -n 1)" ".tar.gz")
-          gh_export SOURCES_ARTIFACT_NAME="${artifact_name}"
-    - name: Upload sources
-      uses: actions/upload-artifact@v2
-      with:
-        name: ${{ env.SOURCES_ARTIFACT_NAME }}
-        path: |
-          .build.x64/package/*
-          !.build.x64/package/_CPack_Packages
-        if-no-files-found: error
+  #         artifact_name=$(basename "$(ls .build.x64/package/*.tar.gz | head -n 1)" ".tar.gz")
+  #         gh_export SOURCES_ARTIFACT_NAME="${artifact_name}"
+  #   - name: Upload sources
+  #     uses: actions/upload-artifact@v2
+  #     with:
+  #       name: ${{ env.SOURCES_ARTIFACT_NAME }}
+  #       path: |
+  #         .build.x64/package/*
+  #         !.build.x64/package/_CPack_Packages
+  #       if-no-files-found: error
 
