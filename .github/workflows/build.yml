@@ -365,48 +365,48 @@ jobs:
   #     with:
   #       name: macos-arm64-${{ github.run_id }}-${{ github.run_attempt }}
   #       path: macos_arm64.tar
-  package_macos:
-    name: Package macOS (x86_64, arm64, universal)
-    runs-on: macos-11
-    needs: [build_macos_intel, build_macos_arm64]
-    steps:
-    - name: Checkout Audacity
-      uses: actions/checkout@v2
-    - uses: actions/download-artifact@v2
-      with:
-        name: macos-intel-${{ github.run_id }}-${{ github.run_attempt }}
-    - uses: actions/download-artifact@v2
-      with:
-        name: macos-arm64-${{ github.run_id }}-${{ github.run_attempt }}
-    - name: Untar files
-      shell: bash
-      run: |
-        tar xf macos_intel.tar
-        tar xf macos_arm64.tar
-    - uses: geekyeggo/delete-artifact@v1
-      with:
-        name: |
-          macos-intel-${{ github.run_id }}-${{ github.run_attempt }}
-          macos-arm64-${{ github.run_id }}-${{ github.run_attempt }}
-    - name: Install Apple codesigning certificates
-      uses: apple-actions/import-codesign-certs@v1
-      if: github.event_name != 'pull_request' && github.repository_owner == 'audacity'
-      with:
-        p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
-        p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-    - name: Package
-      uses: audacity/audacity-actions/package@v1
-      env:
-        AUDACITY_BUILD_DIR: "${{ github.workspace }}/.build.x64"
-        AUDACITY_BUILD_TYPE: ${{ env.BUILD_TYPE }}
-        AUDACITY_BUILD_LEVEL: ${{ env.BUILD_LEVEL }}
-      with:
-        apple_codesign_identity: ${{ secrets.APPLE_CODESIGN_IDENTITY }}
-        apple_notarization_user_name: ${{ secrets.APPLE_NOTARIZATION_USER_NAME }}
-        apple_notarization_password: ${{ secrets.APPLE_NOTARIZATION_PASSWORD }}
-        archs: |
-          x64
-          arm64
+  # package_macos:
+  #   name: Package macOS (x86_64, arm64, universal)
+  #   runs-on: macos-11
+  #   needs: [build_macos_intel, build_macos_arm64]
+  #   steps:
+  #   - name: Checkout Audacity
+  #     uses: actions/checkout@v2
+  #   - uses: actions/download-artifact@v2
+  #     with:
+  #       name: macos-intel-${{ github.run_id }}-${{ github.run_attempt }}
+  #   - uses: actions/download-artifact@v2
+  #     with:
+  #       name: macos-arm64-${{ github.run_id }}-${{ github.run_attempt }}
+  #   - name: Untar files
+  #     shell: bash
+  #     run: |
+  #       tar xf macos_intel.tar
+  #       tar xf macos_arm64.tar
+  #   - uses: geekyeggo/delete-artifact@v1
+  #     with:
+  #       name: |
+  #         macos-intel-${{ github.run_id }}-${{ github.run_attempt }}
+  #         macos-arm64-${{ github.run_id }}-${{ github.run_attempt }}
+  #   - name: Install Apple codesigning certificates
+  #     uses: apple-actions/import-codesign-certs@v1
+  #     if: github.event_name != 'pull_request' && github.repository_owner == 'audacity'
+  #     with:
+  #       p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
+  #       p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+  #   - name: Package
+  #     uses: audacity/audacity-actions/package@v1
+  #     env:
+  #       AUDACITY_BUILD_DIR: "${{ github.workspace }}/.build.x64"
+  #       AUDACITY_BUILD_TYPE: ${{ env.BUILD_TYPE }}
+  #       AUDACITY_BUILD_LEVEL: ${{ env.BUILD_LEVEL }}
+  #     with:
+  #       apple_codesign_identity: ${{ secrets.APPLE_CODESIGN_IDENTITY }}
+  #       apple_notarization_user_name: ${{ secrets.APPLE_NOTARIZATION_USER_NAME }}
+  #       apple_notarization_password: ${{ secrets.APPLE_NOTARIZATION_PASSWORD }}
+  #       archs: |
+  #         x64
+  #         arm64
 
   # sources:
   #   name: Source Tarball
