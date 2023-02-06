@@ -18,6 +18,7 @@
 #pragma once
 
 #include "ActiveModel.h"
+#include "Effect.h"
 #include "ModelManagerPanel.h"
 #include "effects/Effect.h"
 #include "WaveTrack.h"
