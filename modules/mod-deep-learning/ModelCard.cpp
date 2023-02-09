@@ -238,9 +238,13 @@ void ModelCard::Serialize(Writer &writer) const
    // are not serialized because they are filled out
    // by the ModelManager when the ModelCard is loaded from disk. 
 
-   // name
-   writer.String("name");
-   writer.String(m_name.c_str());
+   // displayname
+   writer.String("displayname");
+   writer.String(m_displayname.c_str());   
+   
+   // modelname
+   writer.String("modelname");
+   writer.String(m_modelname.c_str());
 
    // author
    writer.String("author");
@@ -304,7 +308,14 @@ void ModelCard::Deserialize(const Doc& doc, const Doc& schema)
 
    // these first three fields are not in HF metadata but rather added later,
    // so don't throw if they are not present (empty default values are given)
-   m_name              = tryGetString( "name",              doc, false).value_or("");
+   
+   m_modelname              = tryGetString( "name",              doc, false).value_or("");
+   std::optional<std::string> displayname = tryGetString( "displayname",              doc, false);
+   if (displayname)
+      m_displayname = displayname.value();
+   else
+      m_displayname = m_modelname;
+
    m_author            = tryGetString( "author",            doc, false).value_or("");
 
    m_long_description  = tryGetString( "long_description",  doc, false).value_or("no long description available");
@@ -326,7 +337,7 @@ void ModelCard::Deserialize(const Doc& doc, const Doc& schema)
 
 std::string ModelCard::GetRepoID() const
 {
-   return this->author() + '/' + this->name();
+   return this->author() + '/' + this->modelname();
 }
 
 // ModelCardCollection implementation
