@@ -309,12 +309,9 @@ void ModelCard::Deserialize(const Doc& doc, const Doc& schema)
    // these first three fields are not in HF metadata but rather added later,
    // so don't throw if they are not present (empty default values are given)
    
-   m_modelname              = tryGetString( "name",              doc, false).value_or("");
-   std::optional<std::string> displayname = tryGetString( "displayname",              doc, false);
-   if (displayname)
-      m_displayname = displayname.value();
-   else
-      m_displayname = m_modelname;
+   m_modelname         = tryGetString( "modelname",         doc, false).value_or("");
+   
+   m_displayname       = tryGetString( "displayname",       doc, false).value_or("");
 
    m_author            = tryGetString( "author",            doc, false).value_or("");
 
