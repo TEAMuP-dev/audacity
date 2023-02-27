@@ -131,7 +131,11 @@ void ModelCardPanel::PopulateNameAndAuthor(ShuttleGui &S)
    // S.StartHorizontalLay(wxALIGN_LEFT, true);
    S.StartMultiColumn(2, wxALIGN_LEFT);
    {
-      mModelName = S.AddVariableText(Verbatim(mCard->name()),
+      wxString displayname = mCard->displayname();
+      if (displayname.empty())
+         displayname = mCard->modelname();
+
+      mModelName = S.AddVariableText(Verbatim(displayname),
                                        false, wxLEFT);
       mModelName->SetFont(wxFont(wxFontInfo().Bold()));
 

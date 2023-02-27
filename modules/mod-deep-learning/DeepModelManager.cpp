@@ -59,7 +59,7 @@ FilePath DeepModelManager::GetRepoDir(ModelCardHolder card) const
 
    FilePath repoDir = FileNames::MkDir( 
       wxFileName(DeepModel::DLModelsDir(),
-                 card->author() + sep + card->name() 
+                 card->author() + sep + card->modelname() 
       ).GetFullPath()
    );
 
@@ -464,7 +464,7 @@ ModelCardHolder DeepModelManager::NewCardFromHuggingFace(const std::string &json
    
    Doc doc = parsers::ParseString(jsonBody);
    card->Deserialize(doc, mModelCardSchema);
-   (*card).name(cardName)
+   (*card).modelname(cardName)
             .author(cardAuthor)
             .local(false)
             .local_path(audacity::ToUTF8(GetRepoDir(card)));

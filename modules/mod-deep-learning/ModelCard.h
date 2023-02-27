@@ -77,7 +77,7 @@ public:
    ModelCard() = default;
    ModelCard(const ModelCard&) = default;
 
-   //! returns {author}/{name}
+   //! returns {author}/{m_modelname}
    std::string GetRepoID() const;
 
    //! check if two ModelCards have the same RepoID
@@ -112,8 +112,11 @@ public:
    std::string local_path() const { return m_local_path; }
    ModelCard &local_path(const std::string& path) { m_local_path = path; return *this;}
 
-   std::string name() const { return m_name; }
-   ModelCard &name(const std::string &name) { m_name = name; return *this;}
+   std::string displayname() const { return m_displayname; }
+   ModelCard &displayname(const std::string &displayname) { m_displayname = displayname; return *this;}
+
+   std::string modelname() const { return m_modelname; }
+   ModelCard &modelname(const std::string &modelname) { m_modelname = modelname; return *this;}
 
    std::string author() const { return m_author; }
    ModelCard &author(const std::string &author) { m_author = author; return *this;}
@@ -146,7 +149,8 @@ public:
    ModelCard &model_size(size_t model_size) { m_model_size = model_size; return *this;}
 
 private:
-   std::string m_name {""};
+   std::string m_displayname {""};
+   std::string m_modelname {""};
    std::string m_author {""};
    std::string m_long_description {""};
    std::string m_short_description {""};
