@@ -29,7 +29,7 @@
 
 DeepLearningEffectBase::DeepLearningEffectBase()
 {
-   EnablePreview(false);
+   SetBatchProcessing();
 }
 
 bool DeepLearningEffectBase::Init()
@@ -41,6 +41,7 @@ bool DeepLearningEffectBase::Init()
       
       // try loading the model (if available)
       mActiveModel = std::make_shared<ActiveModel>();
+      
       return true;
    }
    catch (const InvalidModelCardDocument &e)
@@ -49,6 +50,7 @@ bool DeepLearningEffectBase::Init()
       wxICON_ERROR);
       return false;
    }
+
 }
 
 void DeepLearningEffectBase::End()
@@ -346,5 +348,6 @@ std::unique_ptr<EffectUIValidator> DeepLearningEffectBase::PopulateOrExchange(Sh
    S.EndVerticalLay();
 
    mActiveModel->SetModel(*this);
+
    return nullptr;
 }
