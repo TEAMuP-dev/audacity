@@ -64,7 +64,7 @@
 #include "Observer.h"
 
 BoolSetting DefaultUpdatesCheckingFlag{
-    L"/Update/DefaultUpdatesChecking", true };
+    L"/Update/DefaultUpdatesChecking", false };
 
 std::unique_ptr<FileConfig> ugPrefs {};
 
