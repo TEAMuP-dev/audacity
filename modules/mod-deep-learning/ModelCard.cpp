@@ -310,6 +310,8 @@ void ModelCard::Deserialize(const Doc& doc, const Doc& schema)
    // so don't throw if they are not present (empty default values are given)
    
    m_modelname         = tryGetString( "modelname",         doc, false).value_or("");
+   if (m_modelname.empty())
+      m_modelname      = tryGetString( "name",              doc, false).value_or(""); // backward compatible for older audacitorch models
    
    m_displayname       = tryGetString( "displayname",       doc, false).value_or("");
 
