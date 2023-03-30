@@ -63,7 +63,12 @@ void DeepLearningEffectBase::End()
       {
          if (manager.IsInstalling(card))
             manager.CancelInstall(card);
-      }
+      } 
+
+      // save the selected model
+      std::string activeModelId = mActiveModel->GetModel()->GetCard()->GetRepoID();
+      wxConfigBase* config = wxConfigBase::Get();
+      config->Write(wxT("SelectedModel"), wxString::FromUTF8(activeModelId.c_str()));
 
       // release model (may still be active in thread)
       mActiveModel->GetModel()->Offload();
@@ -347,7 +352,22 @@ std::unique_ptr<EffectUIValidator> DeepLearningEffectBase::PopulateOrExchange(Sh
    }
    S.EndVerticalLay();
 
-   mActiveModel->SetModel(*this);
+   wxString presetModelNameTemp;
+   wxConfigBase* config = wxConfigBase::Get();
+   config->Read(wxT("SelectedModel"), &presetModelNameTemp);
+
+   std::string presetModelName(presetModelNameTemp);
+   
+   try 
+   {
+      ModelCardHolder presetModel = manager.FetchCard(presetModelName);
+      mActiveModel->SetModel(*this, presetModel);
+   }
+   catch (ModelManagerException &e) 
+   {
+      wxLogError(wxString(e.what()));
+      wxLogDebug(wxString(e.what()));
+   }
 
    return nullptr;
 }
