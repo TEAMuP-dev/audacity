@@ -172,6 +172,25 @@ void ModelManagerPanel::FetchCards()
    // prioritize local cards first
    manager.FetchLocalCards(onCardFetched);
    manager.FetchHuggingFaceCards(onCardFetched);
+
+   // set the last used card as the active card 
+   // grab the last used model with wx presets 
+   wxString presetModelNameTemp;
+   wxConfigBase* config = wxConfigBase::Get();
+   config->Read(wxT("SelectedModel"), &presetModelNameTemp);
+
+   std::string presetModelName(presetModelNameTemp);
+   
+   try 
+   {
+      ModelCardHolder presetModel = manager.FetchCard(presetModelName);
+      mActiveModel->SetModel(*mEffect, presetModel);
+   }
+   catch (ModelManagerException &e) 
+   {
+      wxLogError(wxString(e.what()));
+      wxLogDebug(wxString(e.what()));
+   }
    
 }
 
